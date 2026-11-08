@@ -1,6 +1,6 @@
 // Game loop, state, input and UI glue.
 import { W, H, drawRoom, postFX, drawDark, drawSmiler, clamp } from './render.js';
-import { SCENES, LEVELS, drawSceneSmiler } from './scenes.js';
+import { SCENES, LEVELS, smilerRect, drawSmilers } from './scenes.js';
 import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
 import { Sound } from './audio.js';
@@ -14,7 +14,7 @@ const sound = new Sound();
 
 const fresh = () => ({
   v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false,
-  loops: 0, seen: {}, moves: 0, clock: 0,
+  loops: 0, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
 let S = fresh();
@@ -22,7 +22,11 @@ let playing = false;
 let selected = null;
 let hover = null;
 let mouse = { x: W / 2, y: H / 2 };
-let fade = 0, scareT = 0, darkT = 0, scareBack = null;
+let fade = 0, scareT = 0, scareBack = null, scareMsg = null;
+// per-visit smiler state: time spent with a light on, eye-contact progress, time spent looking away
+let lightT = 0, stare = 0, panicT = 0;
+let docAfter = null;
+let scareKind = 'smiler';
 let modal = null;
 let msgTimer = null;
 let ended = false;
@@ -46,8 +50,12 @@ const g = {
     sound.sfx('step');
     S.scene = id;
     S.moves++;
-    darkT = 0;
+    lightT = 0; stare = 0; panicT = 0;
     hover = null;
+    if (sc.safe && S.flicker) {
+      S.flicker = null;
+      msg = '你躲進門後，屏住呼吸。門外傳來某種東西拖行的聲音……過了很久，燈才亮回來。';
+    }
     sound.setLevel(sc.level);
     const first = !S.seen[id];
     S.seen[id] = true;
@@ -76,8 +84,9 @@ const g = {
   },
   has: (id) => S.inv.includes(id),
   flag(k, v = true) { S.flags[k] = v; },
-  read(id) {
+  read(id, after = null) {
     if (!S.notes.includes(id)) S.notes.push(id);
+    docAfter = after;
     sound.sfx('page');
     $('#docTitle').textContent = NOTES[id].title;
     $('#docBody').textContent = NOTES[id].body;
@@ -97,12 +106,19 @@ const g = {
   },
   keypad(code, ok) { openKeypad(code, ok); },
   dials(cfg) { openDials(cfg); },
-  scare(back) {
+  scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。') {
     if (scareT > 0 || ended) return;
     scareT = 1.1;
     scareBack = back;
+    scareMsg = msg;
     sound.sfx('sting');
     g.sanity(-25);
+  },
+  // Level 1 "Flickering": the lights die a moment later and you have seconds to reach a green EXIT door.
+  flickerSoon() {
+    if (S.flags.flickered) return;
+    S.flags.flickered = true;
+    S.flicker = { delay: 1.6, t: 11 };
   },
   end(kind) {
     if (ended) return;
@@ -121,7 +137,18 @@ const WHISPERS = [
 ];
 
 // ---------- hotspots & input ----------
-const visible = () => SCENES[S.scene].hotspots.filter((h) => !h.when || h.when(S));
+const roomOf = (sc) => (typeof sc.room === 'function' ? sc.room(S) : sc.room);
+const isDark = (sc) => (typeof sc.dark === 'function' ? sc.dark(S) : !!sc.dark) || (sc.flickerable && !!S.flicker && S.flicker.delay <= 0);
+const smilerOn = (sc) => !!sc.smiler && sc.smiler.present(S);
+const staring = (sc) => smilerOn(sc) && sc.smiler.mode === 'stare';
+function visible() {
+  const sc = SCENES[S.scene];
+  const hs = sc.hotspots.filter((h) => !h.when || h.when(S));
+  if (staring(sc)) {
+    hs.push({ id: 'smiler', rect: smilerRect(sc.smiler), label: '盯著牠的眼睛', cursor: 'look', click: () => g.say('你盯著那對眼睛，不敢眨眼，也不敢呼吸。') });
+  }
+  return hs;
+}
 const inRect = (r, x, y) => x >= r[0] && y >= r[1] && x <= r[0] + r[2] && y <= r[1] + r[3];
 function hitTest(x, y) {
   const hs = visible();
@@ -163,6 +190,11 @@ cv.addEventListener('pointerdown', (e) => {
     renderInv();
     if (h.use?.[item]) h.use[item](g);
     else g.say(`「${ITEMS[item].name}」在這裡派不上用場。`);
+    return;
+  }
+  const sc = SCENES[S.scene];
+  if (staring(sc) && h.id !== 'smiler') {
+    g.scare(sc.smiler.back, '你一慌，轉身就跑——那個笑容瞬間追了上來。');
     return;
   }
   h.click(g);
@@ -258,7 +290,13 @@ $('#btnNotes').addEventListener('click', () => {
 
 // ---------- modals ----------
 function openModal(id) { closeModal(); modal = id; $(`#${id}`).hidden = false; $('#tip').hidden = true; }
-function closeModal() { if (modal) $(`#${modal}`).hidden = true; modal = null; }
+function closeModal() {
+  if (!modal) return;
+  $(`#${modal}`).hidden = true;
+  const was = modal;
+  modal = null;
+  if (was === 'doc' && docAfter) { const f = docAfter; docAfter = null; f(); }
+}
 $('#docClose').addEventListener('click', closeModal);
 $('#notesClose').addEventListener('click', closeModal);
 $('#kpClose').addEventListener('click', closeModal);
@@ -345,8 +383,9 @@ const ENDINGS = {
       '你推開那扇門。',
       '……風。真正的、冷冷的風。',
       '你站在一條陌生的街上，天快要亮了。路燈還亮著——發出熟悉的嗡嗡聲。',
-      '口袋裡多了一張你不記得寫過的紙條：',
-      '「記錄 0120：已歸檔。下一位，請小心。」',
+      '口袋裡多了一張紙條。是你自己的筆跡：',
+      '「記錄 0120：已歸檔。下一次，請小心一點。—— J.H.」',
+      '你這才想起來——J.H.，是你名字的縮寫。',
     ],
   },
   lost: {
@@ -398,21 +437,62 @@ function frame(now) {
   const sc = SCENES[S.scene];
   if (playing) S.clock += dt;
 
-  if (playing && sc.dark && !S.light && !modal && scareT <= 0 && !ended) {
-    darkT += dt;
-    if (darkT > 1.8) g.scare(sc.darkBack);
-  } else if (!sc.dark || S.light) darkT = 0;
+  const active = playing && !modal && scareT <= 0 && !ended;
+  if (active && S.flicker) {
+    const f = S.flicker;
+    if (f.delay > 0) {
+      f.delay -= dt;
+      if (f.delay <= 0) g.say('燈全熄了。黑暗中傳來濕黏的腳步聲，越來越近——快找亮著綠燈的門！');
+    } else if (sc.flickerable) {
+      f.t -= dt;
+      if (f.t <= 0) {
+        S.flicker = null;
+        g.scare(S.scene, '有什麼東西在黑暗中撲了上來——你拚命掙脫。燈終於亮回來了，門上留著四道爪痕。');
+        scareKind = 'claws';
+      }
+    }
+  }
+  if (active && smilerOn(sc)) {
+    const sm = sc.smiler;
+    if (S.light) {
+      lightT += dt;
+      if (lightT > 1.3) g.scare(sm.back, '光把牠引了過來——那個笑容一下子就貼到了你眼前。');
+    } else {
+      lightT = Math.max(0, lightT - dt);
+      if (sm.mode === 'stare') {
+        if (inRect(smilerRect(sm), mouse.x, mouse.y)) {
+          stare += dt / 2.5;
+          panicT = Math.max(0, panicT - dt * 0.5);
+          if (stare >= 1) { stare = 0; sm.gone(g); save(); }
+        } else {
+          panicT += dt;
+          if (panicT > 2.5) g.scare(sm.back, '你移開了視線。那個笑容，瞬間就到了你眼前。');
+        }
+      }
+    }
+  }
 
   const stress = 1 - S.sanity / 100;
   ctx.save();
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
   if (stress > 0.6) ctx.translate(Math.sin(t * 2.1) * (stress - 0.6) * 10, Math.cos(t * 1.7) * (stress - 0.6) * 6);
-  drawRoom(ctx, sc.room, t);
-  sc.draw?.(ctx, t, S, sc.room);
-  if (sc.dark) {
-    drawDark(ctx, mouse.x, mouse.y, S.light, t);
-    if (!S.light) drawSceneSmiler(ctx, sc, Math.min(1, darkT / 1.8) * 0.85, t);
+  const R = roomOf(sc);
+  const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
+  if (stutter) R.bright = Math.random() < 0.5 ? 0.25 : 1;
+  drawRoom(ctx, R, t);
+  if (stutter || R.bright !== 1) R.bright = 1;
+  sc.draw?.(ctx, t, S, R);
+  if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t);
+  sc.drawOver?.(ctx, t, S, R);
+  if (smilerOn(sc)) {
+    const approach = Math.max(lightT / 1.3, panicT / 2.5);
+    drawSmilers(ctx, sc.smiler, 0.9, t, approach);
+    if (sc.smiler.mode === 'stare' && stare > 0 && !S.light) {
+      const r = smilerRect(sc.smiler);
+      ctx.strokeStyle = 'rgba(240,240,230,0.6)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(r[0] + r[2] / 2, r[1] + r[3] / 2, 46, -Math.PI / 2, -Math.PI / 2 + stare * Math.PI * 2); ctx.stroke();
+    }
   }
   ctx.restore();
 
@@ -438,12 +518,23 @@ function frame(now) {
     ctx.fillStyle = `rgba(0,0,0,${Math.min(1, k * 1.5)})`;
     ctx.fillRect(0, 0, W, H);
     const shake = 14 * k;
-    drawSmiler(ctx, W / 2 + (Math.random() - 0.5) * shake, H / 2 + (Math.random() - 0.5) * shake, 5 + (1.1 - k) * 4, Math.min(1, k * 2), t);
+    const sx = W / 2 + (Math.random() - 0.5) * shake, sy = H / 2 + (Math.random() - 0.5) * shake;
+    if (scareKind === 'claws') {
+      ctx.save();
+      ctx.strokeStyle = `rgba(200,30,30,${Math.min(1, k * 2)})`; ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        ctx.lineWidth = 10 - i;
+        ctx.beginPath(); ctx.moveTo(sx - 160 + i * 70, sy - 180); ctx.lineTo(sx - 60 + i * 70, sy + 180); ctx.stroke();
+      }
+      ctx.restore();
+    } else {
+      drawSmiler(ctx, sx, sy, 5 + (1.1 - k) * 4, Math.min(1, k * 2), t);
+    }
     if (k > 0.9) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(0, 0, W, H); }
     scareT -= dt;
     if (scareT <= 0 && !ended) {
-      const back = scareBack; scareBack = null;
-      if (S.sanity > 0) g.go(back, { free: true, msg: '黑暗裡有東西在笑。你連滾帶爬地逃了回來。' });
+      const back = scareBack; scareBack = null; scareKind = 'smiler';
+      if (S.sanity > 0) g.go(back, { free: true, msg: scareMsg });
     }
   }
   requestAnimationFrame(frame);

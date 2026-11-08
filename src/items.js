@@ -11,10 +11,10 @@ export const ITEMS = {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
     self: (g) => { g.take('almond'); g.sanity(35); g.sfx('drink'); g.say('你喝下杏仁水。嗡嗡聲退遠了一些。'); },
   },
-  screwdriver: { name: '螺絲起子', desc: '握把上刻著「J.H.」。' },
+  tube: { name: '日光燈管', desc: '一根完好的日光燈管。' },
   torch_empty: { name: '手電筒（沒電）', desc: '電池槽是空的。', combine: { battery: loadTorch } },
   battery: { name: '電池', desc: '一顆普通的電池。看起來還有電。', combine: { torch_empty: loadTorch } },
-  torch: { name: '手電筒', desc: '可以切換開關（也可以按 F 鍵）。', self: (g) => g.setLight(!g.s.light) },
+  torch: { name: '手電筒', desc: '可以切換開關（也可以按 F 鍵）。小心：光會引來某些東西。', self: (g) => g.setLight(!g.s.light) },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
 };
 
@@ -29,10 +29,11 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.fillRect(-4, -19, 8, 10); ctx.fillStyle = '#3f6fb0'; ctx.fillRect(-5, -22, 10, 4);
       ctx.fillStyle = '#c9a46a'; ctx.fillRect(-9, 0, 18, 7);
       break;
-    case 'screwdriver':
-      ctx.rotate(-0.8);
-      ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.roundRect(-6, 4, 12, 18, 4); ctx.fill();
-      ctx.fillStyle = '#c8ccd0'; ctx.fillRect(-2, -20, 4, 25); ctx.fillRect(-3.5, -22, 7, 3);
+    case 'tube':
+      ctx.rotate(-0.7);
+      ctx.fillStyle = '#f2f2ea'; ctx.fillRect(-4, -22, 8, 44);
+      ctx.fillStyle = '#9a9a9a'; ctx.fillRect(-4, -24, 8, 4); ctx.fillRect(-4, 20, 8, 4);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(-2, -18, 2, 36);
       break;
     case 'torch_empty':
     case 'torch':
