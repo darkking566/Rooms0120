@@ -6,6 +6,11 @@ const loadTorch = (g) => {
   g.setLight(true);
 };
 
+const insertTape = (g) => {
+  g.take('tape'); g.flag('tape_in'); g.sfx('whirr');
+  g.read('n0_tape', () => g.say('畫面一跳，螢幕角落亮起紅色的「REC」。你決定不再關掉它了。'));
+};
+
 export const ITEMS = {
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
@@ -15,6 +20,12 @@ export const ITEMS = {
   torch_empty: { name: '手電筒（沒電）', desc: '電池槽是空的。', combine: { battery: loadTorch } },
   battery: { name: '電池', desc: '一顆普通的電池。看起來還有電。', combine: { torch_empty: loadTorch } },
   torch: { name: '手電筒', desc: '可以切換開關（也可以按 F 鍵）。小心：光會引來某些東西。', self: (g) => g.setLight(!g.s.light) },
+  rod: { name: '金屬吊桿', desc: '從天花板上掉下來的金屬吊桿，差不多一個人高。可以用來搆高處的東西。' },
+  camcorder: {
+    name: '攝影機', desc: '一台舊型的手持攝影機，螢幕還亮著。再點一次就能舉起來透過觀景窗看（也可以按 V 鍵）。',
+    self: (g) => g.setView(!g.s.view), combine: { tape: insertTape },
+  },
+  tape: { name: '錄影帶', desc: '一卷小型錄影帶，標籤上寫著「0120」。', combine: { camcorder: insertTape } },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
 };
 
@@ -52,6 +63,24 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.moveTo(0, -16); ctx.lineTo(0, 16); ctx.stroke();
       ctx.fillStyle = '#555'; ctx.fillRect(-5, -5, 10, 10);
+      break;
+    case 'rod':
+      ctx.rotate(0.8);
+      ctx.fillStyle = '#8d8f91'; ctx.fillRect(-2.5, -24, 5, 48);
+      ctx.fillStyle = '#5c5e60'; ctx.fillRect(-4, -24, 8, 4); ctx.fillRect(-4, 20, 8, 4);
+      break;
+    case 'camcorder':
+      ctx.fillStyle = '#2b2d30'; ctx.beginPath(); ctx.roundRect(-16, -9, 26, 20, 3); ctx.fill();
+      ctx.fillStyle = '#44484c'; ctx.fillRect(10, -6, 9, 14);
+      ctx.fillStyle = '#7da7c9'; ctx.beginPath(); ctx.arc(19, 1, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5a6a5c'; ctx.fillRect(-20, -13, 9, 7);
+      ctx.fillStyle = '#d33'; ctx.beginPath(); ctx.arc(5, -4, 2, 0, Math.PI * 2); ctx.fill();
+      break;
+    case 'tape':
+      ctx.fillStyle = '#1e1e20'; ctx.beginPath(); ctx.roundRect(-18, -11, 36, 22, 2); ctx.fill();
+      ctx.fillStyle = '#e9e1c1'; ctx.fillRect(-14, -9, 28, 6);
+      ctx.fillStyle = '#777';
+      for (const x of [-8, 8]) { ctx.beginPath(); ctx.arc(x, 4, 4, 0, Math.PI * 2); ctx.fill(); }
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);

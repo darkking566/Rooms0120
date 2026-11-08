@@ -40,7 +40,7 @@ button.ghost { background: transparent; color: var(--muted); }
 #san b[data-low="1"] { background: var(--danger); animation: pulse 1s infinite; }
 
 #tip { position: absolute; z-index: 5; pointer-events: none; font-size: 13px; padding: 3px 8px; background: rgba(0, 0, 0, 0.75); border: 1px solid var(--line); border-radius: 3px; white-space: nowrap; }
-#msg { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); width: min(86%, 680px); padding: 10px 16px; text-align: center; font-size: 15px; line-height: 1.6; background: rgba(0, 0, 0, 0.72); border-left: 3px solid var(--accent); pointer-events: none; z-index: 4; }
+#msg { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); width: min(86%, 680px); padding: 10px 16px; text-align: center; font-size: 15px; line-height: 1.6; background: rgba(0, 0, 0, 0.72); border-left: 3px solid var(--accent); pointer-events: none; z-index: 4; white-space: pre-line; }
 #msg.show { animation: rise 0.25s ease-out; }
 
 .modal { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); padding: 16px; }

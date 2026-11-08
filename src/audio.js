@@ -127,6 +127,8 @@ export class Sound {
       case 'click': this.burst(0.03, 0.2, 'highpass', 2000); break;
       case 'open': this.burst(0.8, 0.35, 'lowpass', 400, this.brown); this.tone('sine', 90, 50, 0.4, 0.3); break;
       case 'steam': this.burst(1.3, 0.3, 'highpass', 1500); break;
+      case 'whirr': this.tone('square', 1200, 1700, 0.18, 0.025); this.burst(0.35, 0.08, 'bandpass', 2600); break;
+      case 'thud': this.tone('sine', 110, 40, 0.35, 0.45); this.burst(0.15, 0.25, 'lowpass', 300, this.brown); break;
       case 'page': this.burst(0.2, 0.12, 'bandpass', 1800); break;
       case 'sting':
         for (const f of [233, 247, 370, 523]) this.tone('sawtooth', f, f * 0.94, 1.5, 0.09);

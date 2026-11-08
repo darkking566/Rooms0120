@@ -18,7 +18,7 @@ Then open <http://localhost:8080>. There are no dependencies; Node 18 or newer i
 npm test
 ```
 
-Plays the whole game in headless Chromium with real mouse clicks. It also checks the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
+Plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
 
 ## How it's built
 
@@ -29,13 +29,17 @@ Plays the whole game in headless Chromium with real mouse clicks. It also checks
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
-| `src/main.js` | State, input, inventory, modals (notes, keypad, pressure dials), saving and the game loop. |
+| `src/main.js` | State, input, inventory, the camcorder viewfinder, modals (notes, keypad, pressure dials), saving and the game loop. |
 
 ### Mechanics
 
 Most mechanics follow the Backrooms Wiki setting:
 
-- **Level 0:** the Peripheral Shift keeps rearranging the corridor behind you. Keep walking until a flickering wall appears, then throw yourself through it.
+- **Level 0:** the Peripheral Shift keeps rearranging the corridor behind you, and the Isolation Effect means every note you find must have been written by… you. Level 0 now has eight scenes and a puzzle chain built on one rule original to this game: the Peripheral Shift only fools the eye.
+  - A rod from the low room knocks down a soaked ceiling tile in the wet room, dropping a **camcorder**. Raise it (button or `V`) to look through the viewfinder: rooms show their stable layout, including chalk marks, a doorway behind the pillars and the flickering wall.
+  - Beyond the pillars lie the **cubicles**: three identical exits per room. A wrong turn, or looking back, sends you to the first cubicle. Chalk arrows visible only through the lens show the way.
+  - In the **faded room**, J.H.'s old camp, the tally marks on the wall count differently through the lens. The true count opens a locker holding a tape.
+  - With the tape in, the camcorder records (the REC overlay appears). Whatever is being recorded can't be rearranged, so only then can you throw yourself through the flickering wall into Level 1.
 - **Level 1, Flickering:** after you open a crate, every light in the halls goes out. You then have a few seconds to get through a door with a green EXIT light into the safer corridors. If you stay in the halls, something finds you.
 - **Level 1 → Level 2:** a smooth threshold. Keep walking in the direction where pipes and gauges start to appear.
 - **Smilers:** they are attracted to light. With your flashlight on near one, it closes in. Switch the light off, keep the cursor on its eyes (eye contact) until it backs away, and don't panic-click away. A whole nest is too many to stare down.

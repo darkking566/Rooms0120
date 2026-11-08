@@ -296,6 +296,36 @@ export function drawDark(ctx, mx, my, lightOn, t) {
   ctx.drawImage(darkCv, 0, 0);
 }
 
+// Looking through the camcorder: a desaturated green picture, corner brackets and status text.
+export function drawViewfinder(ctx, t, o = {}) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'saturation';
+  ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = '#b4f2c4'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = 'rgba(16,48,26,0.35)'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(225,255,232,0.75)'; ctx.lineWidth = 3;
+  const mx = 34, top = 70, bot = H - 70, L = 34;
+  for (const [x, y, dx, dy] of [[mx, top, 1, 1], [W - mx, top, -1, 1], [mx, bot, 1, -1], [W - mx, bot, -1, -1]]) {
+    ctx.beginPath(); ctx.moveTo(x, y + dy * L); ctx.lineTo(x, y); ctx.lineTo(x + dx * L, y); ctx.stroke();
+  }
+  ctx.lineWidth = 1.5;
+  seg(ctx, [CX - 14, CY], [CX + 14, CY], 'rgba(225,255,232,0.5)', 1.5);
+  seg(ctx, [CX, CY - 14], [CX, CY + 14], 'rgba(225,255,232,0.5)', 1.5);
+  ctx.font = '600 16px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillStyle = 'rgba(225,255,232,0.85)';
+  ctx.textBaseline = 'top';
+  ctx.fillText(o.tape ? 'CAM' : 'CAM  STBY', mx + 10, bot - 26);
+  if (!o.tape && (t * 1.5 | 0) % 2 === 0) { ctx.textAlign = 'center'; ctx.fillText('NO TAPE', CX, top + 4); ctx.textAlign = 'left'; }
+  // battery: one bar left
+  const bx = W - mx - 52, by = bot - 26;
+  ctx.strokeStyle = 'rgba(225,255,232,0.85)'; ctx.strokeRect(bx, by, 40, 16); ctx.fillRect(bx + 40, by + 5, 4, 6);
+  if ((t * 2 | 0) % 2 === 0) ctx.fillRect(bx + 3, by + 3, 10, 10);
+  ctx.restore();
+}
+
 let noiseFrames = null;
 function makeNoise() {
   noiseFrames = [];

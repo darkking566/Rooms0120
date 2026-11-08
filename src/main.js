@@ -1,5 +1,5 @@
 // Game loop, state, input and UI glue.
-import { W, H, drawRoom, postFX, drawDark, drawSmiler, clamp } from './render.js';
+import { W, H, drawRoom, postFX, drawDark, drawSmiler, drawViewfinder, clamp } from './render.js';
 import { SCENES, LEVELS, smilerRect, drawSmilers } from './scenes.js';
 import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
@@ -13,8 +13,8 @@ const ctx = cv.getContext('2d');
 const sound = new Sound();
 
 const fresh = () => ({
-  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false,
-  loops: 0, seen: {}, moves: 0, clock: 0, flicker: null,
+  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false,
+  loops: 0, maze: 0, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
 let S = fresh();
@@ -30,6 +30,8 @@ let scareKind = 'smiler';
 let modal = null;
 let msgTimer = null;
 let ended = false;
+// while moving between scenes, messages are collected and shown together
+let collecting = null;
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -59,15 +61,23 @@ const g = {
     sound.setLevel(sc.level);
     const first = !S.seen[id];
     S.seen[id] = true;
-    if (msg) g.say(msg);
-    sc.enter?.(g, { first });
-    if (!free) g.sanity(-LEVELS[sc.level].drain);
-    if (sc.level !== prevLevel) store.set(CP_KEY, S);
-    if (S.sanity > 0 && S.sanity < 35 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
+    collecting = [];
+    try {
+      if (msg) g.say(msg);
+      sc.enter?.(g, { first });
+      if (!free) g.sanity(-LEVELS[sc.level].drain);
+      if (sc.level !== prevLevel) store.set(CP_KEY, S);
+      if (S.sanity > 0 && S.sanity < 35 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
+    } finally {
+      const msgs = collecting;
+      collecting = null;
+      if (msgs.length) g.say(msgs.join('\n'));
+    }
     updateHud();
     save();
   },
   say(text) {
+    if (collecting) { collecting.push(text); return; }
     const el = $('#msg');
     el.textContent = text;
     el.hidden = false;
@@ -75,12 +85,14 @@ const g = {
     clearTimeout(msgTimer);
     msgTimer = setTimeout(() => { el.hidden = true; }, 2600 + text.length * 70);
   },
-  give(id, msg) { S.inv.push(id); sound.sfx('pick'); renderInv(); if (msg) g.say(msg); },
+  give(id, msg) { S.inv.push(id); sound.sfx('pick'); renderInv(); updateHud(); if (msg) g.say(msg); },
   take(id) {
     const i = S.inv.indexOf(id);
     if (i >= 0) S.inv.splice(i, 1);
     if (selected === id && !S.inv.includes(id)) selected = null;
+    if (!S.inv.includes('camcorder')) S.view = false;
     renderInv();
+    updateHud();
   },
   has: (id) => S.inv.includes(id),
   flag(k, v = true) { S.flags[k] = v; },
@@ -103,6 +115,18 @@ const g = {
     S.light = on;
     sound.sfx('click');
     updateHud();
+  },
+  // Raise or lower the camcorder. Through the viewfinder, a scene's drawView layer becomes visible.
+  setView(on) {
+    if (!g.has('camcorder')) return;
+    S.view = on;
+    sound.sfx('whirr');
+    if (on) {
+      const m = SCENES[S.scene].viewMsg;
+      g.say((typeof m === 'function' ? m(S) : m) || '觀景窗裡的畫面，和肉眼看到的沒什麼不同。');
+    }
+    updateHud();
+    save();
   },
   keypad(code, ok) { openKeypad(code, ok); },
   dials(cfg) { openDials(cfg); },
@@ -206,6 +230,7 @@ window.addEventListener('keydown', (e) => {
     else if (selected) { selected = null; renderInv(); }
   }
   if ((e.key === 'f' || e.key === 'F') && playing && !modal && g.has('torch')) g.setLight(!S.light);
+  if ((e.key === 'v' || e.key === 'V') && playing && !modal && !ended && g.has('camcorder')) g.setView(!S.view);
 });
 
 // ---------- inventory ----------
@@ -267,7 +292,12 @@ function updateHud() {
   bl.hidden = !g.has('torch');
   bl.textContent = `手電筒：${S.light ? '開' : '關'}`;
   bl.setAttribute('aria-pressed', S.light ? 'true' : 'false');
+  const bv = $('#btnView');
+  bv.hidden = !g.has('camcorder');
+  bv.textContent = `觀景窗：${S.view ? '開' : '關'}`;
+  bv.setAttribute('aria-pressed', S.view ? 'true' : 'false');
 }
+$('#btnView').addEventListener('click', () => { if (playing && !modal && !ended) g.setView(!S.view); });
 $('#btnLight').addEventListener('click', () => g.setLight(!S.light));
 $('#btnSave').addEventListener('click', () => { g.say(store.set(SAVE_KEY, S) ? '已存檔。' : '這個瀏覽器無法存檔。'); });
 $('#btnMute').addEventListener('click', () => {
@@ -383,6 +413,7 @@ const ENDINGS = {
       '你推開那扇門。',
       '……風。真正的、冷冷的風。',
       '你站在一條陌生的街上，天快要亮了。路燈還亮著——發出熟悉的嗡嗡聲。',
+      '攝影機還在錄。你低頭看螢幕——畫面裡的街道，和你眼前的一模一樣。',
       '口袋裡多了一張紙條。是你自己的筆跡：',
       '「記錄 0120：已歸檔。下一次，請小心一點。—— J.H.」',
       '你這才想起來——J.H.，是你名字的縮寫。',
@@ -485,6 +516,7 @@ function frame(now) {
   sc.draw?.(ctx, t, S, R);
   if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t);
   sc.drawOver?.(ctx, t, S, R);
+  if (S.view) sc.drawView?.(ctx, t, S, R);
   if (smilerOn(sc)) {
     const approach = Math.max(lightT / 1.3, panicT / 2.5);
     drawSmilers(ctx, sc.smiler, 0.9, t, approach);
@@ -506,7 +538,9 @@ function frame(now) {
     }
   }
 
-  postFX(ctx, t, { stress, clock: S.clock, rec: playing });
+  if (playing && S.view) drawViewfinder(ctx, t, { tape: !!S.flags.tape_in });
+  // the REC overlay appears once a tape is in the camcorder (Levels 1+ always have one)
+  postFX(ctx, t, { stress, clock: S.clock, rec: playing && (!!S.flags.tape_in || sc.level > 0) });
 
   if (fade > 0) {
     ctx.fillStyle = `rgba(0,0,0,${fade})`;
