@@ -13,7 +13,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); }
 body { min-height: 100vh; display: flex; justify-content: center; }
-#wrap { width: 100%; max-width: 1120px; padding: 16px; }
+#wrap { width: 100%; max-width: 1120px; padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
 #stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; user-select: none; -webkit-user-select: none; }
 #game { display: block; width: 100%; height: 100%; image-rendering: auto; touch-action: manipulation; }
@@ -89,7 +89,7 @@ button.ghost { background: transparent; color: var(--muted); }
 #credit a { color: var(--accent); }
 
 @media (max-width: 640px) {
-  #wrap { padding: 16px 16px 24px; }
+  #wrap { padding-block: 16px 24px; }
   #hud { padding: 6px; }
   #lvl b { font-size: 13px; }
   #lvl span { font-size: 10px; }
