@@ -14,7 +14,7 @@ const sound = new Sound();
 
 const fresh = () => ({
   v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false,
-  loops: 0, maze: 0, bo: null, seen: {}, moves: 0, clock: 0, flicker: null,
+  loops: 0, maze: 0, bo: null, holes: null, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
 let S = fresh();
@@ -136,6 +136,7 @@ const g = {
     updateHud();
     save();
   },
+  checkpoint() { store.set(CP_KEY, S); },
   keypad(code, ok) { openKeypad(code, ok); },
   dials(cfg) { openDials(cfg); },
   scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。') {
@@ -429,6 +430,15 @@ const ENDINGS = {
       '口袋裡多了一張紙條。是你自己的筆跡：',
       '「記錄 0120：已歸檔。下一次，請小心一點。—— J.H.」',
       '你這才想起來——J.H.，是你名字的縮寫。',
+    ],
+  },
+  fall: {
+    title: '— 墜落結局 —',
+    lines: [
+      '燈光暗下去的那一瞬間，你一腳踩空。',
+      '下墜的時間長得不合理。',
+      '你一直在等撞擊。',
+      '它一直沒有來。',
     ],
   },
   red: {

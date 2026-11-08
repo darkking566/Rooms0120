@@ -35,7 +35,7 @@ Plays the whole game in headless Chromium with real mouse clicks. It also checks
 
 Most mechanics follow the Backrooms Wiki setting:
 
-- **Level 0:** the Peripheral Shift keeps rearranging the corridor behind you, and the Isolation Effect means every note you find must have been written by… you. Level 0 now has eleven scenes and a puzzle chain built on one rule original to this game: the Peripheral Shift only fools the eye.
+- **Level 0:** the Peripheral Shift keeps rearranging the corridor behind you, and the Isolation Effect means every note you find must have been written by… you. Level 0 now has fourteen scenes and a puzzle chain built on one rule original to this game: the Peripheral Shift only fools the eye.
   - A rod from the low room knocks down a soaked ceiling tile in the wet room, dropping a **camcorder**. Raise it (button or `V`) to look through the viewfinder: rooms show their stable layout, including chalk marks, a doorway behind the pillars and the flickering wall.
   - Beyond the pillars lie the **cubicles**: three identical exits per room. A wrong turn, or looking back, sends you to the first cubicle. Chalk arrows visible only through the lens show the way.
   - In the **faded room**, J.H.'s old camp, the tally marks on the wall count differently through the lens. The true count opens a locker holding a tape.
@@ -43,6 +43,7 @@ Most mechanics follow the Backrooms Wiki setting:
   - **Blackout Zone** (off the low room): pitch dark, ankle-deep water and near silence. Follow the one humming light by ear; it is panned left, right or ahead and moves whenever you go the wrong way. The camcorder's night mode shows the exits but not the way.
   - **Manila Room**: the one place in Level 0 where people can see each other. Someone is sitting in the corner, and M.E.G.'s survival sheet is on the wall. It is a dead end.
   - **Red Rooms**: after enough loops, a red-lit corner appears. Turn back at once and you get away with a sanity hit; go deeper or linger and you get the Red Rooms ending.
+  - **Stairs** (off the pillar room): the step count changes every time you count. Up leads to the **arches**, pale rooms full of archways and the steadiest place in the level: rest there to restore sanity and store a checkpoint (once every few moves). Down leads to the **holes**: rows of pitch-black pits where the light only reaches the next row and sometimes dips so floor and pit look the same. Step only on solid floor; a pit means the fall ending. A bag waits on the far side.
   - Almond water found soaking in the carpet is tainted, and the hum sometimes surges without warning. A dark figure is sometimes standing at the end of the hallway.
 - **Level 1, Flickering:** after you open a crate, every light in the halls goes out. You then have a few seconds to get through a door with a green EXIT light into the safer corridors. If you stay in the halls, something finds you.
 - **Level 1 → Level 2:** a smooth threshold. Keep walking in the direction where pipes and gauges start to appear.

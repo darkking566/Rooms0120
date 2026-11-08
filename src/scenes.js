@@ -90,8 +90,9 @@ const glitchWall = wallQuad(1, -1, 1, 2.2, 3.0);
 
 const l0Pillar = {
   hw: 2.2, depth: 6, fogEnd: 12, pal: PAL.l0, stripes: true, tiles: true, floorTex: 'carpet',
-  lights: [1.6, 3.4, 5.2], flick: hum,
+  lights: [1.6, 3.4, 5.2], flick: hum, openings: [{ side: -1, z1: 3.0, z2: 3.9, top: -0.6 }],
 };
+const stairDoor = wallQuad(-2.2, -0.6, 1, 3.0, 3.9);
 const pillars0 = [
   { x1: -1.1, x2: -0.75, y1: -1, y2: 1, z1: 4.2, z2: 4.55 },
   { x1: 0.75, x2: 1.1, y1: -1, y2: 1, z1: 4.2, z2: 4.55 },
@@ -205,6 +206,86 @@ const l0LoopRed = { ...l0Loop, openings: [{ side: -1, z1: 3.2, z2: 4.0, top: -0.
 const redOpening = wallQuad(-1, -0.6, 1, 3.2, 4.0);
 const peel = [[-1, -0.9, -0.2, 1.1, 1.9], [-1, 0.1, 0.8, 1.3, 2.4], [-1, -0.7, 0.5, 2.7, 3.8], [1, -0.8, 0.0, 1.2, 2.2], [1, 0.2, 0.9, 1.6, 3.0], [1, -0.6, 0.6, 3.2, 4.2]];
 const shrooms = [[-0.85, 1.4], [-0.7, 1.9], [0.8, 1.6], [0.9, 2.5], [-0.9, 2.8], [0.75, 3.4]];
+
+// Stairs: a stairwell off the pillar room. Up to the arches, down to the holes.
+const l0Stairs = {
+  hw: 1.5, depth: 6, fogEnd: 11, pal: PAL.l0, stripes: true, tiles: true, floorTex: 'carpet', lights: [1.6], flick: hum,
+};
+const STEP_H = 0.2;
+const stairsUp = Array.from({ length: 9 }, (_, i) => ({
+  x1: -0.95, x2: 0.15, y1: 1 - (i + 1) * STEP_H, y2: 1, z1: 2.6 + i * 0.32, z2: 2.92 + i * 0.32, color: '#b6a256', edge: true,
+})).reverse();
+const stairsDown = [P(0.55, 1, 1.9), P(1.45, 1, 1.9), P(1.45, 1, 3.4), P(0.55, 1, 3.4)];
+const railTop = [P(0.5, 0.35, 1.9), P(0.5, 0.35, 3.4)];
+
+// Arches: pale walls with archways, deep wet carpet. The steadiest rooms in the level, so a place to rest.
+const l0Arches = {
+  hw: 1.8, depth: 6, fogEnd: 12, tiles: true, floorTex: 'carpet', lights: [1.8, 4.0], flick: hum,
+  pal: { wall: '#ddd3a8', ceil: '#e2dabb', floor: '#7d7046', fog: '#24200f', light: '#fff8de' },
+};
+export const REST_EVERY = 8;
+// archway outline on a side wall (x fixed), centred at depth zc: posts from the floor, round top
+function wallArch(x, zc, half, top) {
+  const pts = [P(x, 1, zc - half)];
+  for (let i = 0; i <= 12; i++) {
+    const a = Math.PI - (Math.PI * i) / 12;
+    pts.push(P(x, top - Math.sin(a) * half * 0.9, zc + Math.cos(a) * half));
+  }
+  pts.push(P(x, 1, zc + half));
+  return pts;
+}
+function faceArch(xc, half, top, z) {
+  const pts = [P(xc - half, 1, z)];
+  for (let i = 0; i <= 12; i++) {
+    const a = Math.PI - (Math.PI * i) / 12;
+    pts.push(P(xc + Math.cos(a) * half, top - Math.sin(a) * half, z));
+  }
+  pts.push(P(xc + half, 1, z));
+  return pts;
+}
+const archesL = [wallArch(-1.8, 2.6, 0.45, -0.2), wallArch(-1.8, 4.4, 0.45, -0.2)];
+const archesR = [wallArch(1.8, 2.6, 0.45, -0.2), wallArch(1.8, 4.4, 0.45, -0.2)];
+const archBack = faceArch(0, 0.5, -0.1, 5.999);
+
+// Holes: pitch-black pits in a grid; the light barely reaches past the next row.
+export const HOLE_ROWS = 3;
+export const LANES = ['left', 'mid', 'right'];
+const LANE_X = { left: [-1.35, -0.45], mid: [-0.45, 0.45], right: [0.45, 1.35] };
+const LANE_ZH = { left: '左前方', mid: '正前方', right: '右前方' };
+const holesFlick = (t) => (Math.sin(t * 1.7) + Math.sin(t * 4.1 + 1) > 1.25 ? 0.22 : 0.95);
+const l0Holes = {
+  hw: 1.8, depth: 7, fogEnd: 4.2, pal: { ...PAL.l0, fog: '#060502' }, stripes: true, tiles: true, floorTex: 'carpet',
+  lights: [1.5], flickerLights: [], flick: holesFlick,
+};
+const laneTile = (lane, z1 = 1.7, z2 = 2.5) => {
+  const [a, b] = LANE_X[lane];
+  return [P(a + 0.06, 1, z1), P(b - 0.06, 1, z1), P(b - 0.06, 1, z2), P(a + 0.06, 1, z2)];
+};
+export function newHoleRow() {
+  const pits = LANES.map(() => Math.random() < 0.6);
+  if (pits.every(Boolean)) pits[Math.floor(Math.random() * 3)] = false;
+  if (!pits.some(Boolean)) pits[Math.floor(Math.random() * 3)] = true;
+  return pits;
+}
+// decorative far pits, fixed so the grid reads as a grid
+const farPits = [['left', 3.0, 3.6], ['right', 3.0, 3.6], ['mid', 4.0, 4.6], ['left', 5.0, 5.6], ['right', 5.0, 5.6]];
+const ledge = { x1: -1.2, x2: 1.2, y1: 0.97, y2: 1, z1: 1.6, z2: 3.2, color: '#9a8746' };
+const bag = { x1: -0.25, x2: 0.3, y1: 0.7, y2: 1, z1: 2.5, z2: 2.85, color: '#4f5a3e', edge: true };
+
+function holeStep(g, lane) {
+  const h = g.s.holes;
+  if (h.pits[LANES.indexOf(lane)]) return g.end('fall');
+  if (h.row + 1 >= HOLE_ROWS) {
+    g.s.holes = { row: HOLE_ROWS, pits: [false, false, false] };
+    return g.go('l0_holes', { msg: '你跨過最後一排坑洞，腳下終於是完整的地板。牆邊靠著一個帆布背包。' });
+  }
+  g.s.holes = { row: h.row + 1, pits: newHoleRow() };
+  g.go('l0_holes', { msg: `你屏住呼吸跨了過去。燈光照得到的下一排地板上，${holeText(g.s.holes.pits)}` });
+}
+const holeText = (pits) => {
+  const open = LANES.filter((l, i) => pits[i]).map((l) => LANE_ZH[l]);
+  return `${open.join('、')}是坑洞。`;
+};
 
 function drawGlitchWall(ctx, R, t) {
   const on = Math.sin(t * 17) + Math.sin(t * 5.3) > -0.4;
@@ -603,6 +684,7 @@ export const SCENES = {
     },
     hotspots: [
       BACK('l0_start'),
+      { id: 'stairs', rect: bounds(stairDoor, 4), label: '左邊的樓梯間', cursor: 'go', click: (g) => g.go('l0_stairs') },
       {
         id: 'deeper', when: (s) => s.view || s.flags.maze_found, rect: bounds(hiddenDoor, 12), label: '柱子後面的門洞', cursor: 'go',
         click: (g) => {
@@ -812,6 +894,137 @@ export const SCENES = {
       },
       { ...FORWARD('l0_red', '往紅光深處走'), click: (g) => g.end('red') },
       { id: 'corner', rect: bounds(wallQuad(1, -0.6, 1, 4.5, 5.3), 4), label: '另一個轉角', cursor: 'go', click: (g) => g.end('red') },
+    ],
+  },
+
+  l0_stairs: {
+    level: 0, title: '樓梯間', room: l0Stairs,
+    viewMsg: '觀景窗裡，樓梯的階數和肉眼數的不一樣。',
+    enter(g, { first }) {
+      if (first) g.say('一座窄窄的樓梯往上延伸，穿過天花板。右邊的欄杆旁，另一道樓梯往下，沒入黑暗。');
+    },
+    draw(ctx, t, s, R) {
+      poly(ctx, [P(-0.95, -1, 4.9), P(0.15, -1, 4.9), P(0.15, -1, 5.6), P(-0.95, -1, 5.6)], '#0d0b05');
+      for (const b of stairsUp) box(ctx, R, b);
+      poly(ctx, stairsDown, '#0a0804');
+      for (let i = 1; i < 6; i++) {
+        const z = 1.9 + i * 0.25, k = i / 6;
+        seg(ctx, P(0.55, 1, z), P(1.45, 1, z), `rgba(150,130,70,${0.35 * (1 - k)})`, 2);
+      }
+      seg(ctx, railTop[0], railTop[1], shade(R, '#6b5a2e', 2.6), 4);
+      for (const z of [1.9, 2.65, 3.4]) seg(ctx, P(0.5, 0.35, z), P(0.5, 1, z), shade(R, '#6b5a2e', z), 3);
+    },
+    hotspots: [
+      BACK('l0_pillar'),
+      { id: 'up', rect: bounds(stairsUp.flatMap((b) => [P(b.x1, b.y1, b.z1), P(b.x2, 1, b.z1)]), 6), label: '往上走', cursor: 'go', click: (g) => g.go('l0_arches', { msg: '你一階一階往上爬，爬了比天花板高得多的距離。' }) },
+      {
+        id: 'down', rect: bounds(stairsDown, 4), label: '往下走', cursor: 'go',
+        click: (g) => { g.s.holes = { row: 0, pits: newHoleRow() }; g.go('l0_holes'); },
+      },
+      {
+        id: 'steps', rect: [140, 300, 120, 60], label: '數一數階數', cursor: 'look',
+        click: (g) => {
+          const n = 11 + Math.floor(Math.random() * 7);
+          g.say(`你數了一下，一共 ${n} 階。${g.s.flags.stairs_counted ? `上次數的時候是 ${g.s.flags.stairs_counted} 階。` : ''}`);
+          g.flag('stairs_counted', n);
+        },
+      },
+    ],
+  },
+
+  l0_arches: {
+    level: 0, title: '拱門的房間', room: l0Arches,
+    viewMsg: '觀景窗裡和肉眼看到的一模一樣。這裡，大概是這一層最穩定的地方。',
+    enter(g, { first }) {
+      if (first) g.say('牆是淡淡的米白色，開滿了拱形的門洞。地毯又深又濕，可是這裡……很安靜。好像什麼都不會再變了。');
+    },
+    draw(ctx, t, s, R) {
+      for (const a of [...archesL, ...archesR]) {
+        poly(ctx, a, rgb(mul(hex(R.pal.fog), 1.4)));
+        ctx.strokeStyle = shade(R, '#b8ad82', 3); ctx.lineWidth = 2; poly(ctx, a); ctx.stroke();
+      }
+      poly(ctx, archBack, rgb(mul(hex(R.pal.fog), 1.2)));
+      ctx.strokeStyle = shade(R, '#b8ad82', 6); ctx.lineWidth = 2; poly(ctx, archBack); ctx.stroke();
+      const c = P(-1.2, 1, 2.3);
+      ctx.fillStyle = 'rgba(40,50,40,0.18)'; ctx.beginPath(); ctx.ellipse(c[0] + 60, c[1], 120, 16, 0, 0, Math.PI * 2); ctx.fill();
+    },
+    hotspots: [
+      { ...BACK('l0_stairs', '走下樓梯'), click: (g) => g.go('l0_stairs') },
+      {
+        id: 'rest', rect: bounds(archesL[0], 6), label: '靠在拱門下休息', cursor: 'look',
+        click: (g) => {
+          const last = g.s.flags.rest_at;
+          if (last !== undefined && g.s.moves - last < REST_EVERY) return g.say('你才剛休息過。再坐下去，你怕自己會不想站起來。');
+          g.flag('rest_at', g.s.moves);
+          g.sanity(25);
+          g.checkpoint();
+          g.say('你靠著拱門坐下，閉上眼睛。醒來時，房間還是原來的樣子——在這一層，這已經是奇蹟了。（這裡記住了你的位置。）');
+        },
+      },
+      { id: 'arch', rect: bounds(archBack, 6), label: '對面的拱門', cursor: 'look', click: (g) => g.say('拱門後面是另一間拱門的房間，再後面又是一間。走過去，也只會回到這裡。') },
+    ],
+  },
+
+  l0_holes: {
+    level: 0, title: '坑洞區', room: l0Holes,
+    viewMsg: '夜視模式下，坑洞的邊緣清楚了一點。坑底……什麼都照不到。',
+    enter(g, { first }) {
+      const h = g.s.holes;
+      if (h.row >= HOLE_ROWS) return;
+      if (first) g.say(`樓梯盡頭是一大片地板，上面整齊地排著一個個漆黑的方形坑洞。燈光只照得到眼前一排：${holeText(h.pits)}`);
+      else if (h.row === 0) g.say(`又是那片坑洞。眼前這一排，${holeText(h.pits)}`);
+    },
+    draw(ctx, t, s, R) {
+      const h = s.holes || { row: 0, pits: [false, false, false] };
+      if (h.row >= HOLE_ROWS) {
+        box(ctx, R, ledge);
+        if (!s.flags.holes_bag) box(ctx, R, bag);
+        return;
+      }
+      for (const [lane, z1, z2] of farPits) poly(ctx, laneTile(lane, z1, z2), 'rgba(0,0,0,0.75)');
+      LANES.forEach((lane, i) => {
+        const q = laneTile(lane);
+        if (h.pits[i]) {
+          poly(ctx, q, '#000');
+          ctx.strokeStyle = shade(R, '#5a4c20', 2); ctx.lineWidth = 1.5; poly(ctx, q); ctx.stroke();
+        }
+      });
+      // when the light dips, the floor and the pits are the same black
+      if (holesFlick(t) < 0.5) {
+        ctx.fillStyle = 'rgba(0,0,0,0.85)';
+        ctx.fillRect(0, P(0, 1, R.depth)[1], W, H);
+      }
+    },
+    hotspots: [
+      {
+        id: 'back', rect: [330, 470, 300, 70], label: '回到樓梯', cursor: 'back',
+        click: (g) => {
+          const across = g.s.holes?.row >= HOLE_ROWS;
+          g.s.holes = null;
+          g.go('l0_stairs', { msg: across ? '你回頭時，坑洞的排列已經全變了——靠牆的地方剛好空出一條路。你貼著牆走回樓梯口。' : '你小心翼翼地退回樓梯口。' });
+        },
+      },
+      ...LANES.map((lane) => ({
+        id: lane, when: (s) => s.holes && s.holes.row < HOLE_ROWS, rect: bounds(laneTile(lane), 4),
+        label: `往${LANE_ZH[lane]}跨一步`, cursor: 'go',
+        click: (g) => holeStep(g, lane),
+        use: {
+          almond_wet: (g) => {
+            if (!g.s.holes.pits[LANES.indexOf(lane)]) return g.say('那裡是地板，不是坑。');
+            g.take('almond_wet');
+            g.say('你把那瓶濕掉的杏仁水丟進坑裡，豎起耳朵等。……一直等。始終沒有聽到落地的聲音。');
+            if (!g.s.flags.holes_drop) { g.flag('holes_drop'); g.sanity(-3); }
+          },
+        },
+      })),
+      {
+        id: 'bag', when: (s) => s.holes?.row >= HOLE_ROWS && !s.flags.holes_bag, rect: boxRect(bag, 8), label: '帆布背包', cursor: 'take',
+        click: (g) => {
+          g.flag('holes_bag'); g.give('almond'); g.give('almond');
+          g.say('背包裡有兩瓶沒開過的杏仁水，還有一本被翻爛的筆記本。');
+          g.read('n0g');
+        },
+      },
     ],
   },
 

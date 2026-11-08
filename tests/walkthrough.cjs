@@ -68,46 +68,66 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('side'); check(await scene() === 'l0_pillar', 'entered pillar room'); await shot('02-l0_pillar');
   await hit('note'); await closeDoc();
   check(!(await ids()).includes('deeper'), 'no way deeper into the pillar room to the naked eye');
+  await hit('stairs'); check(await scene() === 'l0_stairs', 'stairwell off the pillar room'); await shot('03-l0_stairs');
+  await hit('steps');
+  await hit('up'); check(await scene() === 'l0_arches', 'climbed up to the arches'); await shot('04-l0_arches');
+  await page.evaluate(() => { window.__rooms.state.sanity = 50; });
+  await hit('rest');
+  check(await sanity() > 50, 'resting under an arch restores sanity');
+  check(await page.evaluate(() => JSON.parse(localStorage.getItem('rooms0120.checkpoint.v1')).scene) === 'l0_arches', 'resting in the arches stores a checkpoint');
+  { const s1 = await sanity(); await hit('rest'); check(await sanity() === s1, 'cannot rest again straight away'); }
+  await hit('back'); await hit('down'); check(await scene() === 'l0_holes', 'went down to the holes');
+  await page.waitForTimeout(200); await shot('05-l0_holes');
+  await page.evaluate(() => window.__rooms.g.give('almond_wet'));
+  { const st = await page.evaluate(() => window.__rooms.state.holes); const pitLane = ['left', 'mid', 'right'][st.pits.indexOf(true)];
+    await slot('almond_wet'); await hit(pitLane); check(!(await has('almond_wet')) && (await flags()).holes_drop, 'a bottle dropped into a pit never lands'); }
+  for (let i = 0; i < 3; i++) {
+    const st = await page.evaluate(() => window.__rooms.state.holes);
+    await hit(['left', 'mid', 'right'][st.pits.indexOf(false)]);
+  }
+  check(await page.evaluate(() => window.__rooms.state.holes.row) === 3 && !(await page.isVisible('#ending')), 'crossed the holes by stepping only on solid floor');
+  await hit('bag'); await closeDoc(); check((await flags()).holes_bag, 'found the bag on the far side');
+  await hit('back'); await hit('back'); check(await scene() === 'l0_pillar', 'back to the pillar room');
   await hit('back');
-  await hit('lowroom'); check(await scene() === 'l0_low', 'low room behind the left doorway'); await shot('03-l0_low');
+  await hit('lowroom'); check(await scene() === 'l0_low', 'low room behind the left doorway'); await shot('06-l0_low');
   await hit('note'); await closeDoc();
   await hit('rod'); check(await has('rod'), 'picked up the metal rod');
   await hit('blackout'); check(await scene() === 'l0_blackout', 'entered the Blackout Zone');
-  await page.waitForTimeout(200); await shot('04-l0_blackout');
+  await page.waitForTimeout(200); await shot('07-l0_blackout');
   const bo = () => page.evaluate(() => window.__rooms.state.bo);
   { const b = await bo(); await hit(['left', 'ahead', 'right'].find((d) => d !== b.dir)); }
   check((await bo()).step === 0 && await scene() === 'l0_blackout', 'walking away from the hum loses you in the dark');
   for (let i = 0; i < 3; i++) await hit((await bo()).dir);
   check(await scene() === 'l0_manila', 'following the moving hum leads to the Manila Room');
-  await page.waitForTimeout(200); await shot('05-l0_manila');
+  await page.waitForTimeout(200); await shot('08-l0_manila');
   for (let i = 0; i < 5; i++) await hit('jh');
   check((await flags()).met_jh && await has('almond'), 'talked to the figure in the Manila Room and got clean almond water');
   await hit('note'); await closeDoc();
   await hit('back'); check(await scene() === 'l0_low', 'leaving the Manila Room puts you back in the low room');
-  await hit('back'); await hit('forward'); check(await scene() === 'l0_hall', 'hallway'); await shot('06-l0_hall');
-  await hit('wetroom'); check(await scene() === 'l0_wet', 'soaked room off the hallway'); await shot('07-l0_wet');
+  await hit('back'); await hit('forward'); check(await scene() === 'l0_hall', 'hallway'); await shot('09-l0_hall');
+  await hit('wetroom'); check(await scene() === 'l0_wet', 'soaked room off the hallway'); await shot('10-l0_wet');
   await hit('tile'); check(!(await has('camcorder')), 'sagging ceiling tile is out of reach by hand');
   await hit('note'); await closeDoc();
   await slot('rod'); await hit('tile');
   check(await has('camcorder') && !(await has('rod')), 'poking the tile with the rod drops the camcorder');
   await page.click('#btnView'); check(await view(), 'viewfinder raised');
-  await page.waitForTimeout(200); await shot('08-l0_wet-viewfinder');
+  await page.waitForTimeout(200); await shot('11-l0_wet-viewfinder');
   await hit('back'); await hit('forward'); check(await scene() === 'l0_loop', 'loop corridor (1)');
   check((await ids()).includes('wall'), 'the viewfinder shows the flickering wall on the 1st loop');
   await hit('wall'); check(await scene() === 'l0_loop', 'without a tape the wall is solid');
   await hit('back'); await hit('back'); await hit('side');
   check((await ids()).includes('deeper'), 'the viewfinder reveals a doorway behind the pillars');
-  await shot('09-l0_pillar-viewfinder');
+  await shot('12-l0_pillar-viewfinder');
   await hit('deeper'); check(await scene() === 'l0_maze', 'entered the cubicles');
   await hit('note'); await closeDoc();
-  await shot('10-l0_maze');
+  await shot('13-l0_maze');
   await hit('right'); await hit('right');
   check(await scene() === 'l0_maze' && (await page.evaluate(() => window.__rooms.state.maze)) === 0, 'a wrong turn sends you back to the first cubicle');
   for (const d of ['right', 'ahead', 'left', 'right']) await hit(d);
   check(await scene() === 'l0_faded', 'following the chalk arrows leads to the faded room');
-  await page.waitForTimeout(200); await shot('11-l0_faded-viewfinder');
+  await page.waitForTimeout(200); await shot('14-l0_faded-viewfinder');
   await page.click('#btnView'); check(!(await view()), 'viewfinder lowered');
-  await page.waitForTimeout(200); await shot('12-l0_faded');
+  await page.waitForTimeout(200); await shot('15-l0_faded');
   await hit('note'); await closeDoc();
   await hit('tally'); await hit('locker'); check(await page.isVisible('#keypad'), 'locker keypad opens');
   for (const k of ['1', '2', 'ok']) await page.click(`#kpKeys button[data-k="${k}"]`);
@@ -127,27 +147,27 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   const hs2 = await ids();
   check(!hs2.includes('wall'), 'no flickering wall to the naked eye on the 2nd loop');
   await hit('forward');
-  await page.waitForTimeout(300); await shot('13-l0_loop-wall');
+  await page.waitForTimeout(300); await shot('16-l0_loop-wall');
   await hit('forward'); check((await ids()).includes('redroom'), 'a red-lit corner appears after wandering long enough');
   await hit('redroom'); check(await scene() === 'l0_red', 'stepped into the Red Rooms');
-  await page.waitForTimeout(300); await shot('14-l0_red');
+  await page.waitForTimeout(300); await shot('17-l0_red');
   await hit('back'); check(await scene() === 'l0_loop', 'turning back at once gets you out of the Red Rooms');
   await hit('wall'); check(await scene() === 'l1_arrive', 'recording, you throw yourself through the flickering wall into Level 1');
-  await page.waitForTimeout(300); await shot('15-l1_arrive');
+  await page.waitForTimeout(300); await shot('18-l1_arrive');
 
   console.log('Level 1 — Habitable Zone');
   await hit('crate'); check(await has('torch_empty'), 'found empty flashlight');
-  await hit('forward'); check(await scene() === 'l1_crates', 'warehouse'); await shot('16-l1_crates');
+  await hit('forward'); check(await scene() === 'l1_crates', 'warehouse'); await shot('19-l1_crates');
   await hit('note'); await closeDoc();
   await hit('crate'); check(await has('battery'), 'found battery');
   await page.waitForTimeout(2200);
   check(await page.evaluate(() => !!window.__rooms.state.flicker && window.__rooms.state.flicker.delay <= 0), 'Flickering event started');
-  await shot('17-l1_flicker');
+  await shot('20-l1_flicker');
   let san = await sanity();
   await page.waitForTimeout(12500);
   check(await page.evaluate(() => window.__rooms.state.flicker === null), 'Flickering ended after the timeout');
   check(await sanity() < san, `staying in the halls during Flickering hurt you (${san} → ${await sanity()})`);
-  await hit('exitdoor'); check(await scene() === 'l1_corridor', 'went through the green EXIT door'); await shot('18-l1_corridor');
+  await hit('exitdoor'); check(await scene() === 'l1_corridor', 'went through the green EXIT door'); await shot('21-l1_corridor');
   await hit('almond'); await hit('note'); await closeDoc();
   await hit('office'); check(await scene() === 'l1_office', 'office');
   await hit('lockbox'); check(await page.isVisible('#keypad'), 'keypad opens');
@@ -160,9 +180,9 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await has('torch'), 'battery + flashlight combined');
   check(await light(), 'flashlight is on');
   await hit('back'); await hit('back'); await hit('forward');
-  check(await scene() === 'l1_deep', 'deeper warehouse with pipes appearing'); await shot('19-l1_deep');
+  check(await scene() === 'l1_deep', 'deeper warehouse with pipes appearing'); await shot('22-l1_deep');
   await hit('forward'); check(await scene() === 'l2_pipes', 'smooth threshold into Level 2');
-  await page.waitForTimeout(300); await shot('20-l2_pipes');
+  await page.waitForTimeout(300); await shot('23-l2_pipes');
 
   console.log('Level 2 — Abandoned Utility Halls');
   await slot('almond'); await slot('almond'); await slot('almond'); await slot('almond');
@@ -172,7 +192,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await scene() === 'l2_pipes', 'the light drew the smiler in and scared you back');
   await page.click('#btnLight'); check(!(await light()), 'flashlight switched off');
   await hit('side'); await page.waitForTimeout(200);
-  await shot('21-l2_dark-smiler');
+  await shot('24-l2_dark-smiler');
   await hit('back');
   await page.waitForTimeout(2200);
   check(await scene() === 'l2_pipes', 'panicking (clicking away) gets you chased');
@@ -183,12 +203,12 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.click('#btnLight');
   await hit('tube'); check(await has('tube'), 'found the spare fluorescent tube');
   await hit('almond'); await hit('note'); await closeDoc();
-  await page.mouse.move(480, 300); await page.waitForTimeout(200); await shot('22-l2_dark-lit');
+  await page.mouse.move(480, 300); await page.waitForTimeout(200); await shot('25-l2_dark-lit');
   await hit('back');
   const before = await sanity();
   await slot('almond'); await slot('almond');
   check(await sanity() > before || before === 100, 'drinking almond water restores sanity');
-  await hit('forward'); check(await scene() === 'l2_valve', 'control room'); await shot('23-l2_valve');
+  await hit('forward'); check(await scene() === 'l2_valve', 'control room'); await shot('26-l2_valve');
   await hit('door'); check(await scene() === 'l2_valve', 'door locked before calibrating');
   await slot('valve'); await hit('panel');
   check((await flags()).valve_set, 'valve handle installed');
@@ -203,16 +223,16 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.waitForTimeout(2400);
   check(await scene() === 'l2_valve', 'light near the smiler nest gets you scared back');
   await page.click('#btnLight');
-  await hit('door'); await page.waitForTimeout(300); await shot('24-l2_hall-dark');
+  await hit('door'); await page.waitForTimeout(300); await shot('27-l2_hall-dark');
   await hit('forward'); check(await scene() === 'l2_hall', 'cannot walk into the dark nest');
   await slot('tube'); await hit('fixture');
   check((await flags()).circuit, 'replacing the tube restores the series circuit');
-  await page.waitForTimeout(400); await shot('25-l2_hall-lit');
+  await page.waitForTimeout(400); await shot('28-l2_hall-lit');
   await hit('forward'); check(await scene() === 'l2_exit', 'reached the EXIT corridor');
   await hit('exit');
   await page.waitForTimeout(7500);
   check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'escape', 'escape ending shown');
-  await shot('26-ending');
+  await shot('29-ending');
 
   console.log('Save / load');
   await page.click('#btnAgain'); await page.waitForTimeout(300);
@@ -228,12 +248,20 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'red', 'lingering in the Red Rooms ends the game');
   check(await page.isVisible('#btnRetry'), 'retry offered after the Red Rooms ending');
 
+  console.log('Holes ending');
+  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await page.evaluate(() => { const r = window.__rooms; r.g.go('l0_stairs', { free: true }); r.state.holes = { row: 0, pits: [true, false, false] }; r.g.go('l0_holes', { free: true }); });
+  await page.waitForTimeout(200);
+  await hit('left');
+  await page.waitForTimeout(300);
+  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'fall', 'stepping into a pit ends the game');
+
   console.log('Phone layout');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });
   await phone.goto(url);
   const sw = await phone.evaluate(() => document.documentElement.scrollWidth);
   check(sw <= 375, `no horizontal scroll at phone width (${sw}px)`);
-  if (SHOTS) await phone.screenshot({ path: path.join(SHOTS, '27-phone.png') });
+  if (SHOTS) await phone.screenshot({ path: path.join(SHOTS, '30-phone.png') });
 
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await browser.close();
