@@ -16,6 +16,13 @@ export const ITEMS = {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
     self: (g) => { g.take('almond'); g.sanity(35); g.sfx('drink'); g.say('你喝下杏仁水。嗡嗡聲退遠了一些。'); },
   },
+  almond_wet: {
+    name: '濕掉的杏仁水', desc: '從濕地毯上撿來的。瓶蓋是鬆的，瓶底沾滿了地毯裡的水。',
+    self: (g) => {
+      g.take('almond_wet'); g.sanity(-12); g.sfx('drink');
+      g.say('又鹹又苦，還帶著一股藥水味——這根本不是杏仁水，是從地毯裡滲進去的東西。');
+    },
+  },
   tube: { name: '日光燈管', desc: '一根完好的日光燈管。' },
   torch_empty: { name: '手電筒（沒電）', desc: '電池槽是空的。', combine: { battery: loadTorch } },
   battery: { name: '電池', desc: '一顆普通的電池。看起來還有電。', combine: { torch_empty: loadTorch } },
@@ -36,9 +43,14 @@ export function drawIcon(ctx, id, s = 56) {
   ctx.lineCap = 'round';
   switch (id) {
     case 'almond':
+    case 'almond_wet':
       ctx.fillStyle = '#e9e1c1'; ctx.beginPath(); ctx.roundRect(-9, -10, 18, 28, 5); ctx.fill();
       ctx.fillRect(-4, -19, 8, 10); ctx.fillStyle = '#3f6fb0'; ctx.fillRect(-5, -22, 10, 4);
       ctx.fillStyle = '#c9a46a'; ctx.fillRect(-9, 0, 18, 7);
+      if (id === 'almond_wet') {
+        ctx.fillStyle = 'rgba(90,70,30,0.75)'; ctx.beginPath(); ctx.roundRect(-9, 8, 18, 10, [0, 0, 5, 5]); ctx.fill();
+        ctx.rotate(0.4); ctx.fillStyle = '#3f6fb0'; ctx.fillRect(-2, -26, 10, 4);
+      }
       break;
     case 'tube':
       ctx.rotate(-0.7);

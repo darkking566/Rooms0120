@@ -276,12 +276,12 @@ export function drawSmiler(ctx, x, y, s, a = 1, t = 0) {
 }
 
 let darkCv = null;
-export function drawDark(ctx, mx, my, lightOn, t) {
+export function drawDark(ctx, mx, my, lightOn, t, opacity = 0.97) {
   if (!darkCv) { darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H; }
   const d = darkCv.getContext('2d');
   d.globalCompositeOperation = 'source-over';
   d.clearRect(0, 0, W, H);
-  d.fillStyle = 'rgba(0,0,0,0.97)';
+  d.fillStyle = `rgba(0,0,0,${opacity})`;
   d.fillRect(0, 0, W, H);
   if (lightOn) {
     d.globalCompositeOperation = 'destination-out';

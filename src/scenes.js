@@ -104,8 +104,9 @@ const hiddenDoor = faceQuad(-0.35, -0.5, 0.35, 1, 5.999);
 // the low room behind the start room's left doorway
 const l0Low = {
   hw: 2.4, depth: 4, fogEnd: 10, pal: PAL0.low, stripes: true, tiles: true, floorTex: 'carpet',
-  lights: [1.5, 3.0], flickerLights: [1], flick: hum,
+  lights: [1.5, 3.0], flickerLights: [1], flick: hum, openings: [{ side: 1, z1: 2.8, z2: 3.6, top: -0.6 }],
 };
+const blackDoor = wallQuad(2.4, -0.6, 1, 2.8, 3.6);
 const fallenTile = { x1: -1.1, x2: -0.3, y1: 0.95, y2: 1, z1: 2.1, z2: 2.6, color: '#d6cc96' };
 const lowHole = [P(-1.1, -1, 2.1), P(-0.3, -1, 2.1), P(-0.3, -1, 2.6), P(-1.1, -1, 2.6)];
 const rodA = P(0.15, 1, 1.75), rodB = P(1.5, 1, 2.6);
@@ -149,6 +150,61 @@ const locker = { x1: 1.1, x2: 1.75, y1: -0.65, y2: 1, z1: 3.1, z2: 3.7, color: '
 const mat = { x1: -1.65, x2: -0.65, y1: 0.95, y2: 1, z1: 1.9, z2: 2.9, color: '#a08660', edge: true };
 const n0fQuad = wallQuad(-1.8, -0.35, 0.0, 2.2, 2.6);
 const pile = [[0.55, 2.3], [0.8, 2.15], [0.68, 2.6], [1.0, 2.45], [0.4, 2.0], [1.2, 2.2]];
+
+// Blackout Zone: no light, deep silence, ankle-deep fluid; the only guide is a hum that keeps moving.
+export const BLACKOUT_STEPS = 3;
+const DIRS = ['left', 'ahead', 'right'];
+const DIR_ZH = { left: '左邊', ahead: '前面', right: '右邊' };
+const l0Blackout = {
+  hw: 1.4, depth: 5, fogEnd: 6, wallTex: 'concrete', baseboard: false, tiles: true, lights: [],
+  pal: { wall: '#6e6440', ceil: '#3a3420', floor: '#2a2614', fog: '#050403', light: '#fff0b8' },
+  backDoor: { x1: -0.4, x2: 0.4, top: -0.6 },
+  openings: [{ side: -1, z1: 2.2, z2: 3.0, top: -0.6 }, { side: 1, z1: 2.2, z2: 3.0, top: -0.6 }],
+};
+const pickDir = (prev) => { const o = DIRS.filter((d) => d !== prev); return o[Math.floor(Math.random() * o.length)]; };
+function blackoutStep(g, dir) {
+  const b = g.s.bo || { step: 0, dir: pickDir() };
+  if (dir !== b.dir) {
+    g.s.bo = { step: 0, dir: pickDir(b.dir) }; g.sanity(-3);
+    return g.go('l0_blackout', { msg: '你朝那個方向摸過去——腳下一沉，踩進了更深的積水。嗡嗡聲換了位置，黑暗裡的格局又變了。' });
+  }
+  if (b.step + 1 >= BLACKOUT_STEPS) {
+    g.s.bo = null;
+    return g.go('l0_manila', { msg: '你循著嗡嗡聲走，眼前忽然亮了起來——一間小小的方形房間，壁紙是米黃色的。' });
+  }
+  g.s.bo = { step: b.step + 1, dir: pickDir(b.dir) };
+  g.go('l0_blackout');
+}
+
+// The Manila Room: the one place in Level 0 where people can see each other.
+const manilaFlick = (t) => (Math.sin(t * 0.37) > 0.985 ? 0.2 : 0.8 + 0.2 * Math.sin(t * 0.9));
+const l0Manila = {
+  hw: 1.3, depth: 3, fogEnd: 12, tiles: true, floorTex: 'carpet', lights: [1.7], flick: manilaFlick,
+  pal: { wall: '#d8c494', ceil: '#e0d4b0', floor: '#8a7a50', fog: '#2a2416', light: '#fff4d0' },
+};
+const jhTorso = faceQuad(-0.78, 0.18, -0.36, 0.78, 2.75);
+const jhLegs = faceQuad(-0.86, 0.72, -0.16, 0.97, 2.55);
+const jhHead = P(-0.57, 0.04, 2.75);
+const megQuad = wallQuad(1.3, -0.3, 0.1, 1.8, 2.3);
+const JH_LINES = [
+  '那個人抬起頭。是你的臉——更瘦、更老，鬍子很久沒刮。「……你終於找到這裡了。」',
+  '「這是這一層唯一能看見別人的房間。我在這裡等了很久，想看看會不會有人來。」他苦笑。「結果來的，還是我自己。」',
+  '「別喝地毯上撿到的杏仁水，那是從地毯裡滲進去的東西。拿著，這瓶是乾淨的。」',
+  '「我是 J.H.，你也是。我們每一次都從那間黃色的房間開始，每一次都留下紙條給下一個自己。」',
+  '「去吧。帶子裡說的，你已經知道了。」他低下頭，不再說話。',
+];
+
+// Red Rooms: found at random after turning a corner; once you are properly inside, there is no way out.
+const PAL_RED = { wall: '#7a2a1e', ceil: '#4a1812', floor: '#3b1a12', fog: '#140303', light: '#ff6a50' };
+const l0Red = {
+  hw: 1, depth: 10, fogEnd: 7, pal: PAL_RED, stripes: true, tiles: true, floorTex: 'carpet',
+  lights: [1.6, 3.6, 5.6, 7.6], flick: hum, openings: [{ side: 1, z1: 4.5, z2: 5.3, top: -0.6 }],
+};
+export const redCorner = (s) => s.loops >= 4 && s.loops % 2 === 0;
+const l0LoopRed = { ...l0Loop, openings: [{ side: -1, z1: 3.2, z2: 4.0, top: -0.6 }] };
+const redOpening = wallQuad(-1, -0.6, 1, 3.2, 4.0);
+const peel = [[-1, -0.9, -0.2, 1.1, 1.9], [-1, 0.1, 0.8, 1.3, 2.4], [-1, -0.7, 0.5, 2.7, 3.8], [1, -0.8, 0.0, 1.2, 2.2], [1, 0.2, 0.9, 1.6, 3.0], [1, -0.6, 0.6, 3.2, 4.2]];
+const shrooms = [[-0.85, 1.4], [-0.7, 1.9], [0.8, 1.6], [0.9, 2.5], [-0.9, 2.8], [0.75, 3.4]];
 
 function drawGlitchWall(ctx, R, t) {
   const on = Math.sin(t * 17) + Math.sin(t * 5.3) > -0.4;
@@ -330,7 +386,7 @@ export const SCENES = {
       },
       {
         id: 'almond', when: (s) => !s.flags.l0_almond, rect: [almond0.p[0] - 20, almond0.p[1] - 50, 40, 58], label: '一個瓶子', cursor: 'take',
-        click: (g) => { g.flag('l0_almond'); g.give('almond', '地毯上有一瓶杏仁水。你把它收了起來。'); },
+        click: (g) => { g.flag('l0_almond'); g.give('almond_wet', '一瓶杏仁水泡在濕地毯裡，瓶蓋是鬆的。你把它收了起來。'); },
       },
     ],
   },
@@ -339,9 +395,10 @@ export const SCENES = {
     level: 0, title: '低矮的房間', room: l0Low,
     viewMsg: '觀景窗裡，對面的牆上畫著一個往上指的粉筆箭頭。',
     enter(g, { first }) {
-      if (first) g.say('天花板低得像要壓下來，嗡嗡聲比哪裡都大。地上躺著一塊掉下來的天花板板。');
+      if (first) g.say('天花板低得像要壓下來，嗡嗡聲比哪裡都大。地上躺著一塊掉下來的天花板板。右邊的門洞後面一片漆黑。');
     },
     draw(ctx, t, s, R) {
+      poly(ctx, blackDoor, 'rgba(4,3,1,0.92)');
       poly(ctx, lowHole, '#0b0904');
       ctx.strokeStyle = shade(R, '#6b6034', 2.3); ctx.lineWidth = 1.5; poly(ctx, lowHole); ctx.stroke();
       box(ctx, R, fallenTile);
@@ -366,6 +423,7 @@ export const SCENES = {
         id: 'rod', when: (s) => !s.flags.rod, rect: bounds([rodA, rodB], 14), label: '金屬桿', cursor: 'take',
         click: (g) => { g.flag('rod'); g.give('rod', '一根金屬吊桿，跟著天花板板一起掉下來的。差不多有一個人高。'); },
       },
+      { id: 'blackout', rect: bounds(blackDoor, 4), label: '漆黑的門洞', cursor: 'go', click: (g) => { g.s.bo = { step: 0, dir: pickDir() }; g.go('l0_blackout'); } },
       { id: 'hole', rect: bounds(lowHole, 10), label: '天花板上的洞', cursor: 'look', click: (g) => g.say('天花板上破了一個洞，上面一片漆黑，聽不到嗡嗡聲。……那上面，好像是另一個世界。') },
       { id: 'note', rect: bounds(n0cQuad, 8), label: '牆角的紙條', cursor: 'look', click: (g) => g.read('n0c') },
     ],
@@ -379,6 +437,15 @@ export const SCENES = {
       poly(ctx, outletQuad, shade(R, '#eeeadc', 1.95));
       const c = P(1, 0.62, 1.97);
       ctx.fillStyle = shade(R, '#222', 2); ctx.fillRect(c[0] - 3, c[1] - 6, 2, 5); ctx.fillRect(c[0] - 3, c[1] + 2, 2, 5);
+    },
+    drawOver(ctx, t) {
+      // a dark figure that is sometimes standing at the far end of the hall
+      const a = Math.max(0, Math.min(0.7, (Math.sin(t * 0.45) - 0.6) * 3));
+      if (a <= 0) return;
+      const f = P(0.15, 1, 8.5), top = P(0.15, -0.55, 8.5), w = 0.16 * 480 / 8.5;
+      ctx.fillStyle = `rgba(12,10,4,${a})`;
+      ctx.fillRect(f[0] - w / 2, top[1] + w * 0.9, w, f[1] - top[1] - w * 0.9);
+      ctx.beginPath(); ctx.arc(f[0], top[1] + w * 0.45, w * 0.45, 0, Math.PI * 2); ctx.fill();
     },
     drawView(ctx) {
       const c = P(1, 0.42, 1.98);
@@ -471,7 +538,7 @@ export const SCENES = {
   },
 
   l0_loop: {
-    level: 0, title: '走廊？', room: l0Loop,
+    level: 0, title: '走廊？', room: (s) => (redCorner(s) ? l0LoopRed : l0Loop),
     viewMsg: (s) => `觀景窗裡，右邊那面牆一直在閃${s.loops < 3 ? '——肉眼看過去，它卻完全正常。' : '。'}`,
     enter(g) {
       const n = g.s.loops;
@@ -480,6 +547,7 @@ export const SCENES = {
       else if (n === 2) g.say('……你確定剛才走過這裡。但牆邊多了一個木櫃，之前沒有的。');
       else if (n === 3) g.say('右邊的牆……在閃。像訊號不良的螢幕一樣，一明一滅。');
       else g.say(LOOP_MSGS[n % LOOP_MSGS.length]);
+      if (redCorner(g.s)) g.say('左邊多了一個轉角。轉角後面，透出一點暗紅色的光。');
     },
     draw(ctx, t, s, R) {
       if (s.loops >= 2) {
@@ -489,11 +557,17 @@ export const SCENES = {
         ctx.fillStyle = shade(R, '#d8c08a', 2); ctx.fillRect(k[0] - 6, k[1] - 2, 12, 4);
       }
       if (s.loops >= 3) drawGlitchWall(ctx, R, t);
+      if (redCorner(s)) {
+        ctx.save(); poly(ctx, redOpening); ctx.clip();
+        ctx.fillStyle = `rgba(150,20,10,${0.45 + 0.1 * Math.sin(t * 2)})`; ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
     },
     drawView(ctx, t, s, R) { if (s.loops < 3) drawGlitchWall(ctx, R, t); },
     hotspots: [
       { ...FORWARD('l0_loop', '繼續往前'), click: (g) => { g.s.loops++; g.go('l0_loop'); } },
       BACK('l0_hall'),
+      { id: 'redroom', when: redCorner, rect: bounds(redOpening, 4), label: '泛著紅光的轉角', cursor: 'go', click: (g) => g.go('l0_red') },
       {
         id: 'cabinet', when: (s) => s.loops >= 2, rect: boxRect(cabinet, 6), label: '木櫃', cursor: 'look',
         click: (g) => {
@@ -626,6 +700,118 @@ export const SCENES = {
       },
       { id: 'mat', rect: boxRect(mat, 6), label: '紙箱', cursor: 'look', click: (g) => g.say('一張壓扁的紙箱，被當成床墊。上面的凹痕，跟你的身形差不多大。') },
       { id: 'note', rect: bounds(n0fQuad, 8), label: '散落的日記', cursor: 'look', click: (g) => g.read('n0f') },
+    ],
+  },
+
+
+  l0_blackout: {
+    level: 0, title: '停電區', room: l0Blackout, dark: true, nightshot: true,
+    hum: (s) => s.bo?.dir,
+    viewMsg: '攝影機切到了夜視模式。畫面很糊，但看得出三個出口——看不出哪個才對。',
+    enter(g, { first }) {
+      const dir = g.s.bo?.dir || 'ahead';
+      g.say(`${first ? '伸手不見五指，安靜得可怕。牆摸起來很粗糙，地上積著到腳踝的水。' : ''}遠遠的，有一盞燈在嗡嗡作響——聲音從${DIR_ZH[dir]}傳來。`);
+    },
+    draw(ctx, t, s, R) {
+      ctx.fillStyle = 'rgba(120,130,110,0.10)';
+      const c = P(0, 1, 2.2);
+      ctx.beginPath(); ctx.ellipse(c[0], c[1], 260, 40, 0, 0, Math.PI * 2); ctx.fill();
+    },
+    hotspots: [
+      {
+        id: 'back', rect: [330, 470, 300, 70], label: '摸黑退回去', cursor: 'back',
+        click: (g) => { g.s.bo = null; g.go('l0_low', { msg: '你一路摸著牆退回去，直到看見燈光。' }); },
+      },
+      { id: 'left', rect: bounds(mazeLeft, 4), label: '左邊', cursor: 'go', click: (g) => blackoutStep(g, 'left') },
+      { id: 'right', rect: bounds(mazeRight, 4), label: '右邊', cursor: 'go', click: (g) => blackoutStep(g, 'right') },
+      { id: 'ahead', rect: bounds(mazeAhead, 14), label: '前面', cursor: 'go', click: (g) => blackoutStep(g, 'ahead') },
+    ],
+  },
+
+  l0_manila: {
+    level: 0, title: '馬尼拉房間', room: l0Manila,
+    viewMsg: '觀景窗裡，那個人手上也舉著一台攝影機。他的螢幕裡，是你。',
+    enter(g, { first }) {
+      if (first) g.say('牆角坐著一個人，抱著膝蓋。在這一層，你本來不可能看見任何人。');
+      else g.say('那個人還坐在牆角。');
+    },
+    draw(ctx, t, s, R) {
+      const pile0 = faceQuad(0.5, 0.86, 1.0, 1, 2.2);
+      poly(ctx, pile0, shade(R, '#efe9d6', 2.2));
+      paper(ctx, R, megQuad, 2.0, '#f4f0e0');
+      const col = shade(R, '#3b3226', 2.7);
+      poly(ctx, jhTorso, col);
+      poly(ctx, jhLegs, shade(R, '#2f281e', 2.6));
+      ctx.fillStyle = shade(R, '#8a7058', 2.75);
+      ctx.beginPath(); ctx.arc(jhHead[0], jhHead[1], 19, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = shade(R, '#2a2219', 2.75);
+      ctx.beginPath(); ctx.arc(jhHead[0], jhHead[1] - 6, 19, Math.PI, 0); ctx.fill();
+    },
+    drawView(ctx, t) {
+      const c = P(-0.5, 0.5, 2.5);
+      ctx.fillStyle = '#1b1c1e'; ctx.fillRect(c[0] - 18, c[1] - 12, 36, 24);
+      if ((t * 1.2 | 0) % 2 === 0) { ctx.fillStyle = '#e33'; ctx.beginPath(); ctx.arc(c[0] + 10, c[1] - 5, 3, 0, Math.PI * 2); ctx.fill(); }
+    },
+    hotspots: [
+      {
+        id: 'back', rect: [330, 470, 300, 70], label: '離開房間', cursor: 'back',
+        click: (g) => g.go('l0_low', { msg: '你走出房間，四周又是熟悉的黃色。回頭時，門已經不見了——你站在那間低矮的房間裡。' }),
+      },
+      {
+        id: 'jh', rect: bounds([...jhTorso, ...jhLegs, [jhHead[0], jhHead[1] - 22]], 6), label: '牆角的人', cursor: 'look',
+        click: (g) => {
+          const i = g.s.flags.jh_talk || 0;
+          g.flag('met_jh');
+          g.say(JH_LINES[Math.min(i, JH_LINES.length - 1)]);
+          if (i === 2) g.give('almond');
+          if (i === 4 && !g.s.flags.jh_shock) { g.flag('jh_shock'); g.sanity(-5); }
+          g.flag('jh_talk', i + 1);
+        },
+      },
+      { id: 'note', rect: bounds(megQuad, 8), label: '牆上的文件', cursor: 'look', click: (g) => g.read('n_meg0') },
+    ],
+  },
+
+  l0_red: {
+    level: 0, title: '？？？', room: l0Red, trap: { after: 9, end: 'red' },
+    viewMsg: '螢幕上全是雜訊。這裡的東西，連鏡頭都錄不下來。',
+    enter(g) {
+      g.sfx('sting');
+      g.say('一切都泛著紅光。地毯又厚又黏，長著黑霉和小小的菇。剝落的黃色壁紙底下，露出深紅色的漆。——你的每一根神經都在叫你：馬上回頭。');
+    },
+    draw(ctx, t, s, R) {
+      // what's left of the yellow wallpaper, torn into ragged strips over the crimson paint
+      for (const [x, y1, y2, z1, z2] of peel) {
+        const pts = [P(x, y1, z1), P(x, y1, z2)];
+        for (let i = 0; i <= 6; i++) {
+          const z = z2 - ((z2 - z1) * i) / 6;
+          pts.push(P(x, y2 + (i % 2 ? 0.12 : -0.05) * Math.sin(i * 2.7 + z), z));
+        }
+        poly(ctx, pts, shade(R, '#c8b35e', (z1 + z2) / 2, 0.7));
+        seg(ctx, P(x, y2, z1 + 0.1), P(x, y2 + 0.25, z1 + 0.3), shade(R, '#a8964e', z1, 0.6), 2);
+      }
+      for (const [x, z] of shrooms) {
+        const p = P(x, 1, z), r = 14 / z;
+        ctx.fillStyle = shade(R, '#d8c8b0', z); ctx.fillRect(p[0] - r * 0.2, p[1] - r * 1.2, r * 0.4, r * 1.2);
+        ctx.fillStyle = shade(R, '#5a1a10', z); ctx.beginPath(); ctx.arc(p[0], p[1] - r * 1.2, r * 0.7, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = 'rgba(10,6,4,0.5)'; ctx.beginPath(); ctx.ellipse(p[0] + r * 2, p[1], r * 2.5, r * 0.6, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    },
+    drawOver(ctx, t) {
+      const gl = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, W * 0.7);
+      gl.addColorStop(0, 'rgba(120,0,0,0)'); gl.addColorStop(1, `rgba(90,0,0,${0.45 + 0.1 * Math.sin(t * 1.3)})`);
+      ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H);
+    },
+    hotspots: [
+      {
+        id: 'back', rect: [330, 470, 300, 70], label: '馬上回頭', cursor: 'back',
+        click: (g) => {
+          g.sanity(-10);
+          g.go('l0_loop', { free: true, msg: '你轉身就跑，頭也不回。等你停下來喘氣，四周又是黃色的走廊。……你差一點就回不來了。' });
+        },
+      },
+      { ...FORWARD('l0_red', '往紅光深處走'), click: (g) => g.end('red') },
+      { id: 'corner', rect: bounds(wallQuad(1, -0.6, 1, 4.5, 5.3), 4), label: '另一個轉角', cursor: 'go', click: (g) => g.end('red') },
     ],
   },
 

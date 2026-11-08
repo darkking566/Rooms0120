@@ -14,7 +14,7 @@ const sound = new Sound();
 
 const fresh = () => ({
   v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false,
-  loops: 0, maze: 0, seen: {}, moves: 0, clock: 0, flicker: null,
+  loops: 0, maze: 0, bo: null, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
 let S = fresh();
@@ -25,6 +25,8 @@ let mouse = { x: W / 2, y: H / 2 };
 let fade = 0, scareT = 0, scareBack = null, scareMsg = null;
 // per-visit smiler state: time spent with a light on, eye-contact progress, time spent looking away
 let lightT = 0, stare = 0, panicT = 0;
+// seconds spent in the current scene, and the shake left over from a hum surge
+let sceneT = 0, surgeT = 0;
 let docAfter = null;
 let scareKind = 'smiler';
 let modal = null;
@@ -52,13 +54,14 @@ const g = {
     sound.sfx('step');
     S.scene = id;
     S.moves++;
-    lightT = 0; stare = 0; panicT = 0;
+    lightT = 0; stare = 0; panicT = 0; sceneT = 0;
     hover = null;
     if (sc.safe && S.flicker) {
       S.flicker = null;
       msg = '你躲進門後，屏住呼吸。門外傳來某種東西拖行的聲音……過了很久，燈才亮回來。';
     }
     sound.setLevel(sc.level);
+    sound.setHum(sc.hum?.(S) ?? null);
     const first = !S.seen[id];
     S.seen[id] = true;
     collecting = [];
@@ -66,6 +69,11 @@ const g = {
       if (msg) g.say(msg);
       sc.enter?.(g, { first });
       if (!free) g.sanity(-LEVELS[sc.level].drain);
+      // Level 0: the hum sometimes surges without warning
+      if (sc.level === 0 && !free && !sc.trap && !sc.hum && S.moves > 4 && Math.random() < 0.07) {
+        sound.sfx('surge'); surgeT = 1.6; g.sanity(-2);
+        g.say('嗡嗡聲忽然暴漲，像有人把音量轉到最大。你摀住耳朵，直到它慢慢退下去。');
+      }
       if (sc.level !== prevLevel) store.set(CP_KEY, S);
       if (S.sanity > 0 && S.sanity < 35 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
     } finally {
@@ -148,6 +156,7 @@ const g = {
     if (ended) return;
     ended = true;
     closeModal();
+    sound.setHum(null);
     if (kind === 'escape') { store.del(SAVE_KEY); store.del(CP_KEY); }
     showEnding(kind);
   },
@@ -393,11 +402,14 @@ function startGame(state) {
   selected = null;
   playing = true;
   fade = 1;
+  sceneT = 0; surgeT = 0;
   $('#title').hidden = true;
   $('#ending').hidden = true;
   $('#hud').hidden = false;
   sound.level = null;
   sound.setLevel(SCENES[S.scene].level);
+  sound.humDir = undefined;
+  sound.setHum(SCENES[S.scene].hum?.(S) ?? null);
   renderInv();
   updateHud();
   if (!store.get(CP_KEY)) store.set(CP_KEY, S);
@@ -419,6 +431,16 @@ const ENDINGS = {
       '你這才想起來——J.H.，是你名字的縮寫。',
     ],
   },
+  red: {
+    title: '— 紅房間結局 —',
+    lines: [
+      '你往紅光更深的地方走。',
+      '轉過一個彎，又一個彎。每一個轉角後面，都是同一間紅色的房間。',
+      '攝影機的螢幕早就只剩雜訊。',
+      '你開始在牆上刻記號，好記住自己繞了幾圈。',
+      '……正、正、正、正、正、正……',
+    ],
+  },
   lost: {
     title: '— 迷失結局 —',
     lines: [
@@ -437,7 +459,9 @@ function showEnding(kind) {
   $('#endTitle').textContent = E.title;
   const box = $('#endLines');
   box.innerHTML = '';
-  E.lines.forEach((t, i) => {
+  const lines = E.lines.slice();
+  if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。下一次，坐在那裡等的，會不會是你？');
+  lines.forEach((t, i) => {
     const p = document.createElement('p');
     p.textContent = t;
     p.style.animationDelay = `${0.4 + i * 1.3}s`;
@@ -445,7 +469,7 @@ function showEnding(kind) {
   });
   const found = S.notes.length, total = Object.keys(NOTES).length;
   $('#endStats').textContent = `走了 ${S.moves} 步・找到 ${found} / ${total} 張紙條`;
-  $('#btnRetry').hidden = kind !== 'lost' || !valid(store.get(CP_KEY));
+  $('#btnRetry').hidden = kind === 'escape' || !valid(store.get(CP_KEY));
   el.hidden = false;
   playing = false;
   $('#hud').hidden = true;
@@ -483,6 +507,10 @@ function frame(now) {
       }
     }
   }
+  if (active) {
+    sceneT += dt;
+    if (sc.trap && sceneT > sc.trap.after) g.end(sc.trap.end);
+  }
   if (active && smilerOn(sc)) {
     const sm = sc.smiler;
     if (S.light) {
@@ -507,6 +535,7 @@ function frame(now) {
   ctx.save();
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
+  if (surgeT > 0) { surgeT = Math.max(0, surgeT - dt); ctx.translate((Math.random() - 0.5) * surgeT * 6, (Math.random() - 0.5) * surgeT * 6); }
   if (stress > 0.6) ctx.translate(Math.sin(t * 2.1) * (stress - 0.6) * 10, Math.cos(t * 1.7) * (stress - 0.6) * 6);
   const R = roomOf(sc);
   const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
@@ -514,7 +543,7 @@ function frame(now) {
   drawRoom(ctx, R, t);
   if (stutter || R.bright !== 1) R.bright = 1;
   sc.draw?.(ctx, t, S, R);
-  if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t);
+  if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t, S.view && sc.nightshot ? 0.55 : 0.97);
   sc.drawOver?.(ctx, t, S, R);
   if (S.view) sc.drawView?.(ctx, t, S, R);
   if (smilerOn(sc)) {
