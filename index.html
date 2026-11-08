@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ROOMS0120</title>
+  <meta name="description" content="一款以後室（Backrooms）為題材的原創 2D 點擊式恐怖解謎遊戲。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="wrap">
+    <div id="stage">
+      <canvas id="game" width="960" height="540" aria-label="遊戲畫面"></canvas>
+
+      <div id="hud">
+        <div id="lvl"><b id="lvlName">LEVEL 0</b><span id="lvlSub">大廳</span></div>
+        <div id="hudR">
+          <div id="san"><span>清醒度</span><i><b id="sanFill"></b></i></div>
+          <button id="btnLight" hidden aria-pressed="false">手電筒：關</button>
+          <button id="btnNotes">紙條</button>
+          <button id="btnSave">存檔</button>
+          <button id="btnMute">音效：開</button>
+        </div>
+      </div>
+
+      <div id="tip" hidden></div>
+      <div id="msg" hidden role="status" aria-live="polite"></div>
+
+      <div id="doc" class="modal" hidden>
+        <div class="paper">
+          <h2 id="docTitle"></h2>
+          <div id="docBody"></div>
+          <button id="docClose">放下</button>
+        </div>
+      </div>
+
+      <div id="notes" class="modal" hidden>
+        <div class="panel">
+          <h2>撿到的紙條</h2>
+          <ul id="notesList"></ul>
+          <button id="notesClose">關閉</button>
+        </div>
+      </div>
+
+      <div id="keypad" class="modal" hidden>
+        <div class="panel device">
+          <h2>密碼鎖</h2>
+          <div id="kpScreen">____</div>
+          <div id="kpKeys"></div>
+          <button id="kpClose" class="ghost">離開</button>
+        </div>
+      </div>
+
+      <div id="dials" class="modal" hidden>
+        <div class="panel device">
+          <h2>壓力校正</h2>
+          <div id="dialCols"></div>
+          <div class="row">
+            <button id="dialsOk">拉下拉桿</button>
+            <button id="dialsClose" class="ghost">離開</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="title" class="screen">
+        <h1 data-text="ROOMS0120">ROOMS0120</h1>
+        <p class="sub">後室・檔案 0120</p>
+        <div class="row">
+          <button id="btnNew">開始</button>
+          <button id="btnCont" hidden>繼續</button>
+        </div>
+        <p class="hint">點擊畫面探索・下方是物品欄・建議戴耳機</p>
+      </section>
+
+      <section id="ending" class="screen" hidden>
+        <h2 id="endTitle"></h2>
+        <div id="endLines"></div>
+        <p id="endStats"></p>
+        <div class="row">
+          <button id="btnRetry">回到這一層的開頭</button>
+          <button id="btnAgain">重新開始</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="inv" aria-label="物品欄"></div>
+
+    <p id="credit">
+      靈感來自 <a href="https://backrooms-wiki.wikidot.com/" target="_blank" rel="noopener">The Backrooms Wiki</a>（CC BY-SA 3.0）的層級與實體設定。
+      本作的劇情、角色與謎題皆為原創。
+    </p>
+  </main>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
