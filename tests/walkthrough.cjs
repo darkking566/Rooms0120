@@ -71,9 +71,8 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('stairs'); check(await scene() === 'l0_stairs', 'stairwell off the pillar room'); await shot('03-l0_stairs');
   await hit('steps');
   await hit('up'); check(await scene() === 'l0_arches', 'climbed up to the arches'); await shot('04-l0_arches');
-  await page.evaluate(() => { window.__rooms.state.sanity = 50; });
-  await hit('rest');
-  check(await sanity() > 50, 'resting under an arch restores sanity');
+  await page.evaluate(() => { const st = window.__rooms.state; st.sanity = Math.min(st.sanity, 70); });
+  { const s0 = await sanity(); await hit('rest'); check(await sanity() > s0, 'resting under an arch restores sanity'); }
   check(await page.evaluate(() => JSON.parse(localStorage.getItem('rooms0120.checkpoint.v1')).scene) === 'l0_arches', 'resting in the arches stores a checkpoint');
   { const s1 = await sanity(); await hit('rest'); check(await sanity() === s1, 'cannot rest again straight away'); }
   await hit('back'); await hit('down'); check(await scene() === 'l0_holes', 'went down to the holes');
@@ -87,6 +86,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   }
   check(await page.evaluate(() => window.__rooms.state.holes.row) === 3 && !(await page.isVisible('#ending')), 'crossed the holes by stepping only on solid floor');
   await hit('bag'); await closeDoc(); check((await flags()).holes_bag, 'found the bag on the far side');
+  await slot('almond'); await slot('almond'); await slot('almond'); await slot('almond');
   await hit('back'); await hit('back'); check(await scene() === 'l0_pillar', 'back to the pillar room');
   await hit('back');
   await hit('lowroom'); check(await scene() === 'l0_low', 'low room behind the left doorway'); await shot('06-l0_low');
