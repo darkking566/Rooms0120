@@ -49,7 +49,8 @@ Most mechanics follow the Backrooms Wiki setting:
 - **Level 1 → Level 2:** a smooth threshold. Keep walking in the direction where pipes and gauges start to appear.
 - **Smilers:** they are attracted to light. With your flashlight on near one, it closes in. Switch the light off, keep the cursor on its eyes (eye contact) until it backs away, and don't panic-click away. A whole nest is too many to stare down.
 - **Level 2 wiring:** the lights are wired in series, so one cracked tube darkens the whole hall. Replace it and the smilers retreat from the light.
-- **Sanity (清醒度):** drops with every step and with every scare. Almond water restores it. If it reaches 0, you get the "lost" ending, and you can retry from the start of the current level.
+- **Sanity (清醒度):** drops with every step and with every scare. Almond water restores it.
+- **Water (水分) and food (飽足):** every step uses some up, faster on deeper levels. Almond water quenches thirst (tainted carpet water makes it worse, and Level 1's puddle helps a little at a cost); energy bars and a can of peaches fill you up. Resting in the arches costs a little of both. At zero, each step drains extra sanity, and losing all sanity that way gives the dehydration or starvation ending. If it reaches 0, you get the "lost" ending, and you can retry from the start of the current level.
 - **Saving:** the game autosaves on every move and also has a manual save button. Saves live in `localStorage`, and a checkpoint is stored each time you enter a new level.
 
 ## Credits

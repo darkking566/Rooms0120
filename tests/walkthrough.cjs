@@ -129,6 +129,14 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.click('#btnView'); check(!(await view()), 'viewfinder lowered');
   await page.waitForTimeout(200); await shot('15-l0_faded');
   await hit('note'); await closeDoc();
+  { const st0 = await page.evaluate(() => window.__rooms.state);
+    check(st0.thirst < 100 && st0.hunger < 100, `walking uses up water and food (水分 ${st0.thirst.toFixed(1)}, 飽足 ${st0.hunger.toFixed(1)})`); }
+  await hit('mat'); check(await has('bar'), 'found an energy bar under the cardboard bed');
+  { const h0 = await page.evaluate(() => window.__rooms.state.hunger); await slot('bar'); await slot('bar');
+    check(await page.evaluate(() => window.__rooms.state.hunger) > h0, 'eating the energy bar restores 飽足'); }
+  { await page.evaluate(() => { window.__rooms.state.thirst = 40; });
+    await slot('almond'); await slot('almond');
+    check(await page.evaluate(() => window.__rooms.state.thirst) > 40, 'almond water restores 水分'); }
   await hit('tally'); await hit('locker'); check(await page.isVisible('#keypad'), 'locker keypad opens');
   for (const k of ['1', '2', 'ok']) await page.click(`#kpKeys button[data-k="${k}"]`);
   check(!(await has('tape')), 'the naked-eye tally count (12) is wrong');
@@ -143,7 +151,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('back'); await hit('back'); await hit('forward');
   await hit('forward'); check(await scene() === 'l0_loop', 'loop corridor (1) again');
   await hit('forward'); await hit('cabinet');
-  check((await page.evaluate(() => window.__rooms.state.inv.filter((i) => i === 'almond').length)) >= 2, 'cabinet appears on the 2nd loop with almond water');
+  check((await page.evaluate(() => window.__rooms.state.inv.filter((i) => i === 'almond').length)) >= 1, 'cabinet appears on the 2nd loop with almond water');
   const hs2 = await ids();
   check(!hs2.includes('wall'), 'no flickering wall to the naked eye on the 2nd loop');
   await hit('forward');
@@ -155,6 +163,8 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('wall'); check(await scene() === 'l1_arrive', 'recording, you throw yourself through the flickering wall into Level 1');
   await page.waitForTimeout(300); await shot('18-l1_arrive');
 
+  { const st = await page.evaluate(() => window.__rooms.state);
+    console.log(`  · entering Level 1 after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
   console.log('Level 1 — Habitable Zone');
   await hit('crate'); check(await has('torch_empty'), 'found empty flashlight');
   await hit('forward'); check(await scene() === 'l1_crates', 'warehouse'); await shot('19-l1_crates');
@@ -229,6 +239,8 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check((await flags()).circuit, 'replacing the tube restores the series circuit');
   await page.waitForTimeout(400); await shot('28-l2_hall-lit');
   await hit('forward'); check(await scene() === 'l2_exit', 'reached the EXIT corridor');
+  { const st = await page.evaluate(() => window.__rooms.state);
+    console.log(`  · at the exit after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
   await hit('exit');
   await page.waitForTimeout(7500);
   check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'escape', 'escape ending shown');
@@ -247,6 +259,16 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.waitForTimeout(9800);
   check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'red', 'lingering in the Red Rooms ends the game');
   check(await page.isVisible('#btnRetry'), 'retry offered after the Red Rooms ending');
+
+  console.log('Dehydration');
+  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await page.evaluate(() => { const st = window.__rooms.state; st.thirst = 0.5; st.sanity = 6; });
+  { const s0 = await sanity(); await page.evaluate(() => window.__rooms.g.go('l0_stairs'));
+    check(await sanity() <= s0 - 4, 'running out of water drains extra sanity'); }
+  await page.evaluate(() => window.__rooms.g.go('l0_pillar'));
+  await page.waitForTimeout(1200);
+  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'thirst', 'losing all sanity while dehydrated gives the dehydration ending');
+  check(await page.isVisible('#btnRetry'), 'retry offered after the dehydration ending');
 
   console.log('Holes ending');
   await page.click('#btnRetry'); await page.waitForTimeout(300);

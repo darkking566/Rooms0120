@@ -6,9 +6,10 @@ import {
 } from './render.js';
 
 export const LEVELS = {
-  0: { name: 'LEVEL 0', sub: '門檻', drain: 1 },
-  1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 2 },
-  2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 3 },
+  // drain: sanity per step; thirst / hunger: how fast water and food run out per step
+  0: { name: 'LEVEL 0', sub: '門檻', drain: 1, thirst: 1.5, hunger: 1 },
+  1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 2, thirst: 2, hunger: 1.2 },
+  2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 3, thirst: 2.5, hunger: 1.5 },
 };
 
 const PAL = {
@@ -780,7 +781,14 @@ export const SCENES = {
           if (!g.s.flags.bottles) { g.flag('bottles'); g.sanity(-3); }
         },
       },
-      { id: 'mat', rect: boxRect(mat, 6), label: '紙箱', cursor: 'look', click: (g) => g.say('一張壓扁的紙箱，被當成床墊。上面的凹痕，跟你的身形差不多大。') },
+      {
+        id: 'mat', rect: boxRect(mat, 6), label: '紙箱', cursor: 'look',
+        click: (g) => {
+          if (g.s.flags.mat_bar) return g.say('一張壓扁的紙箱，被當成床墊。上面的凹痕，跟你的身形差不多大。');
+          g.flag('mat_bar');
+          g.give('bar', '一張壓扁的紙箱，被當成床墊。紙箱底下塞著一條沒拆封的能量棒——像是特地留給誰的。');
+        },
+      },
       { id: 'note', rect: bounds(n0fQuad, 8), label: '散落的日記', cursor: 'look', click: (g) => g.read('n0f') },
     ],
   },
@@ -956,9 +964,9 @@ export const SCENES = {
           const last = g.s.flags.rest_at;
           if (last !== undefined && g.s.moves - last < REST_EVERY) return g.say('你才剛休息過。再坐下去，你怕自己會不想站起來。');
           g.flag('rest_at', g.s.moves);
-          g.sanity(25);
+          g.sanity(25); g.drink(-8); g.eat(-8);
           g.checkpoint();
-          g.say('你靠著拱門坐下，閉上眼睛。醒來時，房間還是原來的樣子——在這一層，這已經是奇蹟了。（這裡記住了你的位置。）');
+          g.say('你靠著拱門坐下，閉上眼睛。醒來時，房間還是原來的樣子——在這一層，這已經是奇蹟了。只是睡了一覺，又更渴、更餓了。（這裡記住了你的位置。）');
         },
       },
       { id: 'arch', rect: bounds(archBack, 6), label: '對面的拱門', cursor: 'look', click: (g) => g.say('拱門後面是另一間拱門的房間，再後面又是一間。走過去，也只會回到這裡。') },
@@ -1020,8 +1028,8 @@ export const SCENES = {
       {
         id: 'bag', when: (s) => s.holes?.row >= HOLE_ROWS && !s.flags.holes_bag, rect: boxRect(bag, 8), label: '帆布背包', cursor: 'take',
         click: (g) => {
-          g.flag('holes_bag'); g.give('almond'); g.give('almond');
-          g.say('背包裡有兩瓶沒開過的杏仁水，還有一本被翻爛的筆記本。');
+          g.flag('holes_bag'); g.give('almond'); g.give('almond'); g.give('bar');
+          g.say('背包裡有兩瓶沒開過的杏仁水、一條能量棒，還有一本被翻爛的筆記本。');
           g.read('n0g');
         },
       },
@@ -1044,6 +1052,13 @@ export const SCENES = {
     },
     hotspots: [
       FORWARD('l1_crates', '倉庫深處', [420, 215, 120, 120]),
+      {
+        id: 'puddle', rect: [P(-0.6, 1, 2.6)[0] - 110, P(-0.6, 1, 2.6)[1] - 14, 220, 28], label: '地上的積水', cursor: 'look',
+        click: (g) => {
+          g.drink(20); g.sanity(-6); g.sfx('drink');
+          g.say('你跪下來，用手捧起積水喝了幾口。一股鐵鏽和機油的味道……至少喉嚨沒那麼乾了。');
+        },
+      },
       {
         id: 'crate', rect: boxRect(crate1, 6), label: '木箱', cursor: 'look',
         click: (g) => {
@@ -1075,8 +1090,8 @@ export const SCENES = {
         id: 'crate', rect: boxRect(crateOpen, 6), label: '沒釘牢的木箱', cursor: 'look',
         click: (g) => {
           if (g.s.flags.crate_open) return g.say('空木箱。');
-          g.flag('crate_open'); g.give('battery'); g.give('almond');
-          g.say('你撬開木箱：一顆電池，還有一瓶杏仁水。——你身後的燈管，開始劇烈閃爍。');
+          g.flag('crate_open'); g.give('battery'); g.give('almond'); g.give('can');
+          g.say('你撬開木箱：一顆電池、一瓶杏仁水，還有一個罐頭。——你身後的燈管，開始劇烈閃爍。');
           g.flickerSoon();
         },
       },

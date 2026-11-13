@@ -143,6 +143,7 @@ export class Sound {
       case 'click': this.burst(0.03, 0.2, 'highpass', 2000); break;
       case 'open': this.burst(0.8, 0.35, 'lowpass', 400, this.brown); this.tone('sine', 90, 50, 0.4, 0.3); break;
       case 'steam': this.burst(1.3, 0.3, 'highpass', 1500); break;
+      case 'eat': for (let i = 0; i < 3; i++) setTimeout(() => this.burst(0.07, 0.15, 'bandpass', 900 + Math.random() * 600), i * 140); break;
       case 'surge': this.tone('sawtooth', 118, 124, 2.2, 0.22); this.burst(2, 0.06, 'highpass', 5000); break;
       case 'whirr': this.tone('square', 1200, 1700, 0.18, 0.025); this.burst(0.35, 0.08, 'bandpass', 2600); break;
       case 'thud': this.tone('sine', 110, 40, 0.35, 0.45); this.burst(0.15, 0.25, 'lowpass', 300, this.brown); break;

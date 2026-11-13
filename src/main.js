@@ -13,7 +13,7 @@ const ctx = cv.getContext('2d');
 const sound = new Sound();
 
 const fresh = () => ({
-  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false,
+  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false, thirst: 100, hunger: 100,
   loops: 0, maze: 0, bo: null, holes: null, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
@@ -68,7 +68,10 @@ const g = {
     try {
       if (msg) g.say(msg);
       sc.enter?.(g, { first });
-      if (!free) g.sanity(-LEVELS[sc.level].drain);
+      if (!free) {
+        g.sanity(-LEVELS[sc.level].drain);
+        needs(LEVELS[sc.level]);
+      }
       // Level 0: the hum sometimes surges without warning
       if (sc.level === 0 && !free && !sc.trap && !sc.hum && S.moves > 4 && Math.random() < 0.07) {
         sound.sfx('surge'); surgeT = 1.6; g.sanity(-2);
@@ -115,8 +118,11 @@ const g = {
   sanity(d) {
     S.sanity = clamp(S.sanity + d, 0, 100);
     updateHud();
-    if (S.sanity <= 0 && !ended) setTimeout(() => g.end('lost'), 700);
+    if (S.sanity <= 0 && !ended) setTimeout(() => g.end(S.thirst <= 0 ? 'thirst' : S.hunger <= 0 ? 'starve' : 'lost'), 700);
   },
+  // water and food, 0..100
+  drink(d) { S.thirst = clamp((S.thirst ?? 100) + d, 0, 100); updateHud(); },
+  eat(d) { S.hunger = clamp((S.hunger ?? 100) + d, 0, 100); updateHud(); },
   sfx: (n) => sound.sfx(n),
   setLight(on) {
     if (!g.has('torch')) return;
@@ -162,6 +168,19 @@ const g = {
     showEnding(kind);
   },
 };
+
+// Each step uses up water and food. Running out of either eats away at your sanity.
+function needs(L) {
+  const t0 = S.thirst ?? 100, h0 = S.hunger ?? 100;
+  S.thirst = clamp(t0 - L.thirst, 0, 100);
+  S.hunger = clamp(h0 - L.hunger, 0, 100);
+  if (S.thirst <= 0) g.sanity(-3);
+  if (S.hunger <= 0) g.sanity(-2);
+  if (t0 > 0 && S.thirst <= 0) g.say('你已經渴到頭暈眼花，每走一步都像踩在棉花上。再不喝水，你撐不了多久。');
+  else if (t0 >= 25 && S.thirst < 25) g.say('喉嚨乾得發痛，舌頭黏在上顎。得找點喝的。');
+  if (h0 > 0 && S.hunger <= 0) g.say('胃絞成一團。你盯著腳下的地毯，有一瞬間竟然覺得它看起來可以吃。');
+  else if (h0 >= 25 && S.hunger < 25) g.say('肚子餓得咕咕叫。你已經想不起上一次吃東西是什麼時候。');
+}
 
 const WHISPERS = [
   '你聽見有人在叫你的名字。不，是燈管的聲音。',
@@ -298,6 +317,13 @@ function updateHud() {
   fill.style.width = `${S.sanity}%`;
   fill.dataset.low = S.sanity < 35 ? '1' : '';
   $('#san').title = `清醒度 ${Math.round(S.sanity)} / 100`;
+  for (const [k, name] of [['thirst', '水分'], ['hunger', '飽足']]) {
+    const v = S[k] ?? 100;
+    const f = $(`#${k}Fill`);
+    f.style.width = `${v}%`;
+    f.dataset.low = v < 25 ? '1' : '';
+    $(`#${k}`).title = `${name} ${Math.round(v)} / 100`;
+  }
   const bl = $('#btnLight');
   bl.hidden = !g.has('torch');
   bl.textContent = `手電筒：${S.light ? '開' : '關'}`;
@@ -399,6 +425,7 @@ function openDials(cfg) {
 function startGame(state) {
   sound.init();
   S = state;
+  S.thirst ??= 100; S.hunger ??= 100;
   ended = false;
   selected = null;
   playing = true;
@@ -451,6 +478,24 @@ const ENDINGS = {
       '……正、正、正、正、正、正……',
     ],
   },
+  thirst: {
+    title: '— 脫水結局 —',
+    lines: [
+      '你的嘴唇裂開了，舌頭腫得說不出話。',
+      '地毯吸飽了水，踩下去會冒出來。',
+      '你跪下來，把臉貼在濕地毯上。',
+      '那股鹹味，是你最後記得的東西。',
+    ],
+  },
+  starve: {
+    title: '— 飢餓結局 —',
+    lines: [
+      '你已經很多天沒有吃東西了。',
+      '你蜷在牆角，數著燈管閃爍的次數，好忘記胃裡的痛。',
+      '嗡嗡聲越來越遠。',
+      '這一層不會讓你餓死。它只會讓你忘記自己為什麼要站起來。',
+    ],
+  },
   lost: {
     title: '— 迷失結局 —',
     lines: [
@@ -486,7 +531,7 @@ function showEnding(kind) {
 }
 $('#btnRetry').addEventListener('click', () => {
   const cp = store.get(CP_KEY);
-  if (valid(cp)) startGame({ ...cp, sanity: Math.max(cp.sanity, 60) });
+  if (valid(cp)) startGame({ ...cp, sanity: Math.max(cp.sanity, 60), thirst: Math.max(cp.thirst ?? 100, 60), hunger: Math.max(cp.hunger ?? 100, 60) });
 });
 $('#btnAgain').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
 $('#btnNew').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });

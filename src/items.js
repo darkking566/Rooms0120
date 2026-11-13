@@ -14,14 +14,22 @@ const insertTape = (g) => {
 export const ITEMS = {
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
-    self: (g) => { g.take('almond'); g.sanity(35); g.sfx('drink'); g.say('你喝下杏仁水。嗡嗡聲退遠了一些。'); },
+    self: (g) => { g.take('almond'); g.sanity(30); g.drink(35); g.sfx('drink'); g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。'); },
   },
   almond_wet: {
     name: '濕掉的杏仁水', desc: '從濕地毯上撿來的。瓶蓋是鬆的，瓶底沾滿了地毯裡的水。',
     self: (g) => {
-      g.take('almond_wet'); g.sanity(-12); g.sfx('drink');
-      g.say('又鹹又苦，還帶著一股藥水味——這根本不是杏仁水，是從地毯裡滲進去的東西。');
+      g.take('almond_wet'); g.sanity(-12); g.drink(-10); g.sfx('drink');
+      g.say('又鹹又苦，還帶著一股藥水味——這根本不是杏仁水，是從地毯裡滲進去的東西。喝完反而更渴了。');
     },
+  },
+  bar: {
+    name: '能量棒', desc: '包裝上的字已經磨掉了。聞起來像燕麥和……灰塵。',
+    self: (g) => { g.take('bar'); g.eat(40); g.sanity(5); g.sfx('eat'); g.say('你三兩口就把能量棒吞了下去。乾得難以下嚥，但胃裡總算有了東西。'); },
+  },
+  can: {
+    name: '罐頭', desc: '有拉環的罐頭，標籤泡過水，看不出是什麼。',
+    self: (g) => { g.take('can'); g.eat(55); g.drink(5); g.sfx('eat'); g.say('你拉開拉環。是糖水桃子——甜得讓你差點哭出來。'); },
   },
   tube: { name: '日光燈管', desc: '一根完好的日光燈管。' },
   torch_empty: { name: '手電筒（沒電）', desc: '電池槽是空的。', combine: { battery: loadTorch } },
@@ -75,6 +83,17 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.moveTo(0, -16); ctx.lineTo(0, 16); ctx.stroke();
       ctx.fillStyle = '#555'; ctx.fillRect(-5, -5, 10, 10);
+      break;
+    case 'bar':
+      ctx.rotate(-0.5);
+      ctx.fillStyle = '#b8862e'; ctx.fillRect(-20, -7, 40, 14);
+      ctx.fillStyle = '#7a5418'; ctx.fillRect(-20, -7, 6, 14); ctx.fillRect(14, -7, 6, 14);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(-12, -4, 24, 3);
+      break;
+    case 'can':
+      ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-12, -14, 24, 28);
+      ctx.fillStyle = '#c0392b'; ctx.fillRect(-12, -7, 24, 14);
+      ctx.fillStyle = '#d0d4d8'; ctx.beginPath(); ctx.ellipse(0, -14, 12, 3, 0, 0, Math.PI * 2); ctx.fill();
       break;
     case 'rod':
       ctx.rotate(0.8);
