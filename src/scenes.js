@@ -4,11 +4,13 @@
 import {
   P, W, H, box, boxRect, bounds, wallQuad, faceQuad, poly, paper, bottle, pipe, shade, drawSmiler, seg,
 } from './render.js';
+import { SUBLEVELS, SUBLEVEL_SCENES, drawAnnexEntrance } from './sublevels.js';
 
 export const LEVELS = {
   0: { name: 'LEVEL 0', sub: '門檻', drain: 1 },
   1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 2 },
   2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 3 },
+  ...SUBLEVELS,
 };
 
 const PAL = {
@@ -204,6 +206,7 @@ function drawExitSign(ctx, quad, t) {
 }
 
 export const SCENES = {
+  ...SUBLEVEL_SCENES,
   l0_start: {
     level: 0, title: '某個黃色的房間', room: l0Start,
     enter(g, { first }) {
@@ -288,11 +291,13 @@ export const SCENES = {
     level: 0, title: '柱子的房間', room: l0Pillar,
     enter(g, { first }) { if (first) g.say('一間空蕩蕩的大房間，柱子排成整齊的格子，一路延伸到看不見的地方。'); },
     draw(ctx, t, s, R) {
+      drawAnnexEntrance(ctx, R);
       for (const b of pillars0) box(ctx, R, b);
       paper(ctx, R, n0bQuad, 2.4, '#f2eed8');
     },
     hotspots: [
       BACK('l0_start'),
+      FORWARD('l0_annex', '沿著柱列，探索異常的房間'),
       {
         id: 'note', rect: bounds(n0bQuad, 8), label: '柱子上的便條', cursor: 'look',
         click: (g) => g.read('n0b', () => {

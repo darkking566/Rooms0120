@@ -7,6 +7,9 @@ const loadTorch = (g) => {
 };
 
 export const ITEMS = {
+  fuse: { name: '維修保險絲', desc: '天頂站維修機器人提供的備件。更換前，先隔離氣閘電源。' },
+  insulation: { name: '隔熱墊', desc: '翻修工具箱裡的厚墊子。可以封住持續吹出冷氣的通風口。' },
+  rubbing: { name: '年代拓片', desc: '憶域古代區段的石刻拓印。帶回現代區段，補全 N.T.G. 終端的紀錄。' },
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
     self: (g) => { g.take('almond'); g.sanity(35); g.sfx('drink'); g.say('你喝下杏仁水。嗡嗡聲退遠了一些。'); },
@@ -24,6 +27,22 @@ export function drawIcon(ctx, id, s = 56) {
   ctx.translate(s / 2, s / 2);
   ctx.lineCap = 'round';
   switch (id) {
+    case 'fuse':
+      ctx.fillStyle = '#94c7d2'; ctx.fillRect(-6, -16, 12, 32);
+      ctx.fillStyle = '#c9d5d8'; ctx.fillRect(-8, -20, 16, 7); ctx.fillRect(-8, 13, 16, 7);
+      ctx.strokeStyle = '#e7d68b'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(3, -4); ctx.lineTo(-3, 5); ctx.lineTo(0, 12); ctx.stroke();
+      break;
+    case 'insulation':
+      ctx.fillStyle = '#afc3c7'; ctx.fillRect(-20, -16, 40, 32);
+      ctx.strokeStyle = '#718b96'; ctx.lineWidth = 1;
+      for (let x = -16; x <= 16; x += 8) { ctx.beginPath(); ctx.moveTo(x, -15); ctx.lineTo(x, 15); ctx.stroke(); }
+      break;
+    case 'rubbing':
+      ctx.fillStyle = '#d4be84'; ctx.fillRect(-17, -22, 34, 44);
+      ctx.strokeStyle = '#6c5430'; ctx.lineWidth = 2;
+      for (let y = -14; y <= 14; y += 9) { ctx.beginPath(); ctx.moveTo(-9, y); ctx.lineTo(0, y + 5); ctx.lineTo(9, y); ctx.stroke(); }
+      break;
     case 'almond':
       ctx.fillStyle = '#e9e1c1'; ctx.beginPath(); ctx.roundRect(-9, -10, 18, 28, 5); ctx.fill();
       ctx.fillRect(-4, -19, 8, 10); ctx.fillStyle = '#3f6fb0'; ctx.fillRect(-5, -22, 10, 4);

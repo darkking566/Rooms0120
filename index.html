@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ROOMS0120</title>
   <meta name="description" content="一款以後室（Backrooms）為題材的原創 2D 點擊式恐怖解謎遊戲。">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +14,7 @@
       <canvas id="game" width="960" height="540" aria-label="遊戲畫面"></canvas>
 
       <div id="hud">
-        <div id="lvl"><b id="lvlName">LEVEL 0</b><span id="lvlSub">大廳</span></div>
+        <div id="lvl"><b id="lvlName">LEVEL 0</b><span id="lvlSub">大廳</span><span id="hazard" hidden role="status"></span></div>
         <div id="hudR">
           <div id="san"><span>清醒度</span><i><b id="sanFill"></b></i></div>
           <button id="btnLight" hidden aria-pressed="false">手電筒：關</button>
@@ -89,6 +90,17 @@
       靈感來自 <a href="https://backrooms-wiki.wikidot.com/" target="_blank" rel="noopener">The Backrooms Wiki</a>（CC BY-SA 3.0）的層級與實體設定。
       本作的劇情、角色與謎題皆為原創。
     </p>
+    <details id="sources">
+      <summary>新增子層級・設定來源與授權</summary>
+      <p>從 Level 0 柱子的房間繼續往前，可探索四個子層級。遊戲中的路線、維修謎題與 J.H. 紙條為原創改編。</p>
+      <ul>
+        <li><a href="https://backrooms-wiki-cn.wikidot.com/level-0-1" target="_blank" rel="noopener">Level 0.1「天頂站」</a>：CutTheBirch；中譯 Ambersight。</li>
+        <li><a href="https://backrooms-wiki-cn.wikidot.com/level-0-3" target="_blank" rel="noopener">Level 0.3「冰室」</a>：CursedSliver；中譯 Ambersight。</li>
+        <li><a href="https://backrooms-wiki-cn.wikidot.com/level-0-5" target="_blank" rel="noopener">Level 0.5「淵閉療舍」</a>：FuneralBouncer；中譯 xuziqi。</li>
+        <li><a href="https://backrooms-wiki-cn.wikidot.com/level-0-7" target="_blank" rel="noopener">Level 0.7「憶域」</a>：T-Dragon；中譯 jiaoyanerlan2、KkKkK_1234、owl4513。</li>
+      </ul>
+      <p>上述設定及其遊戲改編採用 <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>。場景與音效均由程式產生。</p>
+    </details>
   </main>
   <script type="module" src="src/main.js"></script>
 </body>
