@@ -34,6 +34,7 @@ let msgTimer = null;
 let ended = false;
 // while moving between scenes, messages are collected and shown together
 let collecting = null;
+let lostTimer = null;
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -120,7 +121,10 @@ const g = {
   sanity(d) {
     S.sanity = clamp(S.sanity + d, 0, 100);
     updateHud();
-    if (S.sanity <= 0 && !ended) setTimeout(() => g.end(S.thirst <= 0 ? 'thirst' : S.hunger <= 0 ? 'starve' : 'lost'), 700);
+    if (S.sanity <= 0 && !ended && !lostTimer) lostTimer = setTimeout(() => {
+      lostTimer = null;
+      if (playing && S.sanity <= 0) g.end(S.thirst <= 0 ? 'thirst' : S.hunger <= 0 ? 'starve' : 'lost');
+    }, 700);
   },
   // water and food, 0..100
   drink(d) { S.thirst = clamp((S.thirst ?? 100) + d, 0, 100); updateHud(); },
@@ -278,6 +282,8 @@ cv.addEventListener('pointerdown', (e) => {
     renderInv();
     if (h.use?.[item]) h.use[item](g);
     else g.say(`「${ITEMS[item].name}」在這裡派不上用場。`);
+    updateHud();
+    save();
     return;
   }
   const sc = SCENES[S.scene];
@@ -286,6 +292,8 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
   h.click(g);
+  updateHud();
+  save();
 });
 
 window.addEventListener('keydown', (e) => {
@@ -341,6 +349,8 @@ function onSlot(id) {
     g.say(`${item.name}：${item.desc}${item.self ? '（再點一次直接使用）' : '（點畫面中的東西來使用）'}`);
   }
   renderInv();
+  updateHud();
+  save();
 }
 
 // ---------- HUD ----------
@@ -349,6 +359,9 @@ function updateHud() {
   $('#lvlName').textContent = L.name;
   const title = SCENES[S.scene].title;
   $('#lvlSub').textContent = `${L.sub}・${typeof title === 'function' ? title(S) : title}`;
+  const hazard = SCENES[S.scene].hazard?.(S);
+  $('#hazard').hidden = !hazard;
+  $('#hazard').textContent = hazard || '';
   const fill = $('#sanFill');
   fill.style.width = `${S.sanity}%`;
   fill.dataset.low = S.sanity < 35 ? '1' : '';
@@ -398,6 +411,8 @@ function closeModal() {
   const was = modal;
   modal = null;
   if (was === 'doc' && docAfter) { const f = docAfter; docAfter = null; f(); }
+  updateHud();
+  save();
 }
 $('#docClose').addEventListener('click', closeModal);
 $('#notesClose').addEventListener('click', closeModal);
@@ -459,6 +474,7 @@ function openDials(cfg) {
 
 // ---------- title / ending ----------
 function startGame(state) {
+  clearTimeout(lostTimer); lostTimer = null;
   sound.init();
   S = state;
   S.thirst ??= 100; S.hunger ??= 100;
@@ -599,6 +615,7 @@ function frame(now) {
   if (playing) S.clock += dt;
 
   const active = playing && !modal && scareT <= 0 && !ended;
+  if (active && S.sanity > 0) sc.update?.(g, dt);
   if (active && S.flicker) {
     const f = S.flicker;
     if (f.delay > 0) {

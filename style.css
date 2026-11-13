@@ -32,6 +32,7 @@ button.ghost { background: transparent; color: var(--muted); }
 #lvl { display: flex; flex-direction: column; text-shadow: 0 1px 3px #000; }
 #lvl b { white-space: nowrap; font-size: 18px; letter-spacing: 0.12em; color: var(--accent); }
 #lvl span { font-size: 12px; color: var(--fg); opacity: 0.8; }
+#lvl #hazard { max-width: 280px; margin-top: 6px; padding: 4px 6px; color: #c9e4e1; background: rgba(8, 22, 26, 0.85); border-left: 2px solid #83b7bf; line-height: 1.5; }
 #hudR { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; align-items: center; }
 #hudR button { font-size: 12px; padding: 4px 8px; }
 .meter { display: flex; align-items: center; gap: 6px; font-size: 12px; text-shadow: 0 1px 3px #000; }
@@ -90,6 +91,10 @@ button.ghost { background: transparent; color: var(--muted); }
 .slot.sel { border-color: var(--accent); background: rgba(227, 201, 94, 0.15); box-shadow: 0 0 0 1px var(--accent) inset; }
 #credit { margin: 10px 2px 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 #credit a { color: var(--accent); }
+#sources { margin: 8px 2px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+#sources summary { cursor: pointer; }
+#sources a { color: var(--accent); overflow-wrap: anywhere; }
+#sources ul { padding-left: 20px; }
 
 @media (max-width: 640px) {
   #wrap { padding-block: 16px 24px; }
@@ -99,6 +104,7 @@ button.ghost { background: transparent; color: var(--muted); }
   .meter i { width: 60px; }
   .meter.need i { width: 30px; }
   .meter span { display: none; }
+  #lvl #hazard { max-width: 145px; font-size: 9px; }
   #hudR button { font-size: 11px; padding: 3px 6px; }
   #msg { font-size: 13px; bottom: 4%; padding: 6px 10px; }
   .slot { width: 70px; }

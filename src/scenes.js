@@ -4,6 +4,7 @@
 import {
   P, W, H, box, boxRect, bounds, wallQuad, faceQuad, poly, paper, bottle, pipe, shade, drawSmiler, seg, rgb, mul, hex,
 } from './render.js';
+import { SUBLEVELS, SUBLEVEL_SCENES, drawAnnexEntrance, annexDoor } from './sublevels.js';
 
 export const LEVELS = {
   // drain: sanity per step; thirst / hunger: how fast water and food run out per step
@@ -11,6 +12,7 @@ export const LEVELS = {
   1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 1.5, thirst: 2, hunger: 1.2 },
   2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 2, thirst: 2.5, hunger: 1.5 },
   0.2: { name: 'LEVEL 0.2', sub: '重新裝修的爛攤子', drain: 1, thirst: 1.5, hunger: 1 },
+  ...SUBLEVELS,
 };
 
 const PAL = {
@@ -92,7 +94,7 @@ const glitchWall = wallQuad(1, -1, 1, 2.2, 3.0);
 
 const l0Pillar = {
   hw: 2.2, depth: 6, fogEnd: 12, pal: PAL.l0, stripes: true, tiles: true, floorTex: 'carpet',
-  lights: [1.6, 3.4, 5.2], flick: hum, openings: [{ side: -1, z1: 3.0, z2: 3.9, top: -0.6 }],
+  lights: [1.6, 3.4, 5.2], flick: hum, openings: [{ side: -1, z1: 3.0, z2: 3.9, top: -0.6 }, { side: 1, z1: 3.0, z2: 3.9, top: -0.65 }],
 };
 const stairDoor = wallQuad(-2.2, -0.6, 1, 3.0, 3.9);
 const pillars0 = [
@@ -637,6 +639,7 @@ const archDoor = archesR[1];
 
 
 export const SCENES = {
+  ...SUBLEVEL_SCENES,
   l0_start: {
     level: 0, title: '某個黃色的房間', room: l0Start,
     viewMsg: '觀景窗裡，地毯上浮出一個肉眼看不見的粉筆箭頭，指向那間有柱子的房間。旁邊寫著：J.H.',
@@ -926,6 +929,7 @@ export const SCENES = {
         poly(ctx, hiddenDoor, rgb(mul(hex(R.pal.fog), 0.7)));
         poly(ctx, faceQuad(-0.29, -0.42, 0.29, 1, 8.5), shade(R, R.pal.wall, 8.5, 0.8));
       }
+      drawAnnexEntrance(ctx, R);
       for (const b of pillars0) box(ctx, R, b);
       paper(ctx, R, n0bQuad, 2.4, '#f2eed8');
     },
@@ -941,6 +945,7 @@ export const SCENES = {
           g.go('l0_maze', g.s.seen.l0_maze ? { msg: `你又回到了第一間隔間。${g.s.view ? '地上有一個粉筆箭頭。' : ''}` } : {});
         },
       },
+      { id: 'annex', rect: bounds(annexDoor, 4), label: '右邊：通往異常交界', cursor: 'go', click: (g) => g.go('l0_annex') },
       {
         id: 'note', rect: bounds(n0bQuad, 8), label: '柱子上的便條', cursor: 'look',
         click: (g) => g.read('n0b', () => {
