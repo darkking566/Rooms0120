@@ -8,21 +8,12 @@ Level 0 also has four optional sublevels. Their entrances are spread across Leve
 
 | Level | Way in | Based on the article |
 | --- | --- | --- |
-| 0.1 天頂站 | In the pillar room, take the stencilled doorway on the right wall. Then follow the B.N.T.G. arrows from pillar to pillar four times; one wrong side sends you back to the first arrow. | You can simply walk in, but Level 0 is too vast to find it by chance; only the B.N.T.G. reaches it reliably. |
-| 0.3 冰室 | In the first hallway, look at the vent near the ceiling, then follow the frost on the carpet. | It looks like Level 0 covered in ice; vents never stop blowing cold air. |
-| 0.5 淵閉療舍 | In the blackout zone, after the first correct step, take the stairs at your feet. | The narrator found a staircase down in a Level 0 blackout zone, drawn by a familiar hum. |
-| 0.7 憶域 | In the faded room, take the doorway on the right toward the older wallpaper. | A time bubble of older Backrooms with no fixed exit; you leave by retracing your steps. |
+| 0.1 天頂站 | A sleek, broken station inside Level 0. Time your way through an airlock door stuck in a loop, then explore the ring corridor: crew quarters (one rest, a keycard), a galley whose cooking arm lays a seventh tray, and a hydroponic greenhouse. The far section is cooking at +68°C; the climate console can only cool it by shutting down another section, and you choose which (cutting the airlock closes the way back). The observation deck looks into the hollow shell; a flickering hull breach noclips you to Level 1, or sometimes back to Level 0. |
+| 0.3 冰室 | Level 0, frozen; the cold wears down sanity. Task Force 104-CX's work site holds their emails, a blowtorch with a frozen canister and a roll of wool carpet. The live vent hops around its room: wrap it when it lands within reach, the heater can finally warm the camp, and the blowtorch lights. Melt through the ice to a room full of frozen figures — hollow inside — and on to the "clean, tidy, comfortable, warm" room they finished, which lets you out. |
+| 0.5 淵閉療舍 | Knee-deep brown water and an echo that hurts. Drinking it quenches thirst but makes you sick; a sparking lamp has to be passed between bursts. The hospital has beds — and sleeping in one wakes the Drowned, which follows you without rest and loops the corridors back to the water. Lure it into the water to dissolve it, sleep for real, then follow the corridor to the metal stairs down into Level 1. |
+| 0.7 憶域 | A time bubble of past Level 0s: a modern stretch whose exits are sealed by "no signal" static, then bulbs and candles (toxic wallpaper, an N.T.G. pack with the only water), a Victorian hall where a voice calls from a doorway (don't answer), castle corridors where only the torch-lit archway is safe, a Roman marble hall and Egyptian corridors with a Growler in the dark. Rub the carving and get out by walking back, or sleep in the alcove: with something from the present you wake in the modern stretch, without it you wake beside a rift into an old Level 1. |
 
-Each sublevel returns to the room you entered from.
-
-| Level | Playable adaptation |
-| --- | --- |
-| 0.1 天頂站 | Repair a steel-and-glass station's airlock: take the robot's fuse, isolate power, then replace the fuse. Observe the hollow spherical station, collect supplies, return to Level 0 or noclip into Level 1. |
-| 0.3 冰室 | Cold drains sanity while exploring. Take an insulation mat, seal the cold-air vent, then start the construction heater to thaw a return passage. Reading notes pauses the cold. |
-| 0.5 淵閉療舍 | Wade through flooded corridors into an abandoned hospital. A drowned pursuer keeps tracking you; lure it back into the water to dissolve it, then take the metal stairs to Level 1. You can also retreat up the entrance stairs. |
-| 0.7 憶域 | Explore representative modern, Victorian, medieval and Egyptian districts. Take an ancient rubbing back to the N.T.G. archive terminal. Static-filled exits are blocked; walk back through increasingly modern districts to return to Level 0. |
-
-These routes, repair puzzles and J.H. notes are game adaptations, rather than a full reproduction of each article. The original Level 0 → 1 → 2 route remains available. New levels use the same inventory, autosave and entry checkpoints; existing v1 saves remain compatible.
+These routes, puzzles and J.H. notes are game adaptations, rather than a full reproduction of each article. The original Level 0 → 1 → 2 route remains available. New levels use the same inventory, autosave and entry checkpoints; existing v1 saves remain compatible.
 
 ## Run
 

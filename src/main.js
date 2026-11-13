@@ -4,6 +4,7 @@ import { SCENES, LEVELS, smilerRect, drawSmilers } from './scenes.js';
 import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
 import { Sound } from './audio.js';
+import { drawDrowned, drawGrowler } from './sublevels.js';
 
 const SAVE_KEY = 'rooms0120.save.v1';
 const CP_KEY = 'rooms0120.checkpoint.v1';
@@ -478,6 +479,9 @@ function startGame(state) {
   sound.init();
   S = state;
   S.thirst ??= 100; S.hunger ??= 100;
+  // drop items and notes that no longer exist (saves from older versions)
+  S.inv = S.inv.filter((id) => ITEMS[id]);
+  S.notes = (S.notes || []).filter((id) => NOTES[id]);
   ended = false;
   selected = null;
   playing = true;
@@ -758,6 +762,10 @@ function frame(now) {
       ctx.restore();
     } else if (scareKind === 'figure') {
       drawFigure(ctx, sx, H + 40, H * (1.2 + (1.1 - k) * 0.8), Math.min(1, k * 2));
+    } else if (scareKind === 'drowned') {
+      drawDrowned(ctx, sx, H + 30, 2.6 + (1.1 - k) * 1.6, t, Math.min(1, k * 2));
+    } else if (scareKind === 'growler') {
+      drawGrowler(ctx, sx, sy - 40, 3 + (1.1 - k) * 3, Math.min(1, k * 2), t);
     } else {
       drawSmiler(ctx, sx, sy, 5 + (1.1 - k) * 4, Math.min(1, k * 2), t);
     }
