@@ -18,7 +18,7 @@ Wiki 內容會隨改寫而變動；引用前請再核對一次原頁面。
 | **Manila Room**（馬尼拉房間） | 很難找到的小房間。舊版說要朝同一方向走非常遠才可能遇到；它是死路，是倖存者的會合點，放著 M.E.G. 文件。 | 現行（頁面改寫中） | [Level 0](https://backrooms-wiki.wikidot.com/level-0)、[manila room](https://backrooms-wiki.wikidot.com/manila-room) |
 | **Red Rooms**（紅房間） | 只能從 Level 0 進入：轉過某個轉角時隨機出現，無法預測位置。進去之後「推定沒有出口」。 | 現行 | [Red Rooms](https://backrooms-wiki.wikidot.com/red-rooms) |
 | **Level 0.2 "Remodeled Mess"** | 燈管的嗡嗡聲變小、地毯變乾、房間開始像施工中時，有機會找到一扇門。（**遊戲已做**：濕透的房間 → 乾燥的走廊 → `l02_room`） | 現行 | [Level 0.2](https://backrooms-wiki.wikidot.com/level-0-2) |
-| **Level 0.7 "The Reminiscence District"** | Level 0 的子層級，是保存「後室歷代改版」的時間泡。頁面沒有寫怎麼進去；離開只能「轉身退出去」。 | 現行 | [Level 0.7](https://backrooms-wiki.wikidot.com/level-0-7) |
+| **Level 0.7 "The Reminiscence District"** | Level 0 的子層級，是保存「後室歷代改版」的時間泡。頁面的隱藏區塊寫了入口：穿過 Level 0，直到周圍開始顯得更陳舊（白熾燈泡、石牆等）；離開只能轉身走回較現代的區段。 | 現行 | [Level 0.7](https://backrooms-wiki.wikidot.com/level-0-7) |
 
 現行 Level 0 頁面描述的區域變化（不是獨立樓層）：
 
@@ -49,7 +49,7 @@ Wiki 內容會隨改寫而變動；引用前請再核對一次原頁面。
 | [0.1 天頂站](https://backrooms-wiki-cn.wikidot.com/level-0-1) | 「只須直接走入相應的區域即可」，但 Level 0 太大，幾乎不可能遇到；B.N.T.G. 掌握一種可靠的方法。出口：返回 Level 0，或隨機切出到 Level 1。 | 柱子房間右牆的門洞 → `l0_annex`：跟著 B.N.T.G. 噴漆箭頭連走四次，走錯一次就從頭找 |
 | [0.3 冰室](https://backrooms-wiki-cn.wikidot.com/level-0-3) | 沒有寫入口。外觀幾乎和 Level 0 一樣，只是到處都是冰；通風口不停吹冷氣。 | 第一條走廊天花板旁的冷風格柵 → 循地毯上的霜走 |
 | [0.5 淵閉療舍](https://backrooms-wiki-cn.wikidot.com/level-0-5) | 敘述者在 Level 0 的熄燈區被熟悉的嗡鳴聲引導，「找到一段樓梯往下走」。第 9 天找到金屬格柵樓梯通往 Level 1。 | 停電區走對第一步後，腳邊出現往下的台階 |
-| [0.7 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7) | 沒有寫入口。是保存歷代後室的時間泡；「除了原路折返之外，沒有固定的出口」。 | 褪色的房間（本作 Level 0 最舊的地方）右牆的門洞，回程也走回這裡 |
+| [0.7 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7) | 隱藏區塊（「恢復」資料）寫了入口：一直穿過 Level 0，直到環境變得更陳舊；也可能因切出而進入。出口：轉身走回 Level 0。出口都被像「無訊號」畫面的物質封住；無遮蔽入睡會被移到別的區段。 | 褪色的房間（本作 Level 0 最舊的地方）右牆的門洞，回程也走回這裡 |
 
 查過但**不採用**的：
 

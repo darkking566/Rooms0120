@@ -30,9 +30,14 @@ const tapeItem = (n, where) => ({
 });
 
 export const ITEMS = {
-  fuse: { name: '維修保險絲', desc: '天頂站維修機器人提供的備件。更換前，先隔離氣閘電源。' },
-  insulation: { name: '隔熱墊', desc: '翻修工具箱裡的厚墊子。可以封住持續吹出冷氣的通風口。' },
-  rubbing: { name: '年代拓片', desc: '憶域古代區段的石刻拓印。帶回現代區段，補全 N.T.G. 終端的紀錄。' },
+  zcard: { name: '門禁卡', desc: '天頂站的門禁卡。「R. 瓦爾普利・環境控制」。照片被磨花了，看不清是誰。' },
+  wool: { name: '羊毛地毯', desc: '一捲沒鋪完的羊毛地毯，又厚又重。標籤上寫著「B 類重建・溫暖」。' },
+  blowtorch: { name: '噴槍', desc: '104-CX 的施工噴槍。瓦斯罐烘熱之後就點得著了，藍色的火舌能化開冰。' },
+  outlet: { name: '插座面板', desc: '一塊米色的塑膠插座面板。只有 1950 年之後的走廊裡才有這種東西。' },
+  rubbing: {
+    name: '刻痕拓片', desc: '憶域埃及回廊的刻痕拓片。（再點一次攤開來看）',
+    self: (g) => g.read('n07_rubbing', () => { if (!g.s.flags.l07_read) { g.flag('l07_read'); g.sanity(10); g.say('你把拓片摺好收起來。手不抖了。'); } }),
+  },
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
     self: (g) => { g.take('almond'); g.sanity(30); g.drink(35); g.sfx('drink'); g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。'); },
@@ -88,21 +93,33 @@ export function drawIcon(ctx, id, s = 56) {
   ctx.translate(s / 2, s / 2);
   ctx.lineCap = 'round';
   switch (id) {
-    case 'fuse':
-      ctx.fillStyle = '#94c7d2'; ctx.fillRect(-6, -16, 12, 32);
-      ctx.fillStyle = '#c9d5d8'; ctx.fillRect(-8, -20, 16, 7); ctx.fillRect(-8, 13, 16, 7);
-      ctx.strokeStyle = '#e7d68b'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(3, -4); ctx.lineTo(-3, 5); ctx.lineTo(0, 12); ctx.stroke();
+    case 'zcard':
+      ctx.fillStyle = '#dfe6e8'; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
+      ctx.fillStyle = '#3b6f86'; ctx.fillRect(-18, -12, 36, 6);
+      ctx.fillStyle = '#9aa8ae'; ctx.fillRect(-14, -2, 10, 11);
+      ctx.fillStyle = '#c9a227'; ctx.fillRect(4, 0, 9, 7);
       break;
-    case 'insulation':
-      ctx.fillStyle = '#afc3c7'; ctx.fillRect(-20, -16, 40, 32);
-      ctx.strokeStyle = '#718b96'; ctx.lineWidth = 1;
-      for (let x = -16; x <= 16; x += 8) { ctx.beginPath(); ctx.moveTo(x, -15); ctx.lineTo(x, 15); ctx.stroke(); }
+    case 'wool':
+      ctx.fillStyle = '#8a3a2a'; ctx.fillRect(-20, -10, 34, 20);
+      ctx.fillStyle = '#a5503a'; ctx.beginPath(); ctx.ellipse(14, 0, 7, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#6a2a1a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(14, 0, 4, 0, Math.PI * 2); ctx.stroke();
+      break;
+    case 'blowtorch':
+      ctx.rotate(-0.5);
+      ctx.fillStyle = '#3a5a8a'; ctx.fillRect(-8, -4, 16, 24);
+      ctx.fillStyle = '#9aa0a4'; ctx.fillRect(-2, -18, 4, 14);
+      ctx.fillStyle = '#7fc8ff'; ctx.beginPath(); ctx.moveTo(-4, -18); ctx.lineTo(0, -28); ctx.lineTo(4, -18); ctx.fill();
+      break;
+    case 'outlet':
+      ctx.fillStyle = '#e8e0c8'; ctx.beginPath(); ctx.roundRect(-12, -17, 24, 34, 3); ctx.fill();
+      ctx.fillStyle = '#2a2418';
+      for (const y of [-8, 6]) { ctx.fillRect(-5, y, 2, 6); ctx.fillRect(3, y, 2, 6); }
       break;
     case 'rubbing':
-      ctx.fillStyle = '#d4be84'; ctx.fillRect(-17, -22, 34, 44);
-      ctx.strokeStyle = '#6c5430'; ctx.lineWidth = 2;
-      for (let y = -14; y <= 14; y += 9) { ctx.beginPath(); ctx.moveTo(-9, y); ctx.lineTo(0, y + 5); ctx.lineTo(9, y); ctx.stroke(); }
+      ctx.fillStyle = '#2a2018'; ctx.fillRect(-17, -22, 34, 44);
+      ctx.strokeStyle = '#c8b890'; ctx.lineWidth = 1.5;
+      for (let y = -15; y <= 0; y += 8) for (let x = -11; x <= 9; x += 7) { ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.fillStyle = '#c8b890'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.fillText('0120', 0, 16);
       break;
     case 'almond':
     case 'almond_wet':
