@@ -457,8 +457,8 @@ const ENDINGS = {
       '你站在一條陌生的街上，天快要亮了。路燈還亮著——發出熟悉的嗡嗡聲。',
       '攝影機還在錄。你低頭看螢幕——畫面裡的街道，和你眼前的一模一樣。',
       '口袋裡多了一張紙條。是你自己的筆跡：',
-      '「記錄 0120：已歸檔。下一次，請小心一點。—— J.H.」',
-      '你這才想起來——J.H.，是你名字的縮寫。',
+      '「記錄 0120：已歸檔。下一次，請小心一點。」署名被水暈開了，只看得出一個 J。',
+      '你試著想起 J.H. 是誰。你想起一條走廊、一盞燈、一個坐在牆角的人。……你想不起自己的名字。',
     ],
   },
   fall: {
@@ -478,6 +478,16 @@ const ENDINGS = {
       '攝影機的螢幕早就只剩雜訊。',
       '你開始在牆上刻記號，好記住自己繞了幾圈。',
       '……正、正、正、正、正、正……',
+    ],
+  },
+  archive: {
+    title: '— 0120 —',
+    lines: [
+      '你把攝影機放進抽屜。紅燈還亮著。',
+      '你關上抽屜。嗡嗡聲變得很遠、很遠。',
+      '……',
+      '在某個黃色的房間裡，有人醒了過來。',
+      '牆上貼著一張皺巴巴的紙條。字跡……莫名地眼熟。',
     ],
   },
   thirst: {
@@ -519,9 +529,10 @@ function showEnding(kind) {
   const lines = E.lines.slice();
   if (kind === 'escape' && S.flags.freed_jh) {
     $('#endTitle').textContent = '— 歸檔結局 —';
-    lines.splice(1, 0, '你身後傳來另一個腳步聲。你沒有回頭，只是把門撐得更開一點。');
-    lines.splice(lines.length - 2, 2, '「記錄 0120：已歸檔。這次，我們一起出來了。—— J.H.」', '你這才想起來——J.H.，是你名字的縮寫。也是他的。');
-  } else if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。下一次，坐在那裡等的，會不會是你？');
+    lines.splice(1, 0, '你身後傳來另一個腳步聲。你回頭——街上只有你一個人。可是地上有兩排腳印。');
+    lines.splice(lines.length - 2, 2, '「記錄 0120：對象離開了。對象們離開了。」', '紙條背面還有一行小字：「下一次，換誰坐在牆角？」');
+  } else if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。他後來站起來了嗎？');
+  if (kind === 'escape' && S.flags.wrote_start) lines.push('你在口袋裡摸到一截粉筆。你不記得自己把它帶出來了。');
   lines.forEach((t, i) => {
     const p = document.createElement('p');
     p.textContent = t;

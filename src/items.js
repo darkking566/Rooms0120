@@ -20,7 +20,7 @@ const watch = (id) => (g) => {
   });
 };
 const tapeItem = (n, where) => ({
-  name: `錄影帶 #${n}`, desc: `一卷小型錄影帶，標籤上用你的筆跡寫著「#${n}」。${where}`,
+  name: `錄影帶 #${n}`, desc: `一卷小型錄影帶，標籤上寫著「#${n}」。${where}`,
   combine: { camcorder: watch(`tape${n}`) },
 });
 
@@ -51,8 +51,11 @@ export const ITEMS = {
   tape2: tapeItem(2, '和攝影機一起用就能播放。'),
   tape3: tapeItem(3, '和攝影機一起用就能播放。'),
   tape4: tapeItem(4, '上面還黏著紅色的地毯纖維。'),
+  ladder: { name: '折疊梯', desc: '鋁製的折疊梯。可以架在高處的洞口下面，也可以橫著放。' },
+  key: { name: '黃銅鑰匙', desc: '小小的黃銅鑰匙。標籤上寫著「別開」，字跡被手指摸得快看不見了。' },
+  chalk: { name: '粉筆', desc: '一截很短的粉筆。可以在牆上寫字——如果這一層願意留著那些字的話。' },
   screwdriver: { name: '螺絲起子', desc: '一字的螺絲起子，握把上印著「後室重新裝修公司」。' },
-  rod: { name: '金屬吊桿', desc: '從天花板上掉下來的金屬吊桿，差不多一個人高。可以用來搆高處的東西。' },
+  rod: { name: '金屬吊桿', desc: '從天花板上掉下來的金屬吊桿，差不多一個人高。可以用來搆高處或深處的東西，也可以拿來探路。' },
   camcorder: {
     name: '攝影機', desc: '一台舊型的手持攝影機，螢幕還亮著。再點一次就能舉起來透過觀景窗看（也可以按 V 鍵）。',
     self: (g) => g.setView(!g.s.view),
@@ -101,6 +104,22 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.moveTo(0, -16); ctx.lineTo(0, 16); ctx.stroke();
       ctx.fillStyle = '#555'; ctx.fillRect(-5, -5, 10, 10);
+      break;
+    case 'ladder':
+      ctx.strokeStyle = '#b8bcc0'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-9, 22); ctx.lineTo(-4, -22); ctx.moveTo(9, 22); ctx.lineTo(4, -22); ctx.stroke();
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i++) { const y = 16 - i * 9, w = 8.5 - i * 1.1; ctx.beginPath(); ctx.moveTo(-w, y); ctx.lineTo(w, y); ctx.stroke(); }
+      break;
+    case 'key':
+      ctx.strokeStyle = '#d4b04a'; ctx.fillStyle = '#d4b04a'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(-9, 0, 7, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillRect(-2, -2, 22, 4); ctx.fillRect(12, 2, 3, 6); ctx.fillRect(17, 2, 3, 4);
+      break;
+    case 'chalk':
+      ctx.rotate(-0.6);
+      ctx.fillStyle = '#f2f0e8'; ctx.fillRect(-12, -4, 24, 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(-12, 2, 24, 2);
       break;
     case 'screwdriver':
       ctx.rotate(0.7);

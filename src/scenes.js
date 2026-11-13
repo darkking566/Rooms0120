@@ -9,7 +9,7 @@ export const LEVELS = {
   // drain: sanity per step; thirst / hunger: how fast water and food run out per step
   0: { name: 'LEVEL 0', sub: '門檻', drain: 1, thirst: 1.5, hunger: 1 },
   1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 2, thirst: 2, hunger: 1.2 },
-  2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 3, thirst: 2.5, hunger: 1.5 },
+  2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 2, thirst: 2.5, hunger: 1.5 },
   0.2: { name: 'LEVEL 0.2', sub: '重新裝修的爛攤子', drain: 1, thirst: 1.5, hunger: 1 },
 };
 
@@ -190,11 +190,11 @@ const jhLegs = faceQuad(-0.86, 0.72, -0.16, 0.97, 2.55);
 const jhHead = P(-0.57, 0.04, 2.75);
 const megQuad = wallQuad(1.3, -0.3, 0.1, 1.8, 2.3);
 const JH_LINES = [
-  '那個人抬起頭。是你的臉——更瘦、更老，鬍子很久沒刮。「……你終於找到這裡了。」',
-  '「這是這一層唯一能看見別人的房間。我在這裡等了很久，想看看會不會有人來。」他苦笑。「結果來的，還是我自己。」',
-  '「別喝地毯上撿到的杏仁水，那是從地毯裡滲進去的東西。拿著，這瓶是乾淨的。」',
-  '「我是 J.H.，你也是。我們每一次都從那間黃色的房間開始，每一次都留下紙條給下一個自己。」',
-  '「去吧。帶子裡說的，你已經知道了。」他低下頭，不再說話。',
+  '那個人抬起頭。燈光下，他的臉很模糊，像一張沒對好焦的照片。「……這次比較晚。」',
+  '「這是唯一一間看得見人的房間。」他頓了一下。「所以你看見的，不一定是人。」',
+  '「地毯上的水別喝。」他從身後摸出一瓶杏仁水，推到你腳邊。',
+  '「J——」他說了一個名字。嗡嗡聲正好在那一刻變大，你沒聽清楚。',
+  '「帶子看過了吧。看了就會想起來。想起來……就走不了了。」他低下頭，不再說話。',
 ];
 
 // Red Rooms: found at random after turning a corner; once you are properly inside, there is no way out.
@@ -274,9 +274,9 @@ const farPits = [['left', 3.0, 3.6], ['right', 3.0, 3.6], ['mid', 4.0, 4.6], ['l
 const ledge = { x1: -1.2, x2: 1.2, y1: 0.97, y2: 1, z1: 1.6, z2: 3.2, color: '#9a8746' };
 const bag = { x1: -0.25, x2: 0.3, y1: 0.7, y2: 1, z1: 2.5, z2: 2.85, color: '#4f5a3e', edge: true };
 
-function holeStep(g, lane) {
+function holeStep(g, lane, bridged = false) {
   const h = g.s.holes;
-  if (h.pits[LANES.indexOf(lane)]) return g.end('fall');
+  if (h.pits[LANES.indexOf(lane)] && !bridged) return g.end('fall');
   if (h.row + 1 >= HOLE_ROWS) {
     g.s.holes = { row: HOLE_ROWS, pits: [false, false, false] };
     return g.go('l0_holes', { msg: '你跨過最後一排坑洞，腳下終於是完整的地板。牆邊靠著一個帆布背包。' });
@@ -500,6 +500,45 @@ function cassette(ctx, R, b) {
   ctx.fillStyle = shade(R, '#e9e1c1', b.z1); ctx.fillRect(c[0] - 6, c[1] - 2, 12, 3);
 }
 
+// ---------- above the ceiling tiles ----------
+// "Whatever is up here isn't rearranged." A crawlspace linking the low room, the wet room and the faded room.
+const PAL_CEIL = { wall: '#3a3424', ceil: '#1c1810', floor: '#5a5030', fog: '#050402', light: '#ffe9a8' };
+const l0Ceil = { hw: 2.0, depth: 7, fogEnd: 6, pal: PAL_CEIL, baseboard: false, wallTex: 'concrete', lights: [] };
+const ceilStash = { x1: -1.6, x2: -1.1, y1: 0.8, y2: 1, z1: 2.4, z2: 2.8, color: '#c8c4b0', edge: true };
+const ceilHoleDown = [P(-0.45, 1, 1.35), P(0.45, 1, 1.35), P(0.45, 1, 1.9), P(-0.45, 1, 1.9)];
+const wetFromAbove = [P(-1.5, 1, 2.2), P(-0.7, 1, 2.2), P(-0.7, 1, 2.9), P(-1.5, 1, 2.9)];
+const grille = [P(0.6, 1, 2.6), P(1.4, 1, 2.6), P(1.4, 1, 3.4), P(0.6, 1, 3.4)];
+const duct = { x1: -2.0, x2: -1.3, y1: -0.7, y2: -0.1, z1: 3.6, z2: 5.2, color: '#7a7a72', edge: true };
+const ductMouth = faceQuad(-1.95, -0.65, -1.35, -0.15, 3.599);
+const camAbove = P(-1.1, 0.96, 2.55);
+// light leaking up through the seams between the tiles below
+function tileSeams(ctx, R, skip = []) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,225,140,0.35)'; ctx.lineWidth = 1.5;
+  for (let z = 1.3; z < R.depth; z += 0.55) seg(ctx, P(-R.hw, 1, z), P(R.hw, 1, z), ctx.strokeStyle, Math.max(0.6, 3 / z));
+  for (let x = -R.hw; x <= R.hw; x += 0.6) seg(ctx, P(x, 1, 1), P(x, 1, R.depth), ctx.strokeStyle, 1);
+  ctx.restore();
+  void skip;
+}
+function glowQuad(ctx, q, a = 0.85) {
+  ctx.save(); ctx.shadowColor = 'rgba(255,230,150,0.9)'; ctx.shadowBlur = 30;
+  poly(ctx, q, `rgba(240,220,150,${a})`); ctx.restore();
+}
+
+// ---------- the archive behind the arches ----------
+const l0Archive = {
+  hw: 1.6, depth: 7, fogEnd: 11, tiles: true, floorTex: 'carpet', lights: [2.0, 4.6], flickerLights: [1], flick: hum,
+  pal: { wall: '#b8aa78', ceil: '#cfc6a0', floor: '#6c6040', fog: '#1a1709', light: '#fff2cc' },
+};
+const cabinetsL = [1.6, 2.7, 3.8, 4.9].map((z) => ({ x1: -1.6, x2: -1.05, y1: -0.45, y2: 1, z1: z, z2: z + 0.9, color: '#7d7f78', edge: true }));
+const cabinetsR = [1.6, 2.7, 3.8, 4.9].map((z) => ({ x1: 1.05, x2: 1.6, y1: -0.45, y2: 1, z1: z, z2: z + 0.9, color: '#7d7f78', edge: true }));
+const archDesk = { x1: -0.7, x2: 0.7, y1: 0.4, y2: 1, z1: 5.9, z2: 6.5, color: '#5d4a36', edge: true };
+const chalkAt = P(-0.35, 0.39, 5.95);
+const cardQuad = faceQuad(0.15, 0.3, 0.45, 0.39, 5.899);
+const drawer0120 = wallQuad(1.05, 0.1, 0.35, 1.7, 2.4);
+const archDoor = archesR[1];
+
+
 export const SCENES = {
   l0_start: {
     level: 0, title: '某個黃色的房間', room: l0Start,
@@ -524,6 +563,13 @@ export const SCENES = {
       {
         id: 'note', rect: bounds(n1Quad, 8), label: '牆上的紙條', cursor: 'look',
         click: (g) => g.read('n1', () => { if (!g.s.flags.n1_seen) { g.flag('n1_seen'); g.say('字跡……莫名地眼熟。'); } }),
+        use: {
+          chalk: (g) => {
+            if (g.s.flags.wrote_start) return g.say('你已經寫過了。再寫一次，好像會有什麼東西被確定下來。');
+            g.flag('wrote_start');
+            g.say('你在紙條旁邊的牆上寫下兩個字：「別慌」。寫完你才發現，紙條上的那兩個字，筆順和你的一模一樣。');
+          },
+        },
       },
       {
         id: 'almond', when: (s) => !s.flags.l0_almond, rect: [almond0.p[0] - 20, almond0.p[1] - 50, 40, 58], label: '一個瓶子', cursor: 'take',
@@ -565,7 +611,11 @@ export const SCENES = {
         click: (g) => { g.flag('rod'); g.give('rod', '一根金屬吊桿，跟著天花板板一起掉下來的。差不多有一個人高。'); },
       },
       { id: 'blackout', rect: bounds(blackDoor, 4), label: '漆黑的門洞', cursor: 'go', click: (g) => { g.s.bo = { step: 0, dir: pickDir() }; g.go('l0_blackout'); } },
-      { id: 'hole', rect: bounds(lowHole, 10), label: '天花板上的洞', cursor: 'look', click: (g) => g.say('天花板上破了一個洞，上面一片漆黑，聽不到嗡嗡聲。……那上面，好像是另一個世界。') },
+      {
+        id: 'hole', rect: bounds(lowHole, 10), label: '天花板上的洞', cursor: 'look',
+        click: (g) => g.say('天花板上破了一個洞，上面一片漆黑，聽不到嗡嗡聲。太高了，跳不上去。'),
+        use: { ladder: (g) => g.go('l0_ceiling', { msg: '你把梯子架在洞口下面，爬了上去。' }) },
+      },
       { id: 'note', rect: bounds(n0cQuad, 8), label: '牆角的紙條', cursor: 'look', click: (g) => g.read('n0c') },
     ],
   },
@@ -669,8 +719,14 @@ export const SCENES = {
         use: {
           rod: (g) => {
             if (g.s.flags.tile_down) return g.say('上面已經什麼都沒有了。');
-            g.take('rod'); g.flag('tile_down'); g.sfx('open');
+            g.flag('tile_down'); g.sfx('open');
+            if (g.s.flags.cam_got) return g.say('你用吊桿往上一頂——天花板板連同一灘髒水砸了下來。只有水。');
+            g.flag('cam_got');
             g.give('camcorder', '你用吊桿往上一頂——天花板板連同一灘髒水砸了下來。水裡躺著一台攝影機，螢幕……還亮著。');
+          },
+          ladder: (g) => {
+            if (!g.s.flags.tile_down) return g.say('板子還在。梯子架上去，頭也只會頂到濕透的板子。');
+            g.go('l0_ceiling2', { msg: '你架起梯子，從洞口爬進天花板上方。' });
           },
         },
       },
@@ -702,6 +758,8 @@ export const SCENES = {
       else if (n === 3) g.say('右邊的牆……在閃。像訊號不良的螢幕一樣，一明一滅。');
       else g.say(LOOP_MSGS[n % LOOP_MSGS.length]);
       if (redCorner(g.s)) g.say('左邊多了一個轉角。轉角後面，透出一點暗紅色的光。');
+      const m = g.s.flags.chalk_loop;
+      if (m !== undefined && n > m) g.say(g.s.view ? '你畫的記號不見了。……可是觀景窗裡，牆上密密麻麻全是記號，不只你畫的那一道。' : '你畫的記號不見了。牆面乾乾淨淨，像從來沒人碰過。');
     },
     draw(ctx, t, s, R) {
       if (s.loops >= 2) {
@@ -717,17 +775,36 @@ export const SCENES = {
         ctx.restore();
       }
     },
-    drawView(ctx, t, s, R) { if (s.loops < 3) drawGlitchWall(ctx, R, t); },
+    drawView(ctx, t, s, R) {
+      if (s.loops < 3) drawGlitchWall(ctx, R, t);
+      if (s.flags.chalk_loop !== undefined) {
+        // every mark anyone ever made here, still on the wall
+        for (let i = 0; i < 26; i++) {
+          const z = 1.3 + (i % 6) * 0.11, y = -0.4 + Math.floor(i / 6) * 0.22;
+          seg(ctx, P(1, y, z), P(1, y + 0.14, z + 0.02), CHALK, 2);
+        }
+      }
+    },
     hotspots: [
       { ...FORWARD('l0_loop', '繼續往前'), click: (g) => { g.s.loops++; g.go('l0_loop'); } },
       BACK('l0_hall'),
+      {
+        id: 'mark', rect: bounds(wallQuad(1, -0.5, 0.6, 1.25, 1.9), 4), label: '右邊的牆', cursor: 'look',
+        click: (g) => g.say('黃色的壁紙。和別處一模一樣。'),
+        use: {
+          chalk: (g) => {
+            g.flag('chalk_loop', g.s.loops);
+            g.say('你用粉筆在牆上畫了一道記號。下一圈，你就會知道自己有沒有走回這裡。');
+          },
+        },
+      },
       { id: 'redroom', when: redCorner, rect: bounds(redOpening, 4), label: '泛著紅光的轉角', cursor: 'go', click: (g) => g.go('l0_red') },
       {
         id: 'cabinet', when: (s) => s.loops >= 2, rect: boxRect(cabinet, 6), label: '木櫃', cursor: 'look',
         click: (g) => {
           if (g.s.flags.cabinet) return g.say('抽屜是空的。');
           g.flag('cabinet');
-          g.give('almond', '抽屜裡有一瓶杏仁水。瓶身上用你的筆跡寫著：「撐下去。」');
+          g.give('almond', '抽屜裡有一瓶杏仁水。瓶身上有人寫著：「撐下去。」字跡很像你的，又好像不太像。');
         },
       },
       {
@@ -772,7 +849,7 @@ export const SCENES = {
         click: (g) => g.read('n0b', () => {
           if (g.s.flags.n0b_seen) return;
           g.flag('n0b_seen'); g.sanity(-4);
-          g.say('這是你的筆跡。你很確定。可是你不記得自己寫過。');
+          g.say('字跡很眼熟。眼熟到讓你不舒服。');
         }),
       },
     ],
@@ -849,7 +926,7 @@ export const SCENES = {
       {
         id: 'bottles', rect: bounds(pile.map(([x, z]) => P(x, 1, z)).concat([P(0.4, 0.7, 2.0), P(1.2, 0.7, 2.2)]), 12), label: '一堆空瓶', cursor: 'look',
         click: (g) => {
-          g.say('幾十個空的杏仁水瓶子。每一個的標籤上，都用你的筆跡寫著同一個日期：1 月 20 日。');
+          g.say('幾十個空的杏仁水瓶子。標籤上都寫著日期：有的是 1 月 20 日，有的是 1 月 21 日，有的日期被反覆塗掉，看不出原本寫什麼。');
           if (!g.s.flags.bottles) { g.flag('bottles'); g.sanity(-3); }
         },
       },
@@ -928,10 +1005,10 @@ export const SCENES = {
           camcorder: (g) => {
             if (!allTapesWatched(g.s)) {
               const n = EXTRA_TAPES.filter((id) => g.s.flags[`watched_${id}`]).length;
-              return g.say(`你把攝影機的螢幕轉向他。他看了一眼，搖搖頭。「我都看過了。」${n ? '……他好像在等你帶來別的東西。' : ''}`);
+              return g.say(`你把攝影機的螢幕轉向他。他看了一眼，搖搖頭。「這段我看過。」${n ? '「還少了幾段。」' : ''}`);
             }
             g.flag('freed_jh'); g.sfx('whirr');
-            g.say('你把三卷帶子的畫面一段一段放給他看：施工中的房子、插座裡的錄音機、紅色的房間。看完最後一段，他沉默了很久。「……原來我一直都不是一個人。」他扶著牆，慢慢站了起來。「出口見。這次換我跟著你。」他走出門外，消失在黃色的光裡。');
+            g.say('你把三卷帶子的畫面一段一段放給他看。看到最後，他笑了一下，像是認出了什麼。「……原來是這樣排的。」他扶著牆站起來，走出門外。你沒看見他離開——只是一眨眼，牆角就空了。');
           },
         },
         click: (g) => {
@@ -1043,6 +1120,11 @@ export const SCENES = {
       }
       poly(ctx, archBack, rgb(mul(hex(R.pal.fog), 1.2)));
       ctx.strokeStyle = shade(R, '#b8ad82', 6); ctx.lineWidth = 2; poly(ctx, archBack); ctx.stroke();
+      if (!s.flags.archive_open) {
+        poly(ctx, archDoor, shade(R, '#8a6a42', 4.4));
+        ctx.strokeStyle = shade(R, '#4a3820', 4.4); ctx.lineWidth = 2; poly(ctx, archDoor); ctx.stroke();
+        const k = P(1.8, 0.25, 4.15); ctx.fillStyle = shade(R, '#d8c08a', 4.2); ctx.fillRect(k[0] - 2, k[1] - 3, 4, 6);
+      }
       const c = P(-1.2, 1, 2.3);
       ctx.fillStyle = 'rgba(40,50,40,0.18)'; ctx.beginPath(); ctx.ellipse(c[0] + 60, c[1], 120, 16, 0, 0, Math.PI * 2); ctx.fill();
     },
@@ -1057,6 +1139,20 @@ export const SCENES = {
           g.sanity(25); g.drink(-8); g.eat(-8);
           g.checkpoint();
           g.say('你靠著拱門坐下，閉上眼睛。醒來時，房間還是原來的樣子——在這一層，這已經是奇蹟了。只是睡了一覺，又更渴、更餓了。（這裡記住了你的位置。）');
+        },
+      },
+      {
+        id: 'door', rect: bounds(archDoor, 4), label: '拱門裡的木門', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.archive_open) return g.say('只有這一道拱門裝了門。門上了鎖，鑰匙孔是黃銅的。');
+          g.go('l0_archive');
+        },
+        use: {
+          key: (g) => {
+            if (g.s.flags.archive_open) return g.say('門已經開了。');
+            g.take('key'); g.flag('archive_open'); g.sfx('open');
+            g.say('鑰匙轉得很順，像是常常有人來開。門後飄出一股舊紙張的味道。');
+          },
         },
       },
       { id: 'arch', rect: bounds(archBack, 6), label: '對面的拱門', cursor: 'look', click: (g) => g.say('拱門後面是另一間拱門的房間，再後面又是一間。走過去，也只會回到這裡。') },
@@ -1077,6 +1173,7 @@ export const SCENES = {
       if (h.row >= HOLE_ROWS) {
         box(ctx, R, ledge);
         if (!s.flags.holes_bag) box(ctx, R, bag);
+        poly(ctx, faceQuad(0.7, -0.5, 1.3, 1, 6.999), '#050402');
         return;
       }
       for (const [lane, z1, z2] of farPits) poly(ctx, laneTile(lane, z1, z2), 'rgba(0,0,0,0.75)');
@@ -1107,6 +1204,15 @@ export const SCENES = {
         label: `往${LANE_ZH[lane]}跨一步`, cursor: 'go',
         click: (g) => holeStep(g, lane),
         use: {
+          rod: (g) => g.say(g.s.holes.pits[LANES.indexOf(lane)]
+            ? '你用吊桿往前探——戳了個空。整根桿子伸下去，什麼都碰不到。'
+            : '你用吊桿往前探，桿尖敲到了地毯底下硬硬的地板。'),
+          ladder: (g) => {
+            if (!g.s.holes.pits[LANES.indexOf(lane)]) return g.say('那裡是地板，用不著梯子。');
+            g.sfx('click');
+            g.say('你把梯子橫架在坑口上，一格一格爬過去，再把梯子拉回來。');
+            holeStep(g, lane, true);
+          },
           almond_wet: (g) => {
             if (!g.s.holes.pits[LANES.indexOf(lane)]) return g.say('那裡是地板，不是坑。');
             g.take('almond_wet');
@@ -1115,6 +1221,10 @@ export const SCENES = {
           },
         },
       })),
+      {
+        id: 'passage', when: (s) => s.holes?.row >= HOLE_ROWS, rect: bounds(faceQuad(0.7, -0.5, 1.3, 1, 6.999), 10), label: '對面牆上的黑洞', cursor: 'go',
+        click: (g) => { g.s.holes = null; g.s.bo = { step: 0, dir: ['left', 'ahead', 'right'][Math.floor(Math.random() * 3)] }; g.go('l0_blackout', { msg: '你走進對面牆上的洞口。燈光在身後一下子就消失了。' }); },
+      },
       {
         id: 'bag', when: (s) => s.holes?.row >= HOLE_ROWS && !s.flags.holes_bag, rect: boxRect(bag, 8), label: '帆布背包', cursor: 'take',
         click: (g) => {
@@ -1137,11 +1247,20 @@ export const SCENES = {
       ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
       for (let i = 1; i < 6; i++) seg(ctx, P(-1.2, -1, 1.4 + i * 0.3), P(-1.2, 0.9, 1.5 + i * 0.3), ctx.strokeStyle, 1);
       for (const b of buckets.slice().reverse()) box(ctx, R, b);
+      if (!s.flags.ladder) {
+        const c = shade(R, '#b8bcc0', 3.6);
+        seg(ctx, P(1.2, -0.6, 3.4), P(0.95, 1, 3.4), c, 4); seg(ctx, P(1.2, -0.6, 3.8), P(0.95, 1, 3.8), c, 4);
+        for (let i = 1; i < 7; i++) { const y = -0.6 + i * 0.23, x = 1.2 - (i * 0.23) * 0.156; seg(ctx, P(x, y, 3.4), P(x, y, 3.8), c, 2); }
+      }
       poly(ctx, dryDoor, shade(R, '#a68a5c', 9));
       drawCaution(ctx, faceQuad(-0.32, -0.62, 0.32, -0.54, 8.999));
     },
     hotspots: [
       BACK('l0_wet'),
+      {
+        id: 'ladder', when: (s) => !s.flags.ladder, rect: bounds([P(1.2, -0.6, 3.4), P(0.95, 1, 3.8), P(1.2, -0.6, 3.8)], 10), label: '靠在牆上的折疊梯', cursor: 'take',
+        click: (g) => { g.flag('ladder'); g.give('ladder', '一把鋁製折疊梯，收起來不算重。梯腳上沾著新油漆。'); },
+      },
       { id: 'buckets', rect: bounds(buckets.flatMap((b) => [P(b.x1, b.y1, b.z1), P(b.x2, 1, b.z1)]), 8), label: '油漆桶', cursor: 'look', click: (g) => g.say('油漆還是濕的。標籤上印著一行小字：「後室重新裝修公司」。……在這種地方，誰會來裝修？') },
       { id: 'door', rect: bounds(dryDoor, 12), label: '施工中的門', cursor: 'go', click: (g) => g.go('l02_room', { msg: '你推開門。眼前是一間全新的房間——乾爽的地毯、剛刷好的牆，連插座都通著電。' }) },
     ],
@@ -1195,12 +1314,158 @@ export const SCENES = {
       { id: 'lamp', when: (s) => !s.flags.l02_collapsed, rect: [P(lamp.x, 0, lamp.z)[0] - 30, P(lamp.x, -0.2, lamp.z)[1], 60, 140], label: '立燈', cursor: 'look', click: (g) => g.say('一盞插著電的立燈。電線插在插座上，插座後面……接到哪裡去？') },
       {
         id: 'tape2', when: (s) => s.flags.l02_collapsed && !s.flags.tape2, rect: boxRect(tape2Box, 14), label: '地上的錄影帶', cursor: 'take',
-        click: (g) => { g.flag('tape2'); g.give('tape2', '木屑堆裡躺著一卷錄影帶，標籤上寫著「#2」。是你的筆跡。'); },
+        click: (g) => { g.flag('tape2'); g.give('tape2', '木屑堆裡躺著一卷錄影帶，標籤上寫著「#2」。'); },
       },
       {
         id: 'door', when: (s) => s.flags.l02_collapsed, rect: bounds(houseDoor, 10), label: '木門', cursor: 'go',
         click: (g) => { g.flag('l02_collapsed', false); g.go('l0_dry', { msg: '你衝出木門，身後傳來一陣崩塌聲。回頭看，門後又是那間乾淨的新房間——好像什麼都沒發生過。' }); },
       },
+    ],
+  },
+
+  l0_ceiling: {
+    level: 0, title: '天花板上面', room: l0Ceil, quiet: 0.25,
+    viewMsg: '觀景窗裡什麼都沒變。這裡大概從來不會變。',
+    enter(g, { first }) {
+      if (first) g.say('你爬進天花板上方的夾層。這裡沒有燈，只有底下的光從板子縫隙間透上來。嗡嗡聲……在你腳下。');
+    },
+    draw(ctx, t, s, R) {
+      tileSeams(ctx, R);
+      glowQuad(ctx, ceilHoleDown);
+      pipe(ctx, R, 1.2, -0.55, 0.16, '#6e6e66');
+      pipe(ctx, R, -0.9, -1, 0.08, '#55554e', false);
+      paper(ctx, R, faceQuad(0.6, 0.55, 1.0, 0.85, 6.999), 7, '#8f8770');
+      if (!s.flags.ceil_stash) box(ctx, R, ceilStash);
+    },
+    hotspots: [
+      { ...BACK('l0_low', '從洞口爬下去'), click: (g) => g.go('l0_low', { msg: '你踩著梯子爬回低矮的房間，順手把梯子收了下來。' }) },
+      FORWARD('l0_ceiling2', '在夾層裡往前爬', [380, 200, 200, 120]),
+      { id: 'note', rect: bounds(faceQuad(0.6, 0.55, 1.0, 0.85, 6.999), 10), label: '灰塵上的字', cursor: 'look', click: (g) => g.read('n0h') },
+      {
+        id: 'stash', when: (s) => !s.flags.ceil_stash, rect: boxRect(ceilStash, 8), label: '用塑膠袋包起來的東西', cursor: 'take',
+        click: (g) => {
+          g.flag('ceil_stash'); g.give('almond'); g.give('bar');
+          g.say('塑膠袋裡包著一瓶杏仁水和一條能量棒，袋子上寫著「上面的不會被拿走」。灰塵很厚，可是袋子是新的。');
+        },
+      },
+    ],
+  },
+
+  l0_ceiling2: {
+    level: 0, title: '天花板上面', room: l0Ceil, quiet: 0.25,
+    viewMsg: '觀景窗裡，通風管深處的東西反光得更亮了。',
+    enter(g, { first }) {
+      if (first) g.say('夾層往前延伸。左邊有一塊板子特別潮濕，右邊的地上有一片金屬格柵，牆邊伸出一截通風管。');
+    },
+    draw(ctx, t, s, R) {
+      tileSeams(ctx, R);
+      if (s.flags.tile_down) glowQuad(ctx, wetFromAbove);
+      else {
+        poly(ctx, wetFromAbove, shade(R, '#4a3e1a', 2.5));
+        if (!s.flags.cam_got) {
+          ctx.fillStyle = '#1e1f22'; ctx.fillRect(camAbove[0] - 16, camAbove[1] - 12, 32, 14);
+          if ((t * 1.2 | 0) % 2 === 0) { ctx.fillStyle = '#e33'; ctx.beginPath(); ctx.arc(camAbove[0] + 9, camAbove[1] - 8, 2, 0, Math.PI * 2); ctx.fill(); }
+        }
+      }
+      if (s.flags.grille_open) glowQuad(ctx, grille);
+      else {
+        poly(ctx, grille, shade(R, '#6a6a62', 3));
+        for (let i = 1; i < 6; i++) seg(ctx, P(0.6 + i * 0.133, 1, 2.6), P(0.6 + i * 0.133, 1, 3.4), shade(R, '#2a2a26', 3), 2);
+      }
+      box(ctx, R, duct);
+      poly(ctx, ductMouth, '#050403');
+      if (!s.flags.key) {
+        const k = P(-1.65, -0.38, 4.6);
+        ctx.fillStyle = `rgba(255,220,120,${0.5 + 0.4 * Math.sin(t * 3)})`; ctx.beginPath(); ctx.arc(k[0], k[1], 3, 0, Math.PI * 2); ctx.fill();
+      }
+    },
+    hotspots: [
+      BACK('l0_ceiling', '往回爬'),
+      {
+        id: 'camcorder', when: (s) => !s.flags.cam_got && !s.flags.tile_down, rect: [camAbove[0] - 30, camAbove[1] - 26, 60, 36], label: '板子上的東西', cursor: 'take',
+        click: (g) => { g.flag('cam_got'); g.give('camcorder', '濕透的板子上放著一台攝影機，像是有人特地擺在這裡。螢幕還亮著。'); },
+      },
+      {
+        id: 'wetdrop', rect: bounds(wetFromAbove, 4), label: '潮濕的板子', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.tile_down) return g.say('這塊板子泡得太軟了，撐不住你的重量。從底下把它頂掉，也許比較快。');
+          g.go('l0_wet', { msg: '你從洞口垂下梯子，爬回濕透的房間。' });
+        },
+      },
+      {
+        id: 'grille', rect: bounds(grille, 4), label: '金屬格柵', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.grille_open) return g.say('格柵用四顆螺絲鎖在框上。底下透出褪了色的光。');
+          g.flag('maze_done');
+          g.go('l0_faded', { msg: '你從格柵的洞口垂下梯子。底下是那間壁紙褪了色的房間——你沒有經過任何隔間就到了這裡。' });
+        },
+        use: {
+          screwdriver: (g) => {
+            if (g.s.flags.grille_open) return g.say('格柵已經拆下來了。');
+            g.flag('grille_open'); g.sfx('screw');
+            g.say('你一顆一顆轉開螺絲，把格柵挪到一邊。底下的房間，壁紙的顏色很淡。');
+          },
+        },
+      },
+      {
+        id: 'duct', rect: boxRect(duct, 4), label: '通風管', cursor: 'look',
+        click: (g) => g.say(g.s.flags.key ? '通風管裡空空的，只有灰塵。' : '通風管深處有東西在反光。太深了，手伸不進去。'),
+        use: {
+          rod: (g) => {
+            if (g.s.flags.key) return g.say('裡面已經沒有東西了。');
+            g.flag('key'); g.give('key', '你把吊桿伸進通風管，勾了好幾次，終於勾出一把小小的黃銅鑰匙。鑰匙上的標籤寫著：「別開」。');
+          },
+        },
+      },
+    ],
+  },
+
+  l0_archive: {
+    level: 0, title: '檔案室', room: l0Archive,
+    viewMsg: '觀景窗裡，每一個抽屜的標籤都在閃——只有一個沒有。',
+    enter(g, { first }) {
+      if (first) g.say('門後是一間狹長的房間，兩邊排滿了鐵灰色的檔案櫃。這一層不該有這種地方。這一層不該有任何人在記錄任何東西。');
+    },
+    draw(ctx, t, s, R) {
+      for (const b of [...cabinetsL, ...cabinetsR].sort((a, b) => b.z1 - a.z1)) {
+        box(ctx, R, b);
+        const x = b.x1 < 0 ? b.x2 : b.x1;
+        for (let i = 1; i < 4; i++) {
+          const y = -0.45 + i * 0.36;
+          seg(ctx, P(x, y, b.z1), P(x, y, b.z2), shade(R, '#4a4c46', b.z1), 1.5);
+          const hz = (b.z1 + b.z2) / 2;
+          const hp = P(x, y - 0.18, hz);
+          ctx.fillStyle = shade(R, '#e9e4d4', hz); ctx.fillRect(hp[0] - 3, hp[1] - 2, 6, 4);
+        }
+      }
+      poly(ctx, drawer0120, s.flags.archived_open ? '#0d0c08' : shade(R, '#8a8c84', 2));
+      box(ctx, R, archDesk);
+      if (!s.flags.chalk) { seg(ctx, chalkAt, [chalkAt[0] + 10, chalkAt[1] - 1], '#f2f0e8', 3); }
+      poly(ctx, cardQuad, shade(R, '#f2ecd8', 5.9));
+    },
+    hotspots: [
+      { ...BACK('l0_arches', '回到拱門的房間'), click: (g) => g.go('l0_arches') },
+      {
+        id: 'drawers', rect: [60, 150, 230, 300], label: '檔案櫃', cursor: 'look',
+        click: (g) => g.read('n_records', () => {
+          if (!g.s.flags.records_seen) { g.flag('records_seen'); g.sanity(-4); g.say('每一份記錄都只有一兩行。你翻了很久，找不到任何一個名字。'); }
+        }),
+      },
+      {
+        id: 'drawer0120', rect: bounds(drawer0120, 10), label: '標籤是新的抽屜', cursor: 'look',
+        click: (g) => { g.flag('archived_open'); g.say('抽屜的標籤寫著「0120」，墨水還沒全乾。裡面是空的。大小……剛好放得下一台攝影機。'); },
+        use: {
+          camcorder: (g) => {
+            g.take('camcorder');
+            g.end('archive');
+          },
+        },
+      },
+      {
+        id: 'chalk', when: (s) => !s.flags.chalk, rect: [chalkAt[0] - 16, chalkAt[1] - 14, 40, 24], label: '桌上的粉筆', cursor: 'take',
+        click: (g) => { g.flag('chalk'); g.give('chalk', '一截用到很短的粉筆。指尖沾上的粉，和隔間地上的箭頭是同一種白。'); },
+      },
+      { id: 'card', rect: bounds(cardQuad, 12), label: '桌上的卡片', cursor: 'look', click: (g) => g.read('n0i') },
     ],
   },
 
