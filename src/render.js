@@ -275,13 +275,29 @@ export function drawSmiler(ctx, x, y, s, a = 1, t = 0) {
   ctx.restore();
 }
 
+// A tall figure with no face, standing at screen point (x, y) = its feet, h pixels tall.
+export function drawFigure(ctx, x, y, h, a = 1) {
+  if (a <= 0) return;
+  const w = h * 0.22;
+  ctx.save();
+  ctx.fillStyle = `rgba(6,6,5,${a})`;
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.5, y); ctx.lineTo(x - w * 0.6, y - h * 0.62); ctx.lineTo(x - w * 0.45, y - h * 0.82);
+  ctx.lineTo(x + w * 0.45, y - h * 0.82); ctx.lineTo(x + w * 0.6, y - h * 0.62); ctx.lineTo(x + w * 0.5, y);
+  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y - h * 0.9, w * 0.32, h * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+  // arms too long for the body
+  ctx.fillRect(x - w * 0.75, y - h * 0.8, w * 0.14, h * 0.62); ctx.fillRect(x + w * 0.61, y - h * 0.8, w * 0.14, h * 0.62);
+  ctx.restore();
+}
+
 let darkCv = null;
-export function drawDark(ctx, mx, my, lightOn, t) {
+export function drawDark(ctx, mx, my, lightOn, t, opacity = 0.97) {
   if (!darkCv) { darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H; }
   const d = darkCv.getContext('2d');
   d.globalCompositeOperation = 'source-over';
   d.clearRect(0, 0, W, H);
-  d.fillStyle = 'rgba(0,0,0,0.97)';
+  d.fillStyle = `rgba(0,0,0,${opacity})`;
   d.fillRect(0, 0, W, H);
   if (lightOn) {
     d.globalCompositeOperation = 'destination-out';
@@ -294,6 +310,36 @@ export function drawDark(ctx, mx, my, lightOn, t) {
     d.fillRect(0, 0, W, H);
   }
   ctx.drawImage(darkCv, 0, 0);
+}
+
+// Looking through the camcorder: a desaturated green picture, corner brackets and status text.
+export function drawViewfinder(ctx, t, o = {}) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'saturation';
+  ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = '#b4f2c4'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = 'rgba(16,48,26,0.35)'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(225,255,232,0.75)'; ctx.lineWidth = 3;
+  const mx = 34, top = 70, bot = H - 70, L = 34;
+  for (const [x, y, dx, dy] of [[mx, top, 1, 1], [W - mx, top, -1, 1], [mx, bot, 1, -1], [W - mx, bot, -1, -1]]) {
+    ctx.beginPath(); ctx.moveTo(x, y + dy * L); ctx.lineTo(x, y); ctx.lineTo(x + dx * L, y); ctx.stroke();
+  }
+  ctx.lineWidth = 1.5;
+  seg(ctx, [CX - 14, CY], [CX + 14, CY], 'rgba(225,255,232,0.5)', 1.5);
+  seg(ctx, [CX, CY - 14], [CX, CY + 14], 'rgba(225,255,232,0.5)', 1.5);
+  ctx.font = '600 16px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillStyle = 'rgba(225,255,232,0.85)';
+  ctx.textBaseline = 'top';
+  ctx.fillText(o.tape ? 'CAM' : 'CAM  STBY', mx + 10, bot - 26);
+  if (!o.tape && (t * 1.5 | 0) % 2 === 0) { ctx.textAlign = 'center'; ctx.fillText('NO TAPE', CX, top + 4); ctx.textAlign = 'left'; }
+  // battery: one bar left
+  const bx = W - mx - 52, by = bot - 26;
+  ctx.strokeStyle = 'rgba(225,255,232,0.85)'; ctx.strokeRect(bx, by, 40, 16); ctx.fillRect(bx + 40, by + 5, 4, 6);
+  if ((t * 2 | 0) % 2 === 0) ctx.fillRect(bx + 3, by + 3, 10, 10);
+  ctx.restore();
 }
 
 let noiseFrames = null;
@@ -319,16 +365,24 @@ export function postFX(ctx, t, o = {}) {
   if (!noiseFrames) makeNoise();
   const stress = clamp(o.stress ?? 0, 0, 1);
   ctx.save();
-  ctx.globalAlpha = 0.06 + stress * 0.1;
+  ctx.globalAlpha = 0.08 + stress * 0.12;
   ctx.globalCompositeOperation = 'overlay';
   ctx.drawImage(noiseFrames[(t * 24 | 0) % 4], 0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
   for (let y = (t * 30 | 0) % 3; y < H; y += 3) ctx.fillRect(0, y, W, 1);
-  const v = ctx.createRadialGradient(CX, CY, H * 0.35, CX, CY, W * 0.62);
+  const v = ctx.createRadialGradient(CX, CY, H * 0.28, CX, CY, W * 0.6);
   v.addColorStop(0, 'rgba(0,0,0,0)');
-  v.addColorStop(1, `rgba(0,0,0,${0.55 + stress * 0.3})`);
+  v.addColorStop(1, `rgba(0,0,0,${0.7 + stress * 0.25})`);
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, W, H);
+  // everything a little greyer and dimmer than it should be
+  ctx.globalCompositeOperation = 'saturation';
+  ctx.fillStyle = 'rgba(128,128,128,0.22)'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = 'rgb(222,218,210)'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = v;
   ctx.fillRect(0, 0, W, H);
   if (stress > 0.55) {

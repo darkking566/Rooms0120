@@ -71,7 +71,16 @@ export class Sound {
     this.bus.gain.setTargetAtTime(1, now, 0.6);
     const add = (src, ...rest) => { this.chain(src, ...rest, this.bus); src.start(); this.sources.push(src); };
 
-    if (lv === 0) {
+    if (lv === '0.1') {
+      add(this.node('Oscillator', { type: 'sine', frequency: 84 }), this.node('Gain', { gain: 0.04 }));
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 1100, Q: 1.8 }), this.node('Gain', { gain: 0.025 }));
+    } else if (lv === '0.3') {
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 650 }), this.node('Gain', { gain: 0.12 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 160 }), this.node('Gain', { gain: 0.012 }));
+    } else if (lv === '0.5') {
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 220 }), this.node('Gain', { gain: 0.16 }));
+      this.timers.push(setInterval(() => this.drip(), 900));
+    } else if (lv === 0 || lv === 0.2 || lv === '0.7') {
       add(this.node('Oscillator', { type: 'sawtooth', frequency: 118 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 260 }), this.node('Gain', { gain: 0.05 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 59 }), this.node('Gain', { gain: 0.05 }));
       add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 3200, Q: 0.7 }), this.node('Gain', { gain: 0.006 }));
@@ -79,12 +88,37 @@ export class Sound {
       add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 300 }), this.node('Gain', { gain: 0.12 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 50 }), this.node('Gain', { gain: 0.02 }));
       this.timers.push(setInterval(() => { if (Math.random() < 0.5) this.drip(); }, 1400));
+      add(this.node('Oscillator', { type: 'sawtooth', frequency: 37 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 90 }), this.node('Gain', { gain: 0.05 }));
+      // something heavy, far away, every now and then
+      this.timers.push(setInterval(() => { if (Math.random() < 0.22) this.bang(); }, 4200));
     } else {
       add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 150 }), this.node('Gain', { gain: 0.25 }));
       add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'highpass', frequency: 4000 }), this.node('Gain', { gain: 0.008 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 42 }), this.node('Gain', { gain: 0.06 }));
       this.timers.push(setInterval(() => { if (Math.random() < 0.3) this.groan(); }, 2500));
     }
+  }
+
+  // How loud the level's ambience is in this scene (1 = normal).
+  setQuiet(k) {
+    this.quiet = k;
+    if (this.ac && this.bus && !this.humDir) this.bus.gain.setTargetAtTime(k, this.ac.currentTime, 0.4);
+  }
+
+  // A single humming light somewhere in the dark, panned to where it is (null = none).
+  setHum(dir) {
+    if (!this.ac || this.humDir === dir) return;
+    this.humDir = dir;
+    if (this.hum) { const h = this.hum; h.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.15); setTimeout(() => { try { h.o.stop(); } catch { /* stopped */ } }, 800); this.hum = null; }
+    if (this.bus) this.bus.gain.setTargetAtTime(dir ? 0.08 : this.quiet ?? 1, this.ac.currentTime, 0.3);
+    if (!dir) return;
+    const o = this.node('Oscillator', { type: 'sawtooth', frequency: 121 });
+    const g = this.node('Gain', { gain: 0 });
+    const pan = this.ac.createStereoPanner ? this.node('StereoPanner', { pan: dir === 'left' ? -0.95 : dir === 'right' ? 0.95 : 0 }) : this.node('Gain');
+    this.chain(o, this.node('BiquadFilter', { type: 'lowpass', frequency: dir === 'ahead' ? 700 : 420 }), g, pan, this.master);
+    o.start();
+    g.gain.setTargetAtTime(0.09, this.ac.currentTime, 0.4);
+    this.hum = { o, g };
   }
 
   env(peak, dur, attack = 0.005) {
@@ -111,6 +145,11 @@ export class Sound {
     s.start(); s.stop(this.ac.currentTime + dur + 0.05);
   }
 
+  bang() {
+    if (!this.ac) return;
+    this.tone('sine', 55 + Math.random() * 20, 30, 1.4, 0.12);
+    this.burst(0.6, 0.06, 'lowpass', 180, this.brown);
+  }
   drip() { if (this.ac) this.tone('sine', 1400 + Math.random() * 500, 500, 0.18, 0.05); }
   groan() { if (this.ac) this.tone('sawtooth', 70 + Math.random() * 30, 45, 1.6, 0.03); }
 
@@ -127,6 +166,13 @@ export class Sound {
       case 'click': this.burst(0.03, 0.2, 'highpass', 2000); break;
       case 'open': this.burst(0.8, 0.35, 'lowpass', 400, this.brown); this.tone('sine', 90, 50, 0.4, 0.3); break;
       case 'steam': this.burst(1.3, 0.3, 'highpass', 1500); break;
+      case 'knock': for (let i = 0; i < 3; i++) setTimeout(() => { this.tone('sine', 120, 60, 0.12, 0.35); this.burst(0.08, 0.2, 'lowpass', 400, this.brown); }, i * 260); break;
+      case 'static': this.burst(1.4, 0.12, 'bandpass', 2400); this.tone('square', 600, 580, 0.6, 0.015); break;
+      case 'eat': for (let i = 0; i < 3; i++) setTimeout(() => this.burst(0.07, 0.15, 'bandpass', 900 + Math.random() * 600), i * 140); break;
+      case 'surge': this.tone('sawtooth', 118, 124, 2.2, 0.22); this.burst(2, 0.06, 'highpass', 5000); break;
+      case 'whirr': this.tone('square', 1200, 1700, 0.18, 0.025); this.burst(0.35, 0.08, 'bandpass', 2600); break;
+      case 'thud': this.tone('sine', 110, 40, 0.35, 0.45); this.burst(0.15, 0.25, 'lowpass', 300, this.brown); break;
+      case 'groan': this.groan(); break;
       case 'page': this.burst(0.2, 0.12, 'bandpass', 1800); break;
       case 'sting':
         for (const f of [233, 247, 370, 523]) this.tone('sawtooth', f, f * 0.94, 1.5, 0.09);

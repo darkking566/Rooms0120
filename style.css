@@ -30,17 +30,21 @@ button.ghost { background: transparent; color: var(--muted); }
 #hud { position: absolute; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 12px; pointer-events: none; font-family: var(--mono); }
 #hud > * { pointer-events: auto; }
 #lvl { display: flex; flex-direction: column; text-shadow: 0 1px 3px #000; }
-#lvl b { font-size: 18px; letter-spacing: 0.12em; color: var(--accent); }
+#lvl b { white-space: nowrap; font-size: 18px; letter-spacing: 0.12em; color: var(--accent); }
 #lvl span { font-size: 12px; color: var(--fg); opacity: 0.8; }
+#lvl #hazard { max-width: 280px; margin-top: 6px; padding: 4px 6px; color: #c9e4e1; background: rgba(8, 22, 26, 0.85); border-left: 2px solid #83b7bf; line-height: 1.5; }
 #hudR { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; align-items: center; }
 #hudR button { font-size: 12px; padding: 4px 8px; }
-#san { display: flex; align-items: center; gap: 6px; font-size: 12px; text-shadow: 0 1px 3px #000; }
-#san i { display: block; width: 110px; height: 8px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.6); }
-#san b { display: block; height: 100%; width: 100%; background: var(--accent); transition: width 0.4s; }
-#san b[data-low="1"] { background: var(--danger); animation: pulse 1s infinite; }
+.meter { display: flex; align-items: center; gap: 6px; font-size: 12px; text-shadow: 0 1px 3px #000; }
+.meter i { display: block; width: 110px; height: 8px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.6); }
+.meter b { display: block; height: 100%; width: 100%; background: var(--accent); transition: width 0.4s; }
+.meter.need i { width: 56px; }
+#thirst b { background: #5fa8d3; }
+#hunger b { background: #d39a4a; }
+.meter b[data-low="1"], #thirst b[data-low="1"], #hunger b[data-low="1"] { background: var(--danger); animation: pulse 1s infinite; }
 
 #tip { position: absolute; z-index: 5; pointer-events: none; font-size: 13px; padding: 3px 8px; background: rgba(0, 0, 0, 0.75); border: 1px solid var(--line); border-radius: 3px; white-space: nowrap; }
-#msg { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); width: min(86%, 680px); padding: 10px 16px; text-align: center; font-size: 15px; line-height: 1.6; background: rgba(0, 0, 0, 0.72); border-left: 3px solid var(--accent); pointer-events: none; z-index: 4; }
+#msg { position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); width: min(86%, 680px); padding: 10px 16px; text-align: center; font-size: 15px; line-height: 1.6; background: rgba(0, 0, 0, 0.72); border-left: 3px solid var(--accent); pointer-events: none; z-index: 4; white-space: pre-line; }
 #msg.show { animation: rise 0.25s ease-out; }
 
 .modal { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); padding: 16px; }
@@ -73,7 +77,7 @@ button.ghost { background: transparent; color: var(--muted); }
 .screen .hint { margin: 0; font-size: 13px; color: var(--muted); }
 .screen .row button { font-size: 16px; padding: 10px 26px; }
 #ending h2 { margin: 0; font-family: var(--mono); color: var(--accent); letter-spacing: 0.15em; }
-#ending[data-kind="lost"] h2 { color: var(--danger); }
+#ending[data-kind="lost"] h2, #ending[data-kind="red"] h2, #ending[data-kind="fall"] h2, #ending[data-kind="thirst"] h2, #ending[data-kind="starve"] h2, #ending[data-kind="archive"] h2 { color: var(--danger); }
 #endLines { max-width: 560px; }
 #endLines p { margin: 6px 0; line-height: 1.7; opacity: 0; animation: fadein 1.2s forwards; }
 #endStats { font-family: var(--mono); font-size: 13px; color: var(--muted); }
@@ -87,14 +91,20 @@ button.ghost { background: transparent; color: var(--muted); }
 .slot.sel { border-color: var(--accent); background: rgba(227, 201, 94, 0.15); box-shadow: 0 0 0 1px var(--accent) inset; }
 #credit { margin: 10px 2px 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 #credit a { color: var(--accent); }
+#sources { margin: 8px 2px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+#sources summary { cursor: pointer; }
+#sources a { color: var(--accent); overflow-wrap: anywhere; }
+#sources ul { padding-left: 20px; }
 
 @media (max-width: 640px) {
   #wrap { padding-block: 16px 24px; }
   #hud { padding: 6px; }
   #lvl b { font-size: 13px; }
   #lvl span { font-size: 10px; }
-  #san i { width: 60px; }
-  #san span { display: none; }
+  .meter i { width: 60px; }
+  .meter.need i { width: 30px; }
+  .meter span { display: none; }
+  #lvl #hazard { max-width: 145px; font-size: 9px; }
   #hudR button { font-size: 11px; padding: 3px 6px; }
   #msg { font-size: 13px; bottom: 4%; padding: 6px 10px; }
   .slot { width: 70px; }

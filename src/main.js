@@ -1,5 +1,5 @@
 // Game loop, state, input and UI glue.
-import { W, H, drawRoom, postFX, drawDark, drawSmiler, clamp } from './render.js';
+import { W, H, P, drawRoom, postFX, drawDark, drawSmiler, drawViewfinder, drawFigure, box, boxRect, clamp } from './render.js';
 import { SCENES, LEVELS, smilerRect, drawSmilers } from './scenes.js';
 import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
@@ -13,8 +13,8 @@ const ctx = cv.getContext('2d');
 const sound = new Sound();
 
 const fresh = () => ({
-  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false,
-  loops: 0, seen: {}, moves: 0, clock: 0, flicker: null,
+  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false, thirst: 100, hunger: 100,
+  loops: 0, maze: 0, bo: null, holes: null, dread: 0, ghost: null, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
 let S = fresh();
@@ -25,11 +25,16 @@ let mouse = { x: W / 2, y: H / 2 };
 let fade = 0, scareT = 0, scareBack = null, scareMsg = null;
 // per-visit smiler state: time spent with a light on, eye-contact progress, time spent looking away
 let lightT = 0, stare = 0, panicT = 0;
+// seconds spent in the current scene, and the shake left over from a hum surge
+let sceneT = 0, surgeT = 0;
 let docAfter = null;
 let scareKind = 'smiler';
 let modal = null;
 let msgTimer = null;
 let ended = false;
+// while moving between scenes, messages are collected and shown together
+let collecting = null;
+let lostTimer = null;
 
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -50,24 +55,43 @@ const g = {
     sound.sfx('step');
     S.scene = id;
     S.moves++;
-    lightT = 0; stare = 0; panicT = 0;
+    lightT = 0; stare = 0; panicT = 0; sceneT = 0;
     hover = null;
     if (sc.safe && S.flicker) {
       S.flicker = null;
       msg = '你躲進門後，屏住呼吸。門外傳來某種東西拖行的聲音……過了很久，燈才亮回來。';
     }
     sound.setLevel(sc.level);
+    sound.setQuiet(sc.quiet ?? 1);
+    sound.setHum(sc.hum?.(S) ?? null);
     const first = !S.seen[id];
     S.seen[id] = true;
-    if (msg) g.say(msg);
-    sc.enter?.(g, { first });
-    if (!free) g.sanity(-LEVELS[sc.level].drain);
-    if (sc.level !== prevLevel) store.set(CP_KEY, S);
-    if (S.sanity > 0 && S.sanity < 35 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
+    collecting = [];
+    try {
+      if (msg) g.say(msg);
+      sc.enter?.(g, { first });
+      if (!free) {
+        g.sanity(-LEVELS[sc.level].drain);
+        needs(LEVELS[sc.level]);
+      }
+      // Level 0: the hum sometimes surges without warning
+      if (sc.level === 0 && !free && !sc.trap && !sc.hum && !sc.quiet && S.moves > 4 && Math.random() < 0.07) {
+        sound.sfx('surge'); surgeT = 1.6; g.sanity(-2);
+        g.say('嗡嗡聲忽然暴漲，像有人把音量轉到最大。你摀住耳朵，直到它慢慢退下去。');
+      }
+      if (sc.level !== prevLevel) store.set(CP_KEY, S);
+      follower(sc, id, free);
+      if (S.sanity > 0 && S.sanity < 50 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
+    } finally {
+      const msgs = collecting;
+      collecting = null;
+      if (msgs.length) g.say(msgs.join('\n'));
+    }
     updateHud();
     save();
   },
   say(text) {
+    if (collecting) { collecting.push(text); return; }
     const el = $('#msg');
     el.textContent = text;
     el.hidden = false;
@@ -75,12 +99,14 @@ const g = {
     clearTimeout(msgTimer);
     msgTimer = setTimeout(() => { el.hidden = true; }, 2600 + text.length * 70);
   },
-  give(id, msg) { S.inv.push(id); sound.sfx('pick'); renderInv(); if (msg) g.say(msg); },
+  give(id, msg) { S.inv.push(id); sound.sfx('pick'); renderInv(); updateHud(); if (msg) g.say(msg); },
   take(id) {
     const i = S.inv.indexOf(id);
     if (i >= 0) S.inv.splice(i, 1);
     if (selected === id && !S.inv.includes(id)) selected = null;
+    if (!S.inv.includes('camcorder')) S.view = false;
     renderInv();
+    updateHud();
   },
   has: (id) => S.inv.includes(id),
   flag(k, v = true) { S.flags[k] = v; },
@@ -95,8 +121,14 @@ const g = {
   sanity(d) {
     S.sanity = clamp(S.sanity + d, 0, 100);
     updateHud();
-    if (S.sanity <= 0 && !ended) setTimeout(() => g.end('lost'), 700);
+    if (S.sanity <= 0 && !ended && !lostTimer) lostTimer = setTimeout(() => {
+      lostTimer = null;
+      if (playing && S.sanity <= 0) g.end(S.thirst <= 0 ? 'thirst' : S.hunger <= 0 ? 'starve' : 'lost');
+    }, 700);
   },
+  // water and food, 0..100
+  drink(d) { S.thirst = clamp((S.thirst ?? 100) + d, 0, 100); updateHud(); },
+  eat(d) { S.hunger = clamp((S.hunger ?? 100) + d, 0, 100); updateHud(); },
   sfx: (n) => sound.sfx(n),
   setLight(on) {
     if (!g.has('torch')) return;
@@ -104,15 +136,29 @@ const g = {
     sound.sfx('click');
     updateHud();
   },
+  // Raise or lower the camcorder. Through the viewfinder, a scene's drawView layer becomes visible.
+  setView(on) {
+    if (!g.has('camcorder')) return;
+    S.view = on;
+    sound.sfx('whirr');
+    if (on) {
+      const m = SCENES[S.scene].viewMsg;
+      g.say((typeof m === 'function' ? m(S) : m) || '觀景窗裡的畫面，和肉眼看到的沒什麼不同。');
+    }
+    updateHud();
+    save();
+  },
+  checkpoint() { store.set(CP_KEY, S); },
   keypad(code, ok) { openKeypad(code, ok); },
   dials(cfg) { openDials(cfg); },
-  scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。') {
+  scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。', dmg = 25, kind = null) {
     if (scareT > 0 || ended) return;
     scareT = 1.1;
     scareBack = back;
     scareMsg = msg;
+    if (kind) scareKind = kind;
     sound.sfx('sting');
-    g.sanity(-25);
+    g.sanity(-dmg);
   },
   // Level 1 "Flickering": the lights die a moment later and you have seconds to reach a green EXIT door.
   flickerSoon() {
@@ -124,17 +170,57 @@ const g = {
     if (ended) return;
     ended = true;
     closeModal();
+    sound.setHum(null);
     if (kind === 'escape') { store.del(SAVE_KEY); store.del(CP_KEY); }
     showEnding(kind);
   },
 };
+
+// Each step uses up water and food. Running out of either eats away at your sanity.
+function needs(L) {
+  const t0 = S.thirst ?? 100, h0 = S.hunger ?? 100;
+  S.thirst = clamp(t0 - L.thirst, 0, 100);
+  S.hunger = clamp(h0 - L.hunger, 0, 100);
+  if (S.thirst <= 0) g.sanity(-3);
+  if (S.hunger <= 0) g.sanity(-2);
+  if (t0 > 0 && S.thirst <= 0) g.say('你已經渴到頭暈眼花，每走一步都像踩在棉花上。再不喝水，你撐不了多久。');
+  else if (t0 >= 25 && S.thirst < 25) g.say('喉嚨乾得發痛，舌頭黏在上顎。得找點喝的。');
+  if (h0 > 0 && S.hunger <= 0) g.say('胃絞成一團。你盯著腳下的地毯，有一瞬間竟然覺得它看起來可以吃。');
+  else if (h0 >= 25 && S.hunger < 25) g.say('肚子餓得咕咕叫。你已經想不起上一次吃東西是什麼時候。');
+}
 
 const WHISPERS = [
   '你聽見有人在叫你的名字。不，是燈管的聲音。',
   '牆壁好像在呼吸。',
   '你的手在發抖。也許該喝點什麼。',
   '你忘了自己為什麼要往前走。',
+  '你試著回想外面的天空是什麼顏色。想不起來。',
+  '有人在你耳邊數數。數到你的時候停了。',
+  '你的影子比你慢了半步。',
+  '你突然很確定，這不是你第一次走到這裡。',
+  '你想不起上一次聽見別人的聲音，是什麼時候。',
 ];
+
+// Level 1: something keeps pace with you in the halls. Corridors and safe rooms shake it off.
+const GHOST_LOOT = ['almond', 'bar', 'can', 'almond'];
+function follower(sc, id, free) {
+  if (S.ghost && S.ghost.scene !== id) S.ghost = null;
+  if (sc.safe) { if (S.dread >= 3) g.say('你靠在門後，聽著外面的腳步聲慢慢走遠。'); S.dread = 0; return; }
+  if (sc.level !== 1 || !sc.hall || free) return;
+  // a supply crate can appear behind you, and vanish once you stop looking
+  if (!S.ghost && Math.random() < 0.15) {
+    S.ghost = { scene: id, loot: GHOST_LOOT[Math.floor(Math.random() * GHOST_LOOT.length)] };
+    g.say('你回頭的時候，身後多了一個木箱。剛才明明沒有。');
+  }
+  S.dread = (S.dread || 0) + (S.flicker ? 2 : 1);
+  if (S.dread >= 8) {
+    S.dread = 0;
+    g.scare('l1_corridor', '霧裡的人影一下子就到了你面前。它沒有臉。你不記得自己是怎麼逃進走廊的，只記得它的手指很長、很冷。', 18, 'figure');
+  } else if (S.dread >= 7) g.say('腳步聲就在你背後。你不敢回頭。');
+  else if (S.dread >= 5) g.say('霧裡有個人影，一直和你保持著同樣的距離。你停下來，它也停下來。');
+  else if (S.dread === 3) g.say('你身後的腳步聲，和你的步伐對不上。');
+}
+const GHOST_CRATE = { x1: -0.35, x2: 0.35, y1: 0.55, y2: 1, z1: 1.6, z2: 2.0, color: '#7a5e3c', edge: true };
 
 // ---------- hotspots & input ----------
 const roomOf = (sc) => (typeof sc.room === 'function' ? sc.room(S) : sc.room);
@@ -144,6 +230,12 @@ const staring = (sc) => smilerOn(sc) && sc.smiler.mode === 'stare';
 function visible() {
   const sc = SCENES[S.scene];
   const hs = sc.hotspots.filter((h) => !h.when || h.when(S));
+  if (S.ghost && S.ghost.scene === S.scene) {
+    hs.push({
+      id: 'ghostcrate', rect: boxRect(GHOST_CRATE, 6), label: '突然出現的木箱', cursor: 'take',
+      click: () => { const it = S.ghost.loot; S.ghost = null; g.give(it, `你撬開木箱。裡面有一份「${ITEMS[it].name}」。你一移開視線，木箱就不見了。`); save(); },
+    });
+  }
   if (staring(sc)) {
     hs.push({ id: 'smiler', rect: smilerRect(sc.smiler), label: '盯著牠的眼睛', cursor: 'look', click: () => g.say('你盯著那對眼睛，不敢眨眼，也不敢呼吸。') });
   }
@@ -190,6 +282,8 @@ cv.addEventListener('pointerdown', (e) => {
     renderInv();
     if (h.use?.[item]) h.use[item](g);
     else g.say(`「${ITEMS[item].name}」在這裡派不上用場。`);
+    updateHud();
+    save();
     return;
   }
   const sc = SCENES[S.scene];
@@ -198,6 +292,8 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
   h.click(g);
+  updateHud();
+  save();
 });
 
 window.addEventListener('keydown', (e) => {
@@ -206,6 +302,7 @@ window.addEventListener('keydown', (e) => {
     else if (selected) { selected = null; renderInv(); }
   }
   if ((e.key === 'f' || e.key === 'F') && playing && !modal && g.has('torch')) g.setLight(!S.light);
+  if ((e.key === 'v' || e.key === 'V') && playing && !modal && !ended && g.has('camcorder')) g.setView(!S.view);
 });
 
 // ---------- inventory ----------
@@ -252,22 +349,40 @@ function onSlot(id) {
     g.say(`${item.name}：${item.desc}${item.self ? '（再點一次直接使用）' : '（點畫面中的東西來使用）'}`);
   }
   renderInv();
+  updateHud();
+  save();
 }
 
 // ---------- HUD ----------
 function updateHud() {
   const L = LEVELS[SCENES[S.scene].level];
   $('#lvlName').textContent = L.name;
-  $('#lvlSub').textContent = `${L.sub}・${SCENES[S.scene].title}`;
+  const title = SCENES[S.scene].title;
+  $('#lvlSub').textContent = `${L.sub}・${typeof title === 'function' ? title(S) : title}`;
+  const hazard = SCENES[S.scene].hazard?.(S);
+  $('#hazard').hidden = !hazard;
+  $('#hazard').textContent = hazard || '';
   const fill = $('#sanFill');
   fill.style.width = `${S.sanity}%`;
   fill.dataset.low = S.sanity < 35 ? '1' : '';
   $('#san').title = `清醒度 ${Math.round(S.sanity)} / 100`;
+  for (const [k, name] of [['thirst', '水分'], ['hunger', '飽足']]) {
+    const v = S[k] ?? 100;
+    const f = $(`#${k}Fill`);
+    f.style.width = `${v}%`;
+    f.dataset.low = v < 25 ? '1' : '';
+    $(`#${k}`).title = `${name} ${Math.round(v)} / 100`;
+  }
   const bl = $('#btnLight');
   bl.hidden = !g.has('torch');
   bl.textContent = `手電筒：${S.light ? '開' : '關'}`;
   bl.setAttribute('aria-pressed', S.light ? 'true' : 'false');
+  const bv = $('#btnView');
+  bv.hidden = !g.has('camcorder');
+  bv.textContent = `觀景窗：${S.view ? '開' : '關'}`;
+  bv.setAttribute('aria-pressed', S.view ? 'true' : 'false');
 }
+$('#btnView').addEventListener('click', () => { if (playing && !modal && !ended) g.setView(!S.view); });
 $('#btnLight').addEventListener('click', () => g.setLight(!S.light));
 $('#btnSave').addEventListener('click', () => { g.say(store.set(SAVE_KEY, S) ? '已存檔。' : '這個瀏覽器無法存檔。'); });
 $('#btnMute').addEventListener('click', () => {
@@ -296,6 +411,8 @@ function closeModal() {
   const was = modal;
   modal = null;
   if (was === 'doc' && docAfter) { const f = docAfter; docAfter = null; f(); }
+  updateHud();
+  save();
 }
 $('#docClose').addEventListener('click', closeModal);
 $('#notesClose').addEventListener('click', closeModal);
@@ -357,17 +474,22 @@ function openDials(cfg) {
 
 // ---------- title / ending ----------
 function startGame(state) {
+  clearTimeout(lostTimer); lostTimer = null;
   sound.init();
   S = state;
+  S.thirst ??= 100; S.hunger ??= 100;
   ended = false;
   selected = null;
   playing = true;
   fade = 1;
+  sceneT = 0; surgeT = 0;
   $('#title').hidden = true;
   $('#ending').hidden = true;
   $('#hud').hidden = false;
   sound.level = null;
   sound.setLevel(SCENES[S.scene].level);
+  sound.humDir = undefined;
+  sound.setHum(SCENES[S.scene].hum?.(S) ?? null);
   renderInv();
   updateHud();
   if (!store.get(CP_KEY)) store.set(CP_KEY, S);
@@ -383,9 +505,57 @@ const ENDINGS = {
       '你推開那扇門。',
       '……風。真正的、冷冷的風。',
       '你站在一條陌生的街上，天快要亮了。路燈還亮著——發出熟悉的嗡嗡聲。',
+      '攝影機還在錄。你低頭看螢幕——畫面裡的街道，和你眼前的一模一樣。',
       '口袋裡多了一張紙條。是你自己的筆跡：',
-      '「記錄 0120：已歸檔。下一次，請小心一點。—— J.H.」',
-      '你這才想起來——J.H.，是你名字的縮寫。',
+      '「記錄 0120：已歸檔。下一次，請小心一點。」署名被水暈開了，只看得出一個 J。',
+      '你試著想起 J.H. 是誰。你想起一條走廊、一盞燈、一個坐在牆角的人。……你想不起自己的名字。',
+    ],
+  },
+  fall: {
+    title: '— 墜落結局 —',
+    lines: [
+      '燈光暗下去的那一瞬間，你一腳踩空。',
+      '下墜的時間長得不合理。',
+      '你一直在等撞擊。',
+      '它一直沒有來。',
+    ],
+  },
+  red: {
+    title: '— 紅房間結局 —',
+    lines: [
+      '你往紅光更深的地方走。',
+      '轉過一個彎，又一個彎。每一個轉角後面，都是同一間紅色的房間。',
+      '攝影機的螢幕早就只剩雜訊。',
+      '你開始在牆上刻記號，好記住自己繞了幾圈。',
+      '……正、正、正、正、正、正……',
+    ],
+  },
+  archive: {
+    title: '— 0120 —',
+    lines: [
+      '你把攝影機放進抽屜。紅燈還亮著。',
+      '你關上抽屜。嗡嗡聲變得很遠、很遠。',
+      '……',
+      '在某個黃色的房間裡，有人醒了過來。',
+      '牆上貼著一張皺巴巴的紙條。字跡……莫名地眼熟。',
+    ],
+  },
+  thirst: {
+    title: '— 脫水結局 —',
+    lines: [
+      '你的嘴唇裂開了，舌頭腫得說不出話。',
+      '地毯吸飽了水，踩下去會冒出來。',
+      '你跪下來，把臉貼在濕地毯上。',
+      '那股鹹味，是你最後記得的東西。',
+    ],
+  },
+  starve: {
+    title: '— 飢餓結局 —',
+    lines: [
+      '你已經很多天沒有吃東西了。',
+      '你蜷在牆角，數著燈管閃爍的次數，好忘記胃裡的痛。',
+      '嗡嗡聲越來越遠。',
+      '這一層不會讓你餓死。它只會讓你忘記自己為什麼要站起來。',
     ],
   },
   lost: {
@@ -406,7 +576,14 @@ function showEnding(kind) {
   $('#endTitle').textContent = E.title;
   const box = $('#endLines');
   box.innerHTML = '';
-  E.lines.forEach((t, i) => {
+  const lines = E.lines.slice();
+  if (kind === 'escape' && S.flags.freed_jh) {
+    $('#endTitle').textContent = '— 歸檔結局 —';
+    lines.splice(1, 0, '你身後傳來另一個腳步聲。你回頭——街上只有你一個人。可是地上有兩排腳印。');
+    lines.splice(lines.length - 2, 2, '「記錄 0120：對象離開了。對象們離開了。」', '紙條背面還有一行小字：「下一次，換誰坐在牆角？」');
+  } else if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。他後來站起來了嗎？');
+  if (kind === 'escape' && S.flags.wrote_start) lines.push('你在口袋裡摸到一截粉筆。你不記得自己把它帶出來了。');
+  lines.forEach((t, i) => {
     const p = document.createElement('p');
     p.textContent = t;
     p.style.animationDelay = `${0.4 + i * 1.3}s`;
@@ -414,14 +591,14 @@ function showEnding(kind) {
   });
   const found = S.notes.length, total = Object.keys(NOTES).length;
   $('#endStats').textContent = `走了 ${S.moves} 步・找到 ${found} / ${total} 張紙條`;
-  $('#btnRetry').hidden = kind !== 'lost' || !valid(store.get(CP_KEY));
+  $('#btnRetry').hidden = kind === 'escape' || !valid(store.get(CP_KEY));
   el.hidden = false;
   playing = false;
   $('#hud').hidden = true;
 }
 $('#btnRetry').addEventListener('click', () => {
   const cp = store.get(CP_KEY);
-  if (valid(cp)) startGame({ ...cp, sanity: Math.max(cp.sanity, 60) });
+  if (valid(cp)) startGame({ ...cp, sanity: Math.max(cp.sanity, 60), thirst: Math.max(cp.thirst ?? 100, 60), hunger: Math.max(cp.hunger ?? 100, 60) });
 });
 $('#btnAgain').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
 $('#btnNew').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
@@ -438,6 +615,7 @@ function frame(now) {
   if (playing) S.clock += dt;
 
   const active = playing && !modal && scareT <= 0 && !ended;
+  if (active && S.sanity > 0) sc.update?.(g, dt);
   if (active && S.flicker) {
     const f = S.flicker;
     if (f.delay > 0) {
@@ -450,6 +628,13 @@ function frame(now) {
         g.scare(S.scene, '有什麼東西在黑暗中撲了上來——你拚命掙脫。燈終於亮回來了，門上留著四道爪痕。');
         scareKind = 'claws';
       }
+    }
+  }
+  if (active) {
+    sceneT += dt;
+    if (sc.trap && (!sc.trap.when || sc.trap.when(S)) && sceneT > sc.trap.after) {
+      sceneT = -Infinity;
+      if (sc.trap.run) sc.trap.run(g); else g.end(sc.trap.end);
     }
   }
   if (active && smilerOn(sc)) {
@@ -476,6 +661,7 @@ function frame(now) {
   ctx.save();
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
+  if (surgeT > 0) { surgeT = Math.max(0, surgeT - dt); ctx.translate((Math.random() - 0.5) * surgeT * 6, (Math.random() - 0.5) * surgeT * 6); }
   if (stress > 0.6) ctx.translate(Math.sin(t * 2.1) * (stress - 0.6) * 10, Math.cos(t * 1.7) * (stress - 0.6) * 6);
   const R = roomOf(sc);
   const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
@@ -483,8 +669,16 @@ function frame(now) {
   drawRoom(ctx, R, t);
   if (stutter || R.bright !== 1) R.bright = 1;
   sc.draw?.(ctx, t, S, R);
-  if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t);
+  if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t, S.view && sc.nightshot ? 0.55 : 0.97);
   sc.drawOver?.(ctx, t, S, R);
+  if (S.ghost && S.ghost.scene === S.scene) box(ctx, R, GHOST_CRATE);
+  // the follower, standing in the fog; the viewfinder shows it closer than it looks
+  if (sc.level === 1 && sc.hall && (S.dread || 0) >= 2) {
+    const d = (S.dread || 0) + (S.view ? 2 : 0);
+    const z = Math.max(2.4, 10 - d * 0.95), f = P(0.35, 1, z), top = P(0.35, -0.75, z);
+    drawFigure(ctx, f[0], f[1], f[1] - top[1], Math.min(0.85, 0.25 + d * 0.08));
+  }
+  if (S.view) sc.drawView?.(ctx, t, S, R);
   if (smilerOn(sc)) {
     const approach = Math.max(lightT / 1.3, panicT / 2.5);
     drawSmilers(ctx, sc.smiler, 0.9, t, approach);
@@ -506,7 +700,9 @@ function frame(now) {
     }
   }
 
-  postFX(ctx, t, { stress, clock: S.clock, rec: playing });
+  if (playing && S.view) drawViewfinder(ctx, t, { tape: !!S.flags.tape_in });
+  // the REC overlay appears once a tape is in the camcorder (Levels 1+ always have one)
+  postFX(ctx, t, { stress, clock: S.clock, rec: playing && (!!S.flags.tape_in || sc.level >= 1) });
 
   if (fade > 0) {
     ctx.fillStyle = `rgba(0,0,0,${fade})`;
@@ -527,6 +723,8 @@ function frame(now) {
         ctx.beginPath(); ctx.moveTo(sx - 160 + i * 70, sy - 180); ctx.lineTo(sx - 60 + i * 70, sy + 180); ctx.stroke();
       }
       ctx.restore();
+    } else if (scareKind === 'figure') {
+      drawFigure(ctx, sx, H + 40, H * (1.2 + (1.1 - k) * 0.8), Math.min(1, k * 2));
     } else {
       drawSmiler(ctx, sx, sy, 5 + (1.1 - k) * 4, Math.min(1, k * 2), t);
     }
