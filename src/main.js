@@ -1,5 +1,5 @@
 // Game loop, state, input and UI glue.
-import { W, H, drawRoom, postFX, drawDark, drawSmiler, drawViewfinder, clamp } from './render.js';
+import { W, H, P, drawRoom, postFX, drawDark, drawSmiler, drawViewfinder, drawFigure, box, boxRect, clamp } from './render.js';
 import { SCENES, LEVELS, smilerRect, drawSmilers } from './scenes.js';
 import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
@@ -14,7 +14,7 @@ const sound = new Sound();
 
 const fresh = () => ({
   v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false, thirst: 100, hunger: 100,
-  loops: 0, maze: 0, bo: null, holes: null, seen: {}, moves: 0, clock: 0, flicker: null,
+  loops: 0, maze: 0, bo: null, holes: null, dread: 0, ghost: null, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
 let S = fresh();
@@ -79,7 +79,8 @@ const g = {
         g.say('嗡嗡聲忽然暴漲，像有人把音量轉到最大。你摀住耳朵，直到它慢慢退下去。');
       }
       if (sc.level !== prevLevel) store.set(CP_KEY, S);
-      if (S.sanity > 0 && S.sanity < 35 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
+      follower(sc, id, free);
+      if (S.sanity > 0 && S.sanity < 50 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
     } finally {
       const msgs = collecting;
       collecting = null;
@@ -146,13 +147,14 @@ const g = {
   checkpoint() { store.set(CP_KEY, S); },
   keypad(code, ok) { openKeypad(code, ok); },
   dials(cfg) { openDials(cfg); },
-  scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。') {
+  scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。', dmg = 25, kind = null) {
     if (scareT > 0 || ended) return;
     scareT = 1.1;
     scareBack = back;
     scareMsg = msg;
+    if (kind) scareKind = kind;
     sound.sfx('sting');
-    g.sanity(-25);
+    g.sanity(-dmg);
   },
   // Level 1 "Flickering": the lights die a moment later and you have seconds to reach a green EXIT door.
   flickerSoon() {
@@ -188,7 +190,33 @@ const WHISPERS = [
   '牆壁好像在呼吸。',
   '你的手在發抖。也許該喝點什麼。',
   '你忘了自己為什麼要往前走。',
+  '你試著回想外面的天空是什麼顏色。想不起來。',
+  '有人在你耳邊數數。數到你的時候停了。',
+  '你的影子比你慢了半步。',
+  '你突然很確定，這不是你第一次走到這裡。',
+  '你想不起上一次聽見別人的聲音，是什麼時候。',
 ];
+
+// Level 1: something keeps pace with you in the halls. Corridors and safe rooms shake it off.
+const GHOST_LOOT = ['almond', 'bar', 'can', 'almond'];
+function follower(sc, id, free) {
+  if (S.ghost && S.ghost.scene !== id) S.ghost = null;
+  if (sc.safe) { if (S.dread >= 3) g.say('你靠在門後，聽著外面的腳步聲慢慢走遠。'); S.dread = 0; return; }
+  if (sc.level !== 1 || !sc.hall || free) return;
+  // a supply crate can appear behind you, and vanish once you stop looking
+  if (!S.ghost && Math.random() < 0.15) {
+    S.ghost = { scene: id, loot: GHOST_LOOT[Math.floor(Math.random() * GHOST_LOOT.length)] };
+    g.say('你回頭的時候，身後多了一個木箱。剛才明明沒有。');
+  }
+  S.dread = (S.dread || 0) + (S.flicker ? 2 : 1);
+  if (S.dread >= 8) {
+    S.dread = 0;
+    g.scare('l1_corridor', '霧裡的人影一下子就到了你面前。它沒有臉。你不記得自己是怎麼逃進走廊的，只記得它的手指很長、很冷。', 18, 'figure');
+  } else if (S.dread >= 7) g.say('腳步聲就在你背後。你不敢回頭。');
+  else if (S.dread >= 5) g.say('霧裡有個人影，一直和你保持著同樣的距離。你停下來，它也停下來。');
+  else if (S.dread === 3) g.say('你身後的腳步聲，和你的步伐對不上。');
+}
+const GHOST_CRATE = { x1: -0.35, x2: 0.35, y1: 0.55, y2: 1, z1: 1.6, z2: 2.0, color: '#7a5e3c', edge: true };
 
 // ---------- hotspots & input ----------
 const roomOf = (sc) => (typeof sc.room === 'function' ? sc.room(S) : sc.room);
@@ -198,6 +226,12 @@ const staring = (sc) => smilerOn(sc) && sc.smiler.mode === 'stare';
 function visible() {
   const sc = SCENES[S.scene];
   const hs = sc.hotspots.filter((h) => !h.when || h.when(S));
+  if (S.ghost && S.ghost.scene === S.scene) {
+    hs.push({
+      id: 'ghostcrate', rect: boxRect(GHOST_CRATE, 6), label: '突然出現的木箱', cursor: 'take',
+      click: () => { const it = S.ghost.loot; S.ghost = null; g.give(it, `你撬開木箱。裡面有一份「${ITEMS[it].name}」。你一移開視線，木箱就不見了。`); save(); },
+    });
+  }
   if (staring(sc)) {
     hs.push({ id: 'smiler', rect: smilerRect(sc.smiler), label: '盯著牠的眼睛', cursor: 'look', click: () => g.say('你盯著那對眼睛，不敢眨眼，也不敢呼吸。') });
   }
@@ -620,6 +654,13 @@ function frame(now) {
   sc.draw?.(ctx, t, S, R);
   if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t, S.view && sc.nightshot ? 0.55 : 0.97);
   sc.drawOver?.(ctx, t, S, R);
+  if (S.ghost && S.ghost.scene === S.scene) box(ctx, R, GHOST_CRATE);
+  // the follower, standing in the fog; the viewfinder shows it closer than it looks
+  if (sc.level === 1 && sc.hall && (S.dread || 0) >= 2) {
+    const d = (S.dread || 0) + (S.view ? 2 : 0);
+    const z = Math.max(2.4, 10 - d * 0.95), f = P(0.35, 1, z), top = P(0.35, -0.75, z);
+    drawFigure(ctx, f[0], f[1], f[1] - top[1], Math.min(0.85, 0.25 + d * 0.08));
+  }
   if (S.view) sc.drawView?.(ctx, t, S, R);
   if (smilerOn(sc)) {
     const approach = Math.max(lightT / 1.3, panicT / 2.5);
@@ -665,6 +706,8 @@ function frame(now) {
         ctx.beginPath(); ctx.moveTo(sx - 160 + i * 70, sy - 180); ctx.lineTo(sx - 60 + i * 70, sy + 180); ctx.stroke();
       }
       ctx.restore();
+    } else if (scareKind === 'figure') {
+      drawFigure(ctx, sx, H + 40, H * (1.2 + (1.1 - k) * 0.8), Math.min(1, k * 2));
     } else {
       drawSmiler(ctx, sx, sy, 5 + (1.1 - k) * 4, Math.min(1, k * 2), t);
     }

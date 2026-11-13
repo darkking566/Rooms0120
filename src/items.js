@@ -62,6 +62,13 @@ export const ITEMS = {
     combine: { tape: insertTape, tape2: watch('tape2'), tape3: watch('tape3'), tape4: watch('tape4') },
   },
   tape: { name: '錄影帶', desc: '一卷小型錄影帶，標籤上寫著「0120」。', combine: { camcorder: insertTape } },
+  outpost_key: { name: 'M.E.G. 鑰匙', desc: '小鑰匙，吊牌上寫著「第七前哨站・物資籠」。吊牌背面有人用指甲刻了一道「正」字的第一筆。' },
+  shears: { name: '修枝剪', desc: '刀刃上沾著綠色的汁液，還沒乾。' },
+  pills: {
+    name: '鎮定劑', desc: '鋁箔包裝的白色藥片。標籤上寫著「勿超過劑量」。',
+    self: (g) => { g.take('pills'); g.sanity(40); g.drink(-5); g.sfx('drink'); g.say('藥片很苦。過了一會兒，嗡嗡聲退得很遠——連你自己的心跳也是。'); },
+  },
+  photo: { name: '拍立得照片', desc: '一間黃色的房間，牆角坐著一個人，臉被拍糊了。背面寫著：「第一次」。翻回正面時，牆角是空的。' },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
 };
 
@@ -104,6 +111,29 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.moveTo(0, -16); ctx.lineTo(0, 16); ctx.stroke();
       ctx.fillStyle = '#555'; ctx.fillRect(-5, -5, 10, 10);
+      break;
+    case 'outpost_key':
+      ctx.strokeStyle = '#a8a8a0'; ctx.fillStyle = '#a8a8a0'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(-8, 0, 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillRect(-2, -2, 18, 4); ctx.fillRect(10, 2, 3, 5);
+      ctx.fillStyle = '#c9a227'; ctx.fillRect(-20, 6, 10, 12);
+      break;
+    case 'shears':
+      ctx.strokeStyle = '#b0b4b8'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-16, -16); ctx.lineTo(10, 10); ctx.moveTo(16, -16); ctx.lineTo(-10, 10); ctx.stroke();
+      ctx.strokeStyle = '#3f6a32'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(-13, 14, 5, 0, Math.PI * 2); ctx.arc(13, 14, 5, 0, Math.PI * 2); ctx.stroke();
+      break;
+    case 'pills':
+      ctx.fillStyle = '#c8ccd0'; ctx.fillRect(-14, -10, 28, 20);
+      ctx.fillStyle = '#fff';
+      for (const [x, y] of [[-7, -4], [0, -4], [7, -4], [-7, 4], [0, 4]]) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); }
+      break;
+    case 'photo':
+      ctx.rotate(0.15);
+      ctx.fillStyle = '#efeadc'; ctx.fillRect(-14, -16, 28, 32);
+      ctx.fillStyle = '#b8a352'; ctx.fillRect(-11, -13, 22, 20);
+      ctx.fillStyle = 'rgba(40,30,10,0.6)'; ctx.fillRect(3, -2, 5, 8);
       break;
     case 'ladder':
       ctx.strokeStyle = '#b8bcc0'; ctx.lineWidth = 3;

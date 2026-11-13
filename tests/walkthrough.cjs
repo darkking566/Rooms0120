@@ -222,17 +222,52 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('office'); check(await scene() === 'l1_office', 'office');
   await hit('lockbox'); check(await page.isVisible('#keypad'), 'keypad opens');
   for (const k of ['1', '2', '3', '4', 'ok']) await page.click(`#kpKeys button[data-k="${k}"]`);
-  check(await page.isVisible('#keypad') && !(await has('valve')), 'wrong code rejected');
+  check(await page.isVisible('#keypad') && !(await has('outpost_key')), 'wrong code rejected');
   for (const k of ['0', '1', '2', '0', 'ok']) await page.click(`#kpKeys button[data-k="${k}"]`);
-  check(await has('valve'), 'code 0120 opens the lockbox');
+  check(await has('outpost_key') && !(await has('valve')), 'code 0120 opens the lockbox: the outpost key, not the valve');
   await closeDoc();
   await slot('battery'); await slot('torch_empty');
   check(await has('torch'), 'battery + flashlight combined');
   check(await light(), 'flashlight is on');
-  await hit('back'); await hit('back'); await hit('forward');
-  check(await scene() === 'l1_deep', 'deeper warehouse with pipes appearing'); await shot('28-l1_deep');
+  await hit('back'); await hit('forward'); check(await scene() === 'l1_corridor2', 'deeper into the corridors'); await shot('28-l1_corridor2');
+  await hit('infirmary'); check(await scene() === 'l1_infirmary', 'infirmary'); await shot('29-l1_infirmary');
+  await hit('sheet'); await hit('chart'); await closeDoc();
+  await hit('cabinet'); check(await has('pills'), 'found sedatives in the medicine cabinet');
+  { const s0 = await sanity(); await slot('pills'); await slot('pills'); check(await sanity() > s0 || s0 === 100, 'a sedative restores sanity'); }
+  await hit('back'); await hit('padded'); check(await scene() === 'l1_padded', 'the padded room; the door slams behind you'); await shot('30-l1_padded');
+  if (await view()) await page.click('#btnView');
+  await hit('back'); check(await scene() === 'l1_padded' && !(await ids()).includes('latch'), 'the door will not open and the latch cannot be seen');
+  await hit('note'); await closeDoc();
+  await page.click('#btnView');
+  await hit('latch'); check(await scene() === 'l1_corridor2', 'the viewfinder shows the hidden latch and lets you out');
+  await page.click('#btnView');
+  await hit('forward'); check(await scene() === 'l1_works', 'the construction sector at the end of the corridors'); await shot('31-l1_works');
+  await hit('clip'); await closeDoc(); await hit('gap');
+  await hit('shears'); check(await has('shears'), 'took the shears from the workers\' cart');
+  await hit('back'); await hit('back'); await hit('back'); await hit('back');
+  check(await scene() === 'l1_arrive', 'back at the warehouse entrance');
+  await hit('fog'); check(await scene() === 'l1_fog', 'into the fog'); await page.waitForTimeout(200); await shot('32-l1_fog');
+  const fogDir = () => page.evaluate(() => window.__rooms.state.fogNav.dir);
+  { const d = await fogDir(); await hit('fog_' + ['left', 'ahead', 'right'].find((x) => x !== d)); }
+  check(await page.evaluate(() => window.__rooms.state.fogNav.step) === 0, 'walking away from the red light brings you back to the start');
+  for (let i = 0; i < 3; i++) await hit('fog_' + await fogDir());
+  check(await scene() === 'l1_outpost', 'following the red light leads to the M.E.G. outpost'); await shot('33-l1_outpost');
+  await hit('log'); await closeDoc(); await hit('map'); await closeDoc(); await hit('radio');
+  await hit('cage'); await slot('outpost_key'); await hit('cage'); await hit('cage');
+  check(await has('valve'), 'the outpost key opens the supply cage with the valve handle');
+  await hit('garden'); await hit('garden'); check(await scene() === 'l1_garden', 'pried open the sealed door into the Garden'); await shot('34-l1_garden');
+  await hit('man'); await hit('bag'); check(!(await has('photo')), 'the bag is held fast by the vines');
+  await slot('shears'); await hit('bag'); await hit('bag');
+  check(await has('photo'), 'cut the vines with the shears and took the bag');
+  await hit('back'); await hit('back'); await hit('back');
+  check(await scene() === 'l1_arrive', 'out of the fog again');
+  await slot('pills'); await slot('pills');
+  { const st = await page.evaluate(() => window.__rooms.state);
+    console.log(`  · leaving Level 1 after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
+  await hit('forward'); await hit('forward');
+  check(await scene() === 'l1_deep', 'deeper warehouse with pipes appearing'); await shot('35-l1_deep');
   await hit('forward'); check(await scene() === 'l2_pipes', 'smooth threshold into Level 2');
-  await page.waitForTimeout(300); await shot('29-l2_pipes');
+  await page.waitForTimeout(300); await shot('36-l2_pipes');
 
   console.log('Level 2 — Abandoned Utility Halls');
   await slot('almond'); await slot('almond'); await slot('almond'); await slot('almond');
@@ -242,7 +277,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await scene() === 'l2_pipes', 'the light drew the smiler in and scared you back');
   await page.click('#btnLight'); check(!(await light()), 'flashlight switched off');
   await hit('side'); await page.waitForTimeout(200);
-  await shot('30-l2_dark-smiler');
+  await shot('37-l2_dark-smiler');
   await hit('back');
   await page.waitForTimeout(2200);
   check(await scene() === 'l2_pipes', 'panicking (clicking away) gets you chased');
@@ -253,12 +288,12 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.click('#btnLight');
   await hit('tube'); check(await has('tube'), 'found the spare fluorescent tube');
   await hit('almond'); await hit('note'); await closeDoc();
-  await page.mouse.move(480, 300); await page.waitForTimeout(200); await shot('31-l2_dark-lit');
+  await page.mouse.move(480, 300); await page.waitForTimeout(200); await shot('38-l2_dark-lit');
   await hit('back');
   const before = await sanity();
   await slot('almond'); await slot('almond');
   check(await sanity() > before || before === 100, 'drinking almond water restores sanity');
-  await hit('forward'); check(await scene() === 'l2_valve', 'control room'); await shot('32-l2_valve');
+  await hit('forward'); check(await scene() === 'l2_valve', 'control room'); await shot('39-l2_valve');
   await hit('door'); check(await scene() === 'l2_valve', 'door locked before calibrating');
   await slot('valve'); await hit('panel');
   check((await flags()).valve_set, 'valve handle installed');
@@ -273,11 +308,11 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.waitForTimeout(2400);
   check(await scene() === 'l2_valve', 'light near the smiler nest gets you scared back');
   await page.click('#btnLight');
-  await hit('door'); await page.waitForTimeout(300); await shot('33-l2_hall-dark');
+  await hit('door'); await page.waitForTimeout(300); await shot('40-l2_hall-dark');
   await hit('forward'); check(await scene() === 'l2_hall', 'cannot walk into the dark nest');
   await slot('tube'); await hit('fixture');
   check((await flags()).circuit, 'replacing the tube restores the series circuit');
-  await page.waitForTimeout(400); await shot('34-l2_hall-lit');
+  await page.waitForTimeout(400); await shot('41-l2_hall-lit');
   await hit('forward'); check(await scene() === 'l2_exit', 'reached the EXIT corridor');
   { const st = await page.evaluate(() => window.__rooms.state);
     console.log(`  · at the exit after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
@@ -285,7 +320,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.waitForTimeout(7500);
   check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'escape', 'escape ending shown');
   check((await page.textContent('#endTitle')).includes('歸檔'), 'freeing J.H. turns it into the archived ending');
-  await shot('35-ending');
+  await shot('42-ending');
 
   console.log('Save / load');
   await page.click('#btnAgain'); await page.waitForTimeout(300);
@@ -340,7 +375,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await phone.goto(url);
   const sw = await phone.evaluate(() => document.documentElement.scrollWidth);
   check(sw <= 375, `no horizontal scroll at phone width (${sw}px)`);
-  if (SHOTS) await phone.screenshot({ path: path.join(SHOTS, '36-phone.png') });
+  if (SHOTS) await phone.screenshot({ path: path.join(SHOTS, '43-phone.png') });
 
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await browser.close();

@@ -275,6 +275,22 @@ export function drawSmiler(ctx, x, y, s, a = 1, t = 0) {
   ctx.restore();
 }
 
+// A tall figure with no face, standing at screen point (x, y) = its feet, h pixels tall.
+export function drawFigure(ctx, x, y, h, a = 1) {
+  if (a <= 0) return;
+  const w = h * 0.22;
+  ctx.save();
+  ctx.fillStyle = `rgba(6,6,5,${a})`;
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.5, y); ctx.lineTo(x - w * 0.6, y - h * 0.62); ctx.lineTo(x - w * 0.45, y - h * 0.82);
+  ctx.lineTo(x + w * 0.45, y - h * 0.82); ctx.lineTo(x + w * 0.6, y - h * 0.62); ctx.lineTo(x + w * 0.5, y);
+  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y - h * 0.9, w * 0.32, h * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+  // arms too long for the body
+  ctx.fillRect(x - w * 0.75, y - h * 0.8, w * 0.14, h * 0.62); ctx.fillRect(x + w * 0.61, y - h * 0.8, w * 0.14, h * 0.62);
+  ctx.restore();
+}
+
 let darkCv = null;
 export function drawDark(ctx, mx, my, lightOn, t, opacity = 0.97) {
   if (!darkCv) { darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H; }
@@ -349,16 +365,24 @@ export function postFX(ctx, t, o = {}) {
   if (!noiseFrames) makeNoise();
   const stress = clamp(o.stress ?? 0, 0, 1);
   ctx.save();
-  ctx.globalAlpha = 0.06 + stress * 0.1;
+  ctx.globalAlpha = 0.08 + stress * 0.12;
   ctx.globalCompositeOperation = 'overlay';
   ctx.drawImage(noiseFrames[(t * 24 | 0) % 4], 0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
   for (let y = (t * 30 | 0) % 3; y < H; y += 3) ctx.fillRect(0, y, W, 1);
-  const v = ctx.createRadialGradient(CX, CY, H * 0.35, CX, CY, W * 0.62);
+  const v = ctx.createRadialGradient(CX, CY, H * 0.28, CX, CY, W * 0.6);
   v.addColorStop(0, 'rgba(0,0,0,0)');
-  v.addColorStop(1, `rgba(0,0,0,${0.55 + stress * 0.3})`);
+  v.addColorStop(1, `rgba(0,0,0,${0.7 + stress * 0.25})`);
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, W, H);
+  // everything a little greyer and dimmer than it should be
+  ctx.globalCompositeOperation = 'saturation';
+  ctx.fillStyle = 'rgba(128,128,128,0.22)'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = 'rgb(222,218,210)'; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = v;
   ctx.fillRect(0, 0, W, H);
   if (stress > 0.55) {
