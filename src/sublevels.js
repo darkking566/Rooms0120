@@ -44,21 +44,39 @@ function consoleBox(ctx, rect, title, lines, on = true) {
   lines.forEach((line, i) => text(ctx, line, x + w / 2, y + 45 + i * 19, '#b0bdb5', 11));
 }
 
-// The way into the annex: a doorway on the pillar room's right wall (the back wall hides the cubicles).
+// Level 0.1 per the wiki: you simply walk into it, but Level 0 is too vast to stumble on it;
+// only the B.N.T.G. has a reliable route. Here that route is their stencilled arrows, starting at
+// a doorway on the pillar room's right wall (the back wall hides the cubicles).
 export const annexDoor = wallQuad(2.2, -0.65, 1, 3.0, 3.9);
 export function drawAnnexEntrance(ctx, R) {
-  void R;
   const [x, y, w] = bounds(annexDoor);
-  text(ctx, '0 . ?', x + w / 2, y - 12, '#e1dbad', 15);
+  text(ctx, 'B.N.T.G. →', x + w / 2 - 6, y - 10, shade(R, '#d8d2b4', 3.4), 11);
+}
+export const WALK_STEPS = 4;
+const walkPillars = [
+  { x1: -1.35, x2: -0.95, y1: -1, y2: 1, z1: 3.0, z2: 3.4 },
+  { x1: 0.95, x2: 1.35, y1: -1, y2: 1, z1: 3.0, z2: 3.4 },
+  { x1: -1.35, x2: -0.95, y1: -1, y2: 1, z1: 5.6, z2: 6.0 },
+  { x1: 0.95, x2: 1.35, y1: -1, y2: 1, z1: 5.6, z2: 6.0 },
+].map((b) => ({ ...b, color: yellow.wall }));
+const pillarRect = (b) => bounds([P(b.x1, -1, b.z1), P(b.x2, 1, b.z1)], 8);
+const walkSide = { left: walkPillars[0], right: walkPillars[1] };
+const walkNote = faceQuad(-0.3, 0.1, 0.05, 0.4, 2.999);
+const newMark = (g) => g.flag('l01_mark', Math.random() < 0.5 ? 'left' : 'right');
+function walkStep(g, side) {
+  const n = g.s.flags.l01_walk || 0;
+  if (side !== g.s.flags.l01_mark) {
+    g.flag('l01_walk', 0); newMark(g); g.sanity(-2);
+    return g.go('l0_annex', { msg: '你從沒有記號的那一邊繞過去。再找的時候，柱子全換了位置，箭頭只剩下最開始那一個。' });
+  }
+  if (n + 1 >= WALK_STEPS) {
+    g.flag('l01_walk', 0);
+    return g.go('l01_airlock', { msg: '你跟著最後一個箭頭走。黃色的牆一面一面變得冰冷、平滑，地毯停在一條鋼製的門檻前。' });
+  }
+  g.flag('l01_walk', n + 1); newMark(g);
+  g.go('l0_annex', { msg: ['下一根柱子上，又是同樣的模板字。', '箭頭的漆比較新了。有人不久前才補過。', '燈的嗡嗡聲變了調，像隔著玻璃。'][n] });
 }
 
-const portals = [
-  { id: 'zenith', to: 'l01_airlock', code: '0.1', title: '鋼與玻璃', side: -1, z: [1.6, 2.5], color: '#607e8c' },
-  { id: 'ice', to: 'l03_entry', code: '0.3', title: '結霜的門', side: -1, z: [3.4, 5.0], color: '#c5e4e8' },
-  { id: 'flood', to: 'l05_flood', code: '0.5', title: '向下的樓梯', side: 1, z: [1.6, 2.5], color: '#3e686d' },
-  { id: 'memory', to: 'l07_modern', code: '0.7', title: '老式燈泡', side: 1, z: [3.4, 5.0], color: '#9e773c' },
-].map((p) => ({ ...p, quad: wallQuad(p.side * 1.2, -0.65, 1, ...p.z) }));
-const completed = ['l01_done', 'l03_thawed', 'l05_dissolved', 'l07_recorded'];
 const stationDoor = faceQuad(-0.55, -0.7, 0.55, 1, 4);
 const stationPanel = [215, 330, 175, 100];
 const robotRect = [660, 315, 90, 105];
@@ -156,21 +174,24 @@ const staticRect = [160, 185, 100, 115];
 
 export const SUBLEVEL_SCENES = {
   l0_annex: {
-    level: 0, title: '異常交界', room: room(yellow, { stripes: true, floorTex: 'carpet', tiles: true }),
-    enter(g, { first }) { if (first) g.say('黃色走廊分岔了。鋼板、冰霜、積水、老式燈泡……四種不該出現在這裡的景象。'); },
+    level: 0, title: '柱子間的長路', room: room(yellow, { hw: 2, depth: 8, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.6, 3.6, 5.8] }),
+    enter(g, { first }) {
+      if (!g.s.flags.l01_mark) newMark(g);
+      if (first) g.say('柱子一排接一排，沒有盡頭。有一根柱子上噴著褪色的模板字，旁邊是一個箭頭。');
+    },
     draw(ctx, t, s, R) {
-      portals.forEach((p, i) => {
-        door(ctx, R, p.quad, p.color, p.code);
-        const [x, y, w] = bounds(p.quad);
-        if (s.flags[completed[i]]) text(ctx, '✓', x + w / 2, y + 28, '#a4d4a7', 20);
-      });
-      paper(ctx, R, faceQuad(-0.32, -0.2, 0.32, 0.35, 7.9), 7.9);
-      text(ctx, '四條岔路・可原路返回', 480, 420, '#b5a374', 13);
+      for (const b of walkPillars) box(ctx, R, b);
+      const b = walkSide[s.flags.l01_mark] || walkSide.left, cx = (b.x1 + b.x2) / 2;
+      const p = P(cx, -0.15, b.z1);
+      text(ctx, 'B.N.T.G.', p[0], p[1], shade(R, '#efe9d0', 3), 11);
+      text(ctx, '↑', p[0], p[1] + 24, shade(R, '#efe9d0', 3), 22);
+      if (!(s.flags.l01_walk || 0)) paper(ctx, R, walkNote, 3, '#efe7cf');
     },
     hotspots: [
-      back('l0_pillar', '回到柱子的房間'),
-      hit('guide', [452, 260, 56, 40], '交界處的便條', (g) => g.read('n_annex')),
-      ...portals.map((p) => hit(p.id, bounds(p.quad, 3), `${p.code}・${p.title}`, (g) => g.go(p.to), 'go')),
+      { ...back('l0_pillar', '回到柱子的房間'), click: (g) => { g.flag('l01_walk', 0); g.go('l0_pillar'); } },
+      hit('left', pillarRect(walkSide.left), '從左邊的柱子旁走過去', (g) => walkStep(g, 'left'), 'go'),
+      hit('right', pillarRect(walkSide.right), '從右邊的柱子旁走過去', (g) => walkStep(g, 'right'), 'go'),
+      { ...hit('guide', bounds(walkNote, 8), '貼在柱子上的便條', (g) => g.read('n_annex')), when: (s) => !(s.flags.l01_walk || 0) },
     ],
   },
 
@@ -190,7 +211,7 @@ export const SUBLEVEL_SCENES = {
       drawNote(ctx, R);
     },
     hotspots: [
-      back('l0_annex', '走回黃色地毯'),
+      back('l0_pillar', '走回黃色地毯'),
       hit('forward', bounds(stationDoor, 3), '自動氣閘門', (g) => g.s.flags.l01_power ? g.go('l01_core') : g.say('門沒有反應。控制面板亮著紅燈。'), 'go'),
       note('n01'),
       hit('robot', robotRect, '檢查維修機器人的備件槽', (g) => {
@@ -250,7 +271,7 @@ export const SUBLEVEL_SCENES = {
       frost(ctx, t, s.flags.l03_thawed);
     },
     hotspots: [
-      back('l0_annex', '退回沒有結霜的走廊'), forward('l03_vents', '沿著冷風吹來的方向走'), note('n03'),
+      back('l0_hall', '退回沒有結霜的走廊'), forward('l03_vents', '沿著冷風吹來的方向走'), note('n03'),
       hit('insulation', insulationRect, '翻修工具箱裡的隔熱墊', (g) => {
         if (g.s.flags.l03_mat) return g.say('工具箱空了。');
         g.flag('l03_mat'); g.give('insulation', '你取出一塊厚厚的隔熱墊。邊角還留著施工編號。');
@@ -281,7 +302,7 @@ export const SUBLEVEL_SCENES = {
       hit('exit', bounds(iceDoor, 3), '穿過融冰後的通道', (g) => {
         if (!g.s.flags.l03_thawed) return g.say('厚冰堵住了通道。');
         if (!g.s.flags.l03_supply) { g.flag('l03_supply'); g.give('almond', '冰層後的工具櫃裡藏著一瓶杏仁水。'); }
-        g.go('l0_annex', { msg: '你踩過融化的冰水，回到了異常交界。那片寒冷暫時被留在身後。' });
+        g.go('l0_hall', { msg: '你踩過融化的冰水，走回那條長長的走廊。格柵不再吹冷風了，地毯上的霜也化成了水漬。' });
       }, 'go'),
     ],
   },
@@ -304,7 +325,7 @@ export const SUBLEVEL_SCENES = {
       const q = faceQuad(-0.55, 0.45, 0.55, 1, 5);
       poly(ctx, q, '#6a7568'); text(ctx, '醫院・乾燥平台 ↑', 480, 260, '#b2c3ac', 13);
     },
-    hotspots: [back('l0_annex', '沿入口樓梯回到 Level 0'), forward('l05_hospital', '爬上醫院的平台'), note('n05_water')],
+    hotspots: [{ ...back('l0_low', '沿入口樓梯回到 Level 0'), click: (g) => g.go('l0_low', { msg: '你爬上台階，在黑暗裡摸著牆走了很久，直到看見那間低矮房間的燈光。' }) }, forward('l05_hospital', '爬上醫院的平台'), note('n05_water')],
   },
 
   l05_hospital: {
@@ -364,7 +385,7 @@ export const SUBLEVEL_SCENES = {
       text(ctx, '1950 — NOW', 480, 165, '#e3c95e', 18);
     },
     hotspots: [
-      back('l0_annex', '朝更現代的燈光走，返回 Level 0'), forward('l07_victorian', '往燈泡與花紋壁紙的方向走'), note('n07'),
+      { ...back('l0_faded', '朝更現代的燈光走，返回 Level 0'), click: (g) => g.go('l0_faded', { msg: '你一直朝比較新的燈光走。日光燈管、米色壁紙……最後是那間褪了色的房間。' }) }, forward('l07_victorian', '往燈泡與花紋壁紙的方向走'), note('n07'),
       hit('static', staticRect, '凝固成雜訊的出口', (g) => { g.sanity(-3); g.sfx('error'); g.say('你的手被彈了回來。出口被封死了，應該朝更現代的區段原路返回。'); }),
       { ...hit('archive', archiveRect, 'N.T.G. 年代紀錄終端', (g) => g.say(g.s.flags.l07_recorded ? '你的古代拓片已存入紀錄。現在可以原路返回。' : '終端缺少古代區段的紀錄。更深處的石刻或許能補上。')), use: {
         rubbing(g) { g.take('rubbing'); g.flag('l07_recorded'); g.sanity(12); g.sfx('ok'); g.read('n07_echo'); },

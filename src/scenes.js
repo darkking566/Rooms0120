@@ -88,6 +88,9 @@ const l0Hall = {
   lights: [1.4, 2.9, 4.4, 5.9, 7.4, 8.9, 10.4], flick: hum, openings: [{ side: -1, z1: 3.0, z2: 3.8, top: -0.6 }],
 };
 const outletQuad = wallQuad(1, 0.55, 0.7, 1.9, 2.05);
+// Level 0.3 per the wiki: Level 0 with ice everywhere, fed by vents that never stop blowing cold air.
+const coldVent = wallQuad(1, -0.95, -0.6, 4.2, 5.4);
+const frostPath = [P(0.35, 1, 4.4), P(1, 1, 4.4), P(1, 1, 9), P(0.75, 1, 9)];
 const l0Loop = { ...l0Hall, openings: undefined, flickerLights: [1, 4] };
 const cabinet = { x1: -1, x2: -0.55, y1: 0.25, y2: 1, z1: 2.0, z2: 2.5, color: '#7a5a33', edge: true };
 const glitchWall = wallQuad(1, -1, 1, 2.2, 3.0);
@@ -147,10 +150,12 @@ const n0eQuad = wallQuad(-1.4, -0.2, 0.15, 1.5, 1.85);
 // the faded room: the oldest part of the level, where J.H. camped
 const l0Faded = {
   hw: 1.8, depth: 4, fogEnd: 12, pal: PAL0.faded, stripes: true, tiles: true, floorTex: 'carpet',
-  lights: [1.6, 3.2], flickerLights: [1], flick: hum,
+  lights: [1.6, 3.2], flickerLights: [1], flick: hum, openings: [{ side: 1, z1: 1.9, z2: 2.7, top: -0.6 }],
 };
 export const TALLY = { seen: 12, real: 23 };
 const tallyArea = faceQuad(-1.5, -0.8, 0.5, -0.12, 3.999);
+// Level 0.7 per the wiki: a time bubble of older Backrooms, left only by retracing your steps.
+const olderDoor = wallQuad(1.8, -0.6, 1, 1.9, 2.7);
 const locker = { x1: 1.1, x2: 1.75, y1: -0.65, y2: 1, z1: 3.1, z2: 3.7, color: '#6d7176', edge: true };
 const mat = { x1: -1.65, x2: -0.65, y1: 0.95, y2: 1, z1: 1.9, z2: 2.9, color: '#a08660', edge: true };
 const n0fQuad = wallQuad(-1.8, -0.35, 0.0, 2.2, 2.6);
@@ -160,6 +165,8 @@ const pile = [[0.55, 2.3], [0.8, 2.15], [0.68, 2.6], [1.0, 2.45], [0.4, 2.0], [1
 export const BLACKOUT_STEPS = 3;
 const DIRS = ['left', 'ahead', 'right'];
 const DIR_ZH = { left: '左邊', ahead: '前面', right: '右邊' };
+// Level 0.5 per the wiki: found as a flight of stairs down inside a blackout zone, lured by a familiar hum.
+const sunkStairs = [P(0.3, 1, 1.5), P(1.1, 1, 1.5), P(1.1, 1, 1.95), P(0.3, 1, 1.95)];
 const l0Blackout = {
   hw: 1.4, depth: 5, fogEnd: 6, wallTex: 'concrete', baseboard: false, tiles: true, lights: [],
   pal: { wall: '#6e6440', ceil: '#3a3420', floor: '#2a2614', fog: '#050403', light: '#fff0b8' },
@@ -178,7 +185,7 @@ function blackoutStep(g, dir) {
     return g.go('l0_manila', { msg: '你循著嗡嗡聲走，眼前忽然亮了起來——一間小小的方形房間，壁紙是米黃色的。' });
   }
   g.s.bo = { step: b.step + 1, dir: pickDir(b.dir) };
-  g.go('l0_blackout');
+  g.go('l0_blackout', b.step === 0 ? { msg: '你的腳尖踢到一級台階。右手邊的地面往下陷，底下也有嗡嗡聲——同一個調子，只是比較悶，像隔著水。' } : {});
 }
 
 // The Manila Room: the one place in Level 0 where people can see each other.
@@ -725,6 +732,17 @@ export const SCENES = {
     viewMsg: '觀景窗裡，插座旁邊刻著四個小小的數字：0120。',
     enter(g, { first }) { if (first) g.say('一條長長的走廊。盡頭消失在昏黃的霧裡。左手邊有個門洞。'); },
     draw(ctx, t, s, R) {
+      const thaw = s.flags.l03_thawed;
+      poly(ctx, coldVent, shade(R, '#8c8a7a', 4.8));
+      for (let i = 1; i < 6; i++) { const z = 4.2 + i * 0.2; seg(ctx, P(1, -0.93, z), P(1, -0.62, z), shade(R, '#3a3a32', z), 1.5); }
+      if (!thaw) {
+        ctx.save(); ctx.globalAlpha = s.flags.cold_vent ? 0.4 : 0.22;
+        poly(ctx, frostPath, '#dcecf0'); ctx.restore();
+        for (let i = 0; i < 6; i++) {
+          const y = -0.6 + ((t * 0.5 + i * 0.17) % 1) * 0.5;
+          seg(ctx, P(0.98, y, 4.4 + i * 0.15), P(0.8, y + 0.08, 4.5 + i * 0.15), 'rgba(220,240,255,0.18)', 1);
+        }
+      }
       if (s.flags.outlet_open) {
         poly(ctx, outletQuad, '#0c0a05');
       } else {
@@ -751,6 +769,18 @@ export const SCENES = {
       { ...FORWARD('l0_loop', '繼續往前'), click: (g) => { g.s.loops = 1; g.go('l0_loop'); } },
       BACK('l0_start'),
       { id: 'wetroom', rect: bounds(wallQuad(-1, -0.6, 1, 3.0, 3.8), 4), label: '左邊的房間', cursor: 'go', click: (g) => g.go('l0_wet') },
+      {
+        id: 'vent', rect: bounds(coldVent, 10), label: '天花板旁的通風格柵', cursor: 'look',
+        click: (g) => {
+          if (g.s.flags.l03_thawed) return g.say('格柵安安靜靜的，吹出來的是溫的、帶灰塵味的風。');
+          g.flag('cold_vent');
+          g.say('格柵吹出來的風冷得刺骨，跟這一層悶熱的空氣完全不一樣。底下的地毯結了一層薄霜，白白的一條，沿著右牆往走廊深處延伸。');
+        },
+      },
+      {
+        id: 'frost', when: (s) => s.flags.cold_vent && !s.flags.l03_thawed, rect: bounds(frostPath, 6), label: '循著地上的白霜走', cursor: 'go',
+        click: (g) => g.go('l03_entry', { msg: '你沿著那條霜走。腳下的地毯越來越硬，呼出來的氣變成了白色。牆還是黃色的——只是上面全是冰。' }),
+      },
       {
         id: 'outlet', rect: bounds(outletQuad, 14), label: '牆上的插座', cursor: 'look',
         click: (g) => {
@@ -945,7 +975,7 @@ export const SCENES = {
           g.go('l0_maze', g.s.seen.l0_maze ? { msg: `你又回到了第一間隔間。${g.s.view ? '地上有一個粉筆箭頭。' : ''}` } : {});
         },
       },
-      { id: 'annex', rect: bounds(annexDoor, 4), label: '右邊：通往異常交界', cursor: 'go', click: (g) => g.go('l0_annex') },
+      { id: 'annex', rect: bounds(annexDoor, 4), label: '右邊噴著模板字的門洞', cursor: 'go', click: (g) => g.go('l0_annex') },
       {
         id: 'note', rect: bounds(n0bQuad, 8), label: '柱子上的便條', cursor: 'look',
         click: (g) => g.read('n0b', () => {
@@ -1003,6 +1033,9 @@ export const SCENES = {
       ctx.fillStyle = s.flags.locker_open ? '#3f3' : '#f33';
       ctx.beginPath(); ctx.arc(led[0] + 1, led[1], 2, 0, Math.PI * 2); ctx.fill();
       paper(ctx, R, n0fQuad, 2.4, '#e8dfc4');
+      const glow = P(1.8, -0.2, 2.3);
+      ctx.save(); ctx.fillStyle = 'rgba(255,200,110,0.16)'; ctx.shadowColor = '#ffb64c'; ctx.shadowBlur = 30;
+      ctx.beginPath(); ctx.ellipse(glow[0] - 20, glow[1], 18, 40, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     },
     hotspots: [
       {
@@ -1041,6 +1074,10 @@ export const SCENES = {
         },
       },
       { id: 'note', rect: bounds(n0fQuad, 8), label: '散落的日記', cursor: 'look', click: (g) => g.read('n0f') },
+      {
+        id: 'older', rect: bounds(olderDoor, 4), label: '更舊的那一頭', cursor: 'go',
+        click: (g) => g.go('l07_modern', { msg: '門洞後面的壁紙比這裡還舊。你每走一步，燈管就換一種款式——像有人把這一層歷年的樣子，一層一層疊在了一起。' }),
+      },
     ],
   },
 
@@ -1057,11 +1094,25 @@ export const SCENES = {
       ctx.fillStyle = 'rgba(120,130,110,0.10)';
       const c = P(0, 1, 2.2);
       ctx.beginPath(); ctx.ellipse(c[0], c[1], 260, 40, 0, 0, Math.PI * 2); ctx.fill();
+      if (s.bo?.step === 1) poly(ctx, sunkStairs, '#020201');
+    },
+    drawOver(ctx, t, s) {
+      // the stairs give off a faint wet glint even through the dark, pulsing with the hum below
+      if (s.bo?.step !== 1) return;
+      const k = 0.5 + 0.5 * Math.sin(t * 2.2);
+      for (let i = 0; i < 4; i++) {
+        const z = 1.52 + i * 0.13;
+        seg(ctx, P(0.34, 1, z), P(1.06, 1, z), `rgba(120,165,180,${(0.32 - i * 0.07) * (0.6 + 0.4 * k)})`, 2);
+      }
     },
     hotspots: [
       {
         id: 'back', rect: [330, 470, 300, 70], label: '摸黑退回去', cursor: 'back',
         click: (g) => { g.s.bo = null; g.go('l0_low', { msg: '你一路摸著牆退回去，直到看見燈光。' }); },
+      },
+      {
+        id: 'down', when: (s) => s.bo?.step === 1, rect: bounds(sunkStairs, 6), label: '腳邊往下的台階', cursor: 'go',
+        click: (g) => { g.s.bo = null; g.go('l05_flood'); },
       },
       { id: 'left', rect: bounds(mazeLeft, 4), label: '左邊', cursor: 'go', click: (g) => blackoutStep(g, 'left') },
       { id: 'right', rect: bounds(mazeRight, 4), label: '右邊', cursor: 'go', click: (g) => blackoutStep(g, 'right') },

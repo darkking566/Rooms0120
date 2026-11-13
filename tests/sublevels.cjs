@@ -39,9 +39,21 @@ const { chromium } = require('playwright');
     async function start() {
       await page.goto(url);
       await page.click('#btnNew');
-      await hit('side'); await hit('annex');
-      check((await state()).scene === 'l0_annex', 'new routes reachable from Level 0');
     }
+    // Each sublevel has its own way in, spread across Level 0.
+    async function walkPillars() {
+      await hit('side'); await hit('annex');
+      for (let i = 0; i < 4; i++) await hit((await state()).flags.l01_mark);
+    }
+    const enter = {
+      zenith: async () => { await walkPillars(); },
+      ice: async () => { await hit('forward'); await hit('vent'); await hit('frost'); },
+      flood: async () => {
+        await page.evaluate(() => { const g = window.__rooms.g; g.s.bo = { step: 0, dir: 'ahead' }; g.go('l0_blackout'); });
+        await hit('ahead'); await hit('down');
+      },
+      memory: async () => { await page.evaluate(() => window.__rooms.g.go('l0_faded')); await hit('older'); },
+    };
     async function reload() {
       await page.reload(); await page.click('#btnCont');
     }
@@ -51,9 +63,15 @@ const { chromium } = require('playwright');
     const closeDoc = () => page.click('#docClose');
 
     console.log('Level 0.1 — Zenith Station');
-    await start(); await shot('sub-00-annex');
+    await start(); await hit('side'); await hit('annex'); await shot('sub-00-annex');
+    check((await state()).scene === 'l0_annex', 'B.N.T.G. route starts from the pillar room');
     await hit('guide'); await closeDoc();
-    await hit('zenith');
+    const mark = (await state()).flags.l01_mark;
+    await hit(mark); check((await state()).flags.l01_walk === 1, 'following the arrow advances the route');
+    await hit((await state()).flags.l01_mark === 'left' ? 'right' : 'left');
+    check((await state()).scene === 'l0_annex' && (await state()).flags.l01_walk === 0, 'the wrong side restarts the route');
+    for (let i = 0; i < 4; i++) await hit((await state()).flags.l01_mark);
+    check((await state()).scene === 'l01_airlock', 'four arrows lead to the station');
     check(await page.textContent('#lvlName') === 'LEVEL 0.1', 'sublevel name appears in HUD');
     await shot('sub-01-zenith-airlock');
     await hit('forward'); check((await state()).scene === 'l01_airlock', 'airlock locked before repair');
@@ -71,12 +89,16 @@ const { chromium } = require('playwright');
     await hit('window'); await closeDoc(); await hit('supply'); await hit('supply');
     check((await state()).inv.filter((i) => i === 'almond').length === 1, 'station supplies cannot be farmed');
     await hit('back'); await hit('back');
-    check((await state()).scene === 'l0_annex', 'station has a return route to Level 0');
-    await hit('zenith'); await hit('forward'); await hit('noclip');
+    check((await state()).scene === 'l0_pillar', 'station has a return route to Level 0');
+    await hit('annex'); for (let i = 0; i < 4; i++) await hit((await state()).flags.l01_mark);
+    await hit('forward'); await hit('noclip');
     check((await state()).scene === 'l1_arrive', 'station noclip connects to the existing main story');
 
     console.log('Level 0.3 — Icy Rooms');
-    await start(); await hit('ice'); await shot('sub-03-ice-entry');
+    await start(); await hit('forward');
+    check(!(await page.evaluate(() => window.__rooms.hotspots())).some((h) => h.id === 'frost'), 'frost trail is noticed only after the vent');
+    await hit('vent'); await hit('frost'); await shot('sub-03-ice-entry');
+    check((await state()).scene === 'l03_entry', 'following the frost from the vent enters Level 0.3');
     const beforeCold = (await state()).sanity;
     await page.waitForTimeout(2300);
     check((await state()).sanity < beforeCold, 'cold drains sanity over time');
@@ -93,13 +115,14 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(2200);
     check((await state()).sanity === warm, 'thawing stops cold damage');
     await shot('sub-05-ice-thawed'); await hit('exit');
-    check((await state()).scene === 'l0_annex', 'thawed passage returns to Level 0');
+    check((await state()).scene === 'l0_hall', 'thawed passage returns to the hallway');
+    check(!(await page.evaluate(() => window.__rooms.hotspots())).some((h) => h.id === 'frost'), 'thawed vent no longer leaves frost');
     const bottles = (await state()).inv.filter((i) => i === 'almond').length;
-    await hit('ice'); await hit('forward'); await hit('exit');
+    await page.evaluate(() => window.__rooms.g.go('l03_entry')); await hit('forward'); await hit('exit');
     check((await state()).inv.filter((i) => i === 'almond').length === bottles, 'thawed passage reward is not duplicated');
 
     // Retry must restore an achievable entry state, including puzzle items consumed later.
-    await start(); await hit('ice'); await hit('insulation'); await hit('forward'); await use('insulation', 'vent');
+    await start(); await enter.ice(); await hit('insulation'); await hit('forward'); await use('insulation', 'vent');
     await page.evaluate(() => window.__rooms.g.sanity(-100));
     await page.waitForSelector('#ending:not([hidden])'); await page.click('#btnRetry');
     check((await state()).scene === 'l03_entry' && !(await state()).flags.l03_mat, 'retry restores the new level entry checkpoint');
@@ -107,7 +130,8 @@ const { chromium } = require('playwright');
     check((await state()).inv.includes('insulation'), 'puzzle supplies can be recovered after retry');
 
     console.log('Level 0.5 — Flooded corridors and hospital');
-    await start(); await hit('flood'); await shot('sub-06-flood');
+    await start(); await enter.flood(); await shot('sub-06-flood');
+    check((await state()).scene === 'l05_flood', 'stairs in the blackout zone lead down into Level 0.5');
     await hit('note'); await closeDoc(); await hit('forward'); await shot('sub-07-hospital');
     await hit('forward'); check((await state()).scene === 'l05_hospital', 'pursuer blocks the stairs');
     await hit('note'); const huntPaused = (await state()).flags.l05_pursuit;
@@ -125,7 +149,8 @@ const { chromium } = require('playwright');
     await hit('forward'); check((await state()).scene === 'l1_arrive', 'metal stairs lead into Level 1');
 
     console.log('Level 0.7 — Historical districts');
-    await start(); await hit('memory'); await shot('sub-09-modern');
+    await start(); await enter.memory(); await shot('sub-09-modern');
+    check((await state()).scene === 'l07_modern', 'the faded room opens onto older districts');
     await hit('static'); check((await state()).scene === 'l07_modern', 'static exits cannot be used as ordinary doors');
     await hit('note'); await closeDoc(); await hit('forward');
     check((await state()).scene === 'l07_victorian', 'modern corridor transitions to the Victorian era');
@@ -142,17 +167,31 @@ const { chromium } = require('playwright');
     await use('rubbing', 'archive'); check(await page.isVisible('#doc'), 'archive completion reveals the J.H. note'); await closeDoc();
     await reload();
     check((await state()).flags.l07_recorded && !(await state()).inv.includes('rubbing'), 'archive completion and consumed rubbing persist');
-    await hit('back'); check((await state()).scene === 'l0_annex', 'walking toward newer eras returns to Level 0');
+    await hit('back'); check((await state()).scene === 'l0_faded', 'walking toward newer eras returns to the faded room');
 
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
     page = await mobile.newPage(); watch(page);
-    await start(); await shot('sub-13-phone-annex');
-    // Tap all four visible branch entrances using the same canvas coordinate conversion.
-    for (const [portal, scene] of [['zenith', 'l01_airlock'], ['ice', 'l03_entry'], ['flood', 'l05_flood'], ['memory', 'l07_modern']]) {
+    await start(); await hit('side'); await hit('annex'); await shot('sub-13-phone-annex');
+    // Reach each branch, tapping the final entrance with the same canvas coordinate conversion.
+    const tap = async (id) => {
       const hs = await page.evaluate(() => window.__rooms.hotspots());
-      const h = hs.find((h) => h.id === portal), b = await page.locator('#game').boundingBox();
+      const h = hs.find((h) => h.id === id), b = await page.locator('#game').boundingBox();
       await page.touchscreen.tap(b.x + (h.rect[0] + h.rect[2] / 2) / 960 * b.width, b.y + (h.rect[1] + h.rect[3] / 2) / 540 * b.height);
+    };
+    for (const [portal, scene, from, last] of [
+      ['zenith', 'l01_airlock', 'l0_pillar', null], ['ice', 'l03_entry', 'l0_start', 'frost'],
+      ['flood', 'l05_flood', 'l0_start', 'down'], ['memory', 'l07_modern', 'l0_start', 'older'],
+    ]) {
+      await page.evaluate((to) => window.__rooms.g.go(to), from);
+      if (portal === 'zenith') {
+        await hit('annex'); for (let i = 0; i < 3; i++) await hit((await state()).flags.l01_mark);
+        await tap((await state()).flags.l01_mark);
+      } else if (portal === 'ice') { await hit('forward'); await hit('vent'); await tap(last); }
+      else if (portal === 'flood') {
+        await page.evaluate(() => { const g = window.__rooms.g; g.s.bo = { step: 0, dir: 'ahead' }; g.go('l0_blackout'); });
+        await hit('ahead'); await tap(last);
+      } else { await page.evaluate(() => window.__rooms.g.go('l0_faded')); await tap(last); }
       check((await state()).scene === scene, `phone tap enters ${scene}`);
       await hit('note'); check(await page.isVisible('#doc'), 'new note readable at phone width'); await closeDoc();
       await shot(`sub-14-phone-${portal}`); await hit('back');
@@ -165,6 +204,8 @@ const { chromium } = require('playwright');
     })));
     await reload(); await hit('annex');
     check((await state()).scene === 'l0_annex', 'existing v1 saves can enter the new branches');
+    await hit((await state()).flags.l01_mark);
+    check((await state()).flags.l01_walk === 1, 'old saves get a B.N.T.G. arrow to follow');
     check(errors.length === 0, `no browser errors: ${errors.join(', ')}`);
     console.log('\nAll sublevel checks passed');
   } finally {
