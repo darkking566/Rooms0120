@@ -71,7 +71,7 @@ export class Sound {
     this.bus.gain.setTargetAtTime(1, now, 0.6);
     const add = (src, ...rest) => { this.chain(src, ...rest, this.bus); src.start(); this.sources.push(src); };
 
-    if (lv === 0) {
+    if (lv === 0 || lv === 0.2) {
       add(this.node('Oscillator', { type: 'sawtooth', frequency: 118 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 260 }), this.node('Gain', { gain: 0.05 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 59 }), this.node('Gain', { gain: 0.05 }));
       add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 3200, Q: 0.7 }), this.node('Gain', { gain: 0.006 }));
@@ -87,12 +87,18 @@ export class Sound {
     }
   }
 
+  // How loud the level's ambience is in this scene (1 = normal).
+  setQuiet(k) {
+    this.quiet = k;
+    if (this.ac && this.bus && !this.humDir) this.bus.gain.setTargetAtTime(k, this.ac.currentTime, 0.4);
+  }
+
   // A single humming light somewhere in the dark, panned to where it is (null = none).
   setHum(dir) {
     if (!this.ac || this.humDir === dir) return;
     this.humDir = dir;
     if (this.hum) { const h = this.hum; h.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.15); setTimeout(() => { try { h.o.stop(); } catch { /* stopped */ } }, 800); this.hum = null; }
-    if (this.bus) this.bus.gain.setTargetAtTime(dir ? 0.08 : 1, this.ac.currentTime, 0.3);
+    if (this.bus) this.bus.gain.setTargetAtTime(dir ? 0.08 : this.quiet ?? 1, this.ac.currentTime, 0.3);
     if (!dir) return;
     const o = this.node('Oscillator', { type: 'sawtooth', frequency: 121 });
     const g = this.node('Gain', { gain: 0 });

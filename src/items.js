@@ -11,6 +11,19 @@ const insertTape = (g) => {
   g.read('n0_tape', () => g.say('畫面一跳，螢幕角落亮起紅色的「REC」。你決定不再關掉它了。'));
 };
 
+// Extra tapes: watch them on the camcorder. They are J.H.'s earlier attempts.
+const watch = (id) => (g) => {
+  g.take(id); g.flag(`watched_${id}`); g.sfx('whirr');
+  g.read(`n_${id}`, () => {
+    const n = ['tape2', 'tape3', 'tape4'].filter((t) => g.s.flags[`watched_${t}`]).length;
+    g.say(n === 3 ? '三卷帶子都看完了。你忽然很想讓另一個人也看看這些畫面。' : `你看完了這卷帶子。（額外的帶子：${n} / 3）`);
+  });
+};
+const tapeItem = (n, where) => ({
+  name: `錄影帶 #${n}`, desc: `一卷小型錄影帶，標籤上用你的筆跡寫著「#${n}」。${where}`,
+  combine: { camcorder: watch(`tape${n}`) },
+});
+
 export const ITEMS = {
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
@@ -35,10 +48,15 @@ export const ITEMS = {
   torch_empty: { name: '手電筒（沒電）', desc: '電池槽是空的。', combine: { battery: loadTorch } },
   battery: { name: '電池', desc: '一顆普通的電池。看起來還有電。', combine: { torch_empty: loadTorch } },
   torch: { name: '手電筒', desc: '可以切換開關（也可以按 F 鍵）。小心：光會引來某些東西。', self: (g) => g.setLight(!g.s.light) },
+  tape2: tapeItem(2, '和攝影機一起用就能播放。'),
+  tape3: tapeItem(3, '和攝影機一起用就能播放。'),
+  tape4: tapeItem(4, '上面還黏著紅色的地毯纖維。'),
+  screwdriver: { name: '螺絲起子', desc: '一字的螺絲起子，握把上印著「後室重新裝修公司」。' },
   rod: { name: '金屬吊桿', desc: '從天花板上掉下來的金屬吊桿，差不多一個人高。可以用來搆高處的東西。' },
   camcorder: {
     name: '攝影機', desc: '一台舊型的手持攝影機，螢幕還亮著。再點一次就能舉起來透過觀景窗看（也可以按 V 鍵）。',
-    self: (g) => g.setView(!g.s.view), combine: { tape: insertTape },
+    self: (g) => g.setView(!g.s.view),
+    combine: { tape: insertTape, tape2: watch('tape2'), tape3: watch('tape3'), tape4: watch('tape4') },
   },
   tape: { name: '錄影帶', desc: '一卷小型錄影帶，標籤上寫著「0120」。', combine: { camcorder: insertTape } },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
@@ -84,6 +102,12 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.moveTo(0, -16); ctx.lineTo(0, 16); ctx.stroke();
       ctx.fillStyle = '#555'; ctx.fillRect(-5, -5, 10, 10);
       break;
+    case 'screwdriver':
+      ctx.rotate(0.7);
+      ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.roundRect(-5, 4, 10, 18, 3); ctx.fill();
+      ctx.fillStyle = '#b8bcc0'; ctx.fillRect(-1.5, -22, 3, 27);
+      ctx.fillRect(-3, -24, 6, 3);
+      break;
     case 'bar':
       ctx.rotate(-0.5);
       ctx.fillStyle = '#b8862e'; ctx.fillRect(-20, -7, 40, 14);
@@ -108,10 +132,14 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.fillStyle = '#d33'; ctx.beginPath(); ctx.arc(5, -4, 2, 0, Math.PI * 2); ctx.fill();
       break;
     case 'tape':
+    case 'tape2':
+    case 'tape3':
+    case 'tape4':
       ctx.fillStyle = '#1e1e20'; ctx.beginPath(); ctx.roundRect(-18, -11, 36, 22, 2); ctx.fill();
       ctx.fillStyle = '#e9e1c1'; ctx.fillRect(-14, -9, 28, 6);
       ctx.fillStyle = '#777';
       for (const x of [-8, 8]) { ctx.beginPath(); ctx.arc(x, 4, 4, 0, Math.PI * 2); ctx.fill(); }
+      if (id !== 'tape') { ctx.fillStyle = '#2b241a'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`#${id.slice(4)}`, 0, -4); }
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);

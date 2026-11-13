@@ -61,6 +61,7 @@ const g = {
       msg = '你躲進門後，屏住呼吸。門外傳來某種東西拖行的聲音……過了很久，燈才亮回來。';
     }
     sound.setLevel(sc.level);
+    sound.setQuiet(sc.quiet ?? 1);
     sound.setHum(sc.hum?.(S) ?? null);
     const first = !S.seen[id];
     S.seen[id] = true;
@@ -73,7 +74,7 @@ const g = {
         needs(LEVELS[sc.level]);
       }
       // Level 0: the hum sometimes surges without warning
-      if (sc.level === 0 && !free && !sc.trap && !sc.hum && S.moves > 4 && Math.random() < 0.07) {
+      if (sc.level === 0 && !free && !sc.trap && !sc.hum && !sc.quiet && S.moves > 4 && Math.random() < 0.07) {
         sound.sfx('surge'); surgeT = 1.6; g.sanity(-2);
         g.say('嗡嗡聲忽然暴漲，像有人把音量轉到最大。你摀住耳朵，直到它慢慢退下去。');
       }
@@ -312,7 +313,8 @@ function onSlot(id) {
 function updateHud() {
   const L = LEVELS[SCENES[S.scene].level];
   $('#lvlName').textContent = L.name;
-  $('#lvlSub').textContent = `${L.sub}・${SCENES[S.scene].title}`;
+  const title = SCENES[S.scene].title;
+  $('#lvlSub').textContent = `${L.sub}・${typeof title === 'function' ? title(S) : title}`;
   const fill = $('#sanFill');
   fill.style.width = `${S.sanity}%`;
   fill.dataset.low = S.sanity < 35 ? '1' : '';
@@ -515,7 +517,11 @@ function showEnding(kind) {
   const box = $('#endLines');
   box.innerHTML = '';
   const lines = E.lines.slice();
-  if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。下一次，坐在那裡等的，會不會是你？');
+  if (kind === 'escape' && S.flags.freed_jh) {
+    $('#endTitle').textContent = '— 歸檔結局 —';
+    lines.splice(1, 0, '你身後傳來另一個腳步聲。你沒有回頭，只是把門撐得更開一點。');
+    lines.splice(lines.length - 2, 2, '「記錄 0120：已歸檔。這次，我們一起出來了。—— J.H.」', '你這才想起來——J.H.，是你名字的縮寫。也是他的。');
+  } else if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。下一次，坐在那裡等的，會不會是你？');
   lines.forEach((t, i) => {
     const p = document.createElement('p');
     p.textContent = t;
@@ -564,7 +570,10 @@ function frame(now) {
   }
   if (active) {
     sceneT += dt;
-    if (sc.trap && sceneT > sc.trap.after) g.end(sc.trap.end);
+    if (sc.trap && (!sc.trap.when || sc.trap.when(S)) && sceneT > sc.trap.after) {
+      sceneT = -Infinity;
+      if (sc.trap.run) sc.trap.run(g); else g.end(sc.trap.end);
+    }
   }
   if (active && smilerOn(sc)) {
     const sm = sc.smiler;
@@ -624,7 +633,7 @@ function frame(now) {
 
   if (playing && S.view) drawViewfinder(ctx, t, { tape: !!S.flags.tape_in });
   // the REC overlay appears once a tape is in the camcorder (Levels 1+ always have one)
-  postFX(ctx, t, { stress, clock: S.clock, rec: playing && (!!S.flags.tape_in || sc.level > 0) });
+  postFX(ctx, t, { stress, clock: S.clock, rec: playing && (!!S.flags.tape_in || sc.level >= 1) });
 
   if (fade > 0) {
     ctx.fillStyle = `rgba(0,0,0,${fade})`;
