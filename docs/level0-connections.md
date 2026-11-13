@@ -40,6 +40,17 @@ Wiki 內容會隨改寫而變動；引用前請再核對一次原頁面。
 | Level 92 "Crimson Glow" | 一直去碰那個看電視的人，最後昏倒，醒來就在 Level 0；探索時也可能找到通往 Level 0 的門。 | 刪減 | [(TRIMMED) Level 92](https://backrooms-wiki.wikidot.com/trimmed:level-92) |
 | Level 1 | 最早的舊版 Level 1 寫它可以回到 Level 0。**現行版 Level 1 沒有列出回 Level 0 的出口**，只把 Level 0 當成入口。 | 舊版 | [(ARCHIVED) Level 1](https://backrooms-wiki.wikidot.com/archived:level-1-oldest)、[Level 1](https://backrooms-wiki.wikidot.com/level-1) |
 
+### 四個子層級（中文 Wiki）的進入方式
+
+查詢日期：2026-11-13。遊戲據此把入口分散在 Level 0 各處，不再集中在同一個房間。
+
+| 子層級 | 原文怎麼進去 | 遊戲的做法 |
+| --- | --- | --- |
+| [0.1 天頂站](https://backrooms-wiki-cn.wikidot.com/level-0-1) | 「只須直接走入相應的區域即可」，但 Level 0 太大，幾乎不可能遇到；B.N.T.G. 掌握一種可靠的方法。出口：返回 Level 0，或隨機切出到 Level 1。 | 柱子房間右牆的門洞 → `l0_annex`：跟著 B.N.T.G. 噴漆箭頭連走四次，走錯一次就從頭找 |
+| [0.3 冰室](https://backrooms-wiki-cn.wikidot.com/level-0-3) | 沒有寫入口。外觀幾乎和 Level 0 一樣，只是到處都是冰；通風口不停吹冷氣。 | 第一條走廊天花板旁的冷風格柵 → 循地毯上的霜走 |
+| [0.5 淵閉療舍](https://backrooms-wiki-cn.wikidot.com/level-0-5) | 敘述者在 Level 0 的熄燈區被熟悉的嗡鳴聲引導，「找到一段樓梯往下走」。第 9 天找到金屬格柵樓梯通往 Level 1。 | 停電區走對第一步後，腳邊出現往下的台階 |
+| [0.7 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7) | 沒有寫入口。是保存歷代後室的時間泡；「除了原路折返之外，沒有固定的出口」。 | 褪色的房間（本作 Level 0 最舊的地方）右牆的門洞，回程也走回這裡 |
+
 查過但**不採用**的：
 
 - Level 601 只在一句比喻裡提到 Level 0，不是通道。

@@ -4,7 +4,16 @@ An original 2D point-and-click horror puzzle game set in the Backrooms. The UI a
 
 You "noclip" out of reality into Level 0 (門檻 / "Threshold"). You then make your way through Level 1 (宜居地帶 / "The Habitable Zone") and Level 2 (廢棄維修通道 / "Abandoned Utility Halls") to a door with a green EXIT sign. Along the way you follow notes signed "J.H.", but Level 0's Isolation Effect means nobody else could have left them…
 
-Level 0 also has four optional sublevels. From the starting room, enter the side room with pillars, then take the doorway on its right wall into **異常交界**. The four visible entrances lead to:
+Level 0 also has four optional sublevels. Their entrances are spread across Level 0 and follow how each wiki article says the sublevel is reached:
+
+| Level | Way in | Based on the article |
+| --- | --- | --- |
+| 0.1 天頂站 | In the pillar room, take the stencilled doorway on the right wall. Then follow the B.N.T.G. arrows from pillar to pillar four times; one wrong side sends you back to the first arrow. | You can simply walk in, but Level 0 is too vast to find it by chance; only the B.N.T.G. reaches it reliably. |
+| 0.3 冰室 | In the first hallway, look at the vent near the ceiling, then follow the frost on the carpet. | It looks like Level 0 covered in ice; vents never stop blowing cold air. |
+| 0.5 淵閉療舍 | In the blackout zone, after the first correct step, take the stairs at your feet. | The narrator found a staircase down in a Level 0 blackout zone, drawn by a familiar hum. |
+| 0.7 憶域 | In the faded room, take the doorway on the right toward the older wallpaper. | A time bubble of older Backrooms with no fixed exit; you leave by retracing your steps. |
+
+Each sublevel returns to the room you entered from.
 
 | Level | Playable adaptation |
 | --- | --- |
@@ -39,7 +48,7 @@ The second suite walks all four sublevels, including unsafe repairs, cold and pu
 | --- | --- |
 | `src/render.js` | Procedural one-point-perspective renderer: rooms, boxes, pipes, notes, the flashlight darkness mask, the smiler, film grain and the camcorder overlay. Every scene is drawn in code; there are no image files. |
 | `src/scenes.js` | The scene graph: each scene's room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
-| `src/sublevels.js` | Level 0's branch entrances and the four sublevels: procedural scenery, repair puzzles, cold, pursuit and historical districts. |
+| `src/sublevels.js` | The B.N.T.G. pillar route and the four sublevels: procedural scenery, repair puzzles, cold, pursuit and historical districts. |
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
