@@ -19,6 +19,11 @@ const watch = (id) => (g) => {
     g.say(n === 3 ? '三卷帶子都看完了。你忽然很想讓另一個人也看看這些畫面。' : `你看完了這卷帶子。（額外的帶子：${n} / 3）`);
   });
 };
+// The fifth tape was recorded in the dark, at the very end. Watching it gives back the one thing this place takes.
+const watch5 = (g) => {
+  g.take('tape5'); g.flag('watched_tape5'); g.sfx('whirr');
+  g.read('n_tape5', () => { g.sanity(10); g.say('你按下停止鍵。那個名字還在你嘴裡。這一次，你沒有忘記。'); });
+};
 const tapeItem = (n, where) => ({
   name: `錄影帶 #${n}`, desc: `一卷小型錄影帶，標籤上寫著「#${n}」。${where}`,
   combine: { camcorder: watch(`tape${n}`) },
@@ -54,6 +59,8 @@ export const ITEMS = {
   tape2: tapeItem(2, '和攝影機一起用就能播放。'),
   tape3: tapeItem(3, '和攝影機一起用就能播放。'),
   tape4: tapeItem(4, '上面還黏著紅色的地毯纖維。'),
+  tape5: { name: '錄影帶 #5', desc: '一卷小型錄影帶，標籤上寫著「#5」。摸起來是冰的。', combine: { camcorder: watch5 } },
+  wrench: { name: '扳手', desc: '很重的活動扳手，握把被很多隻手磨得發亮。' },
   ladder: { name: '折疊梯', desc: '鋁製的折疊梯。可以架在高處的洞口下面，也可以橫著放。' },
   key: { name: '黃銅鑰匙', desc: '小小的黃銅鑰匙。標籤上寫著「別開」，字跡被手指摸得快看不見了。' },
   chalk: { name: '粉筆', desc: '一截很短的粉筆。可以在牆上寫字——如果這一層願意留著那些字的話。' },
@@ -62,7 +69,7 @@ export const ITEMS = {
   camcorder: {
     name: '攝影機', desc: '一台舊型的手持攝影機，螢幕還亮著。再點一次就能舉起來透過觀景窗看（也可以按 V 鍵）。',
     self: (g) => g.setView(!g.s.view),
-    combine: { tape: insertTape, tape2: watch('tape2'), tape3: watch('tape3'), tape4: watch('tape4') },
+    combine: { tape: insertTape, tape2: watch('tape2'), tape3: watch('tape3'), tape4: watch('tape4'), tape5: watch5 },
   },
   tape: { name: '錄影帶', desc: '一卷小型錄影帶，標籤上寫著「0120」。', combine: { camcorder: insertTape } },
   outpost_key: { name: 'M.E.G. 鑰匙', desc: '小鑰匙，吊牌上寫著「第七前哨站・物資籠」。吊牌背面有人用指甲刻了一道「正」字的第一筆。' },
@@ -203,11 +210,18 @@ export function drawIcon(ctx, id, s = 56) {
     case 'tape2':
     case 'tape3':
     case 'tape4':
+    case 'tape5':
       ctx.fillStyle = '#1e1e20'; ctx.beginPath(); ctx.roundRect(-18, -11, 36, 22, 2); ctx.fill();
       ctx.fillStyle = '#e9e1c1'; ctx.fillRect(-14, -9, 28, 6);
       ctx.fillStyle = '#777';
       for (const x of [-8, 8]) { ctx.beginPath(); ctx.arc(x, 4, 4, 0, Math.PI * 2); ctx.fill(); }
       if (id !== 'tape') { ctx.fillStyle = '#2b241a'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`#${id.slice(4)}`, 0, -4); }
+      break;
+    case 'wrench':
+      ctx.rotate(-0.7);
+      ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-3, -14, 6, 34);
+      ctx.beginPath(); ctx.arc(0, -16, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-3, -26, 6, 10);
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);

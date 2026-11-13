@@ -558,6 +558,27 @@ const ENDINGS = {
       '這一層不會讓你餓死。它只會讓你忘記自己為什麼要站起來。',
     ],
   },
+  void: {
+    title: '— 虛空結局 —',
+    lines: [
+      '你回頭。門口不在那裡了。',
+      '沒有牆，沒有地板的邊，沒有聲音——連自己的腳步聲都沒有。',
+      '你開始數步數。數到一萬的時候，你發現自己一直站在原地。',
+      '攝影機的螢幕是黑的。不是沒電，是它也找不到任何東西可以錄。',
+    ],
+  },
+  filed: {
+    title: '— 記錄 0120：歸檔 —',
+    lines: [
+      '你按下輸入鍵。游標停止了閃爍。',
+      '牆上所有的螢幕同時切換成同一個畫面：一間黃色的房間。',
+      '有人在房間裡醒過來，摸到牆上一張皺巴巴的紙條。',
+      '你看著他讀紙條。你知道他接下來會往哪裡走，會在哪裡停下來，會在哪裡哭。',
+      '桌上有一疊紙和一支筆。',
+      '你拿起筆。該寫下一張了。',
+      '「如果你在讀這張紙條，代表你又『切出去』了。」',
+    ],
+  },
   lost: {
     title: '— 迷失結局 —',
     lines: [
@@ -576,13 +597,25 @@ function showEnding(kind) {
   $('#endTitle').textContent = E.title;
   const box = $('#endLines');
   box.innerHTML = '';
-  const lines = E.lines.slice();
-  if (kind === 'escape' && S.flags.freed_jh) {
+  let lines = E.lines.slice();
+  if (kind === 'escape' && S.flags.rec === 'name') {
+    // the true ending: the subject wrote their own name into record 0120
+    $('#endTitle').textContent = '— 結案 —';
+    lines = [
+      '你推開那扇門。',
+      '外面是真正的早晨。路燈已經熄了，沒有嗡嗡聲。',
+      '攝影機的紅燈熄了。這一次，沒有人在錄。',
+      '口袋裡的紙條是空白的。你把它留在門邊，給下一個需要它的人——不，你希望不會再有下一個人了。',
+      '你記得自己的名字。你一路小聲念著它，走回家。',
+    ];
+    if (S.flags.freed_jh) lines.splice(3, 0, '街角有個人朝你點了點頭。他的臉終於對準了焦。然後他轉身，走進了人群。');
+  } else if (kind === 'escape' && S.flags.freed_jh) {
     $('#endTitle').textContent = '— 歸檔結局 —';
     lines.splice(1, 0, '你身後傳來另一個腳步聲。你回頭——街上只有你一個人。可是地上有兩排腳印。');
     lines.splice(lines.length - 2, 2, '「記錄 0120：對象離開了。對象們離開了。」', '紙條背面還有一行小字：「下一次，換誰坐在牆角？」');
   } else if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。他後來站起來了嗎？');
-  if (kind === 'escape' && S.flags.wrote_start) lines.push('你在口袋裡摸到一截粉筆。你不記得自己把它帶出來了。');
+  if (kind === 'escape' && S.flags.rec === 'left') lines.splice(lines.length - 1, 0, '你想起監視室終端上那兩個自己冒出來的字：「未歸檔」。');
+  if (kind === 'escape' && S.flags.rec !== 'name' && S.flags.wrote_start) lines.push('你在口袋裡摸到一截粉筆。你不記得自己把它帶出來了。');
   lines.forEach((t, i) => {
     const p = document.createElement('p');
     p.textContent = t;
