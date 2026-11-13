@@ -116,10 +116,14 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('ladder'); check(await has('ladder'), 'picked up the folding ladder');
   await hit('door'); check(await scene() === 'l02_room' && await page.textContent('#lvlName') === 'LEVEL 0.2', 'entered Level 0.2');
   await page.waitForTimeout(200); await shot('13-l02_room');
-  await hit('toolbox'); check(await has('screwdriver') && (await flags()).l02_collapsed, 'taking the screwdriver makes the remodelled room collapse');
+  await hit('forward'); check(await scene() === 'l02_office', 'site office at the end of the remodelled hall');
+  await hit('toolbox'); check(await has('screwdriver') && (await flags()).l02_collapsed && await scene() === 'l02_frame', 'taking the screwdriver makes the remodelled rooms collapse');
   await page.waitForTimeout(300); await shot('14-l02_house');
   await hit('tape2'); check(await has('tape2'), 'found tape #2 in the half-built house');
-  await hit('door'); check(await scene() === 'l0_dry' && !(await flags()).l02_collapsed, 'escaped the collapsing house');
+  await hit('back'); await hit((await flags()).l02_crack === 'left' ? 'right' : 'left');
+  check(await scene() === 'l02_exit', 'crossed the caved-in hall on the sound joist');
+  await page.waitForFunction(() => { const k = window.__rooms.state.clock % 2.8; return k > 1.2 && k < 2.4; }, null, { polling: 'raf', timeout: 10000 });
+  await hit('forward'); check(await scene() === 'l0_dry' && !(await flags()).l02_collapsed, 'escaped the collapsing house');
   await hit('back'); await hit('back');
   await slot('screwdriver'); await hit('outlet'); check(await has('tape3'), 'unscrewing the whispering outlet reveals tape #3');
   await hit('back'); await hit('lowroom');

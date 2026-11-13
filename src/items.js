@@ -30,6 +30,14 @@ const tapeItem = (n, where) => ({
 });
 
 export const ITEMS = {
+  towel: {
+    name: '濕擦手紙', desc: '一張沾濕、摺成小塊的擦手紙。摀住口鼻，就能擋掉大部分的灰塵。（再點一次直接使用）',
+    self: (g) => {
+      if (!g.s.flags.l02_collapsed) return g.say('現在沒有灰塵要擋。先留著吧。');
+      g.take('towel'); g.flag('l02_mask');
+      g.say('你把濕擦手紙摀在口鼻上。呼吸一下子順多了，灰塵只剩下眼睛還在刺痛。');
+    },
+  },
   zcard: { name: '門禁卡', desc: '天頂站的門禁卡。「R. 瓦爾普利・環境控制」。照片被磨花了，看不清是誰。' },
   wool: { name: '羊毛地毯', desc: '一捲沒鋪完的羊毛地毯，又厚又重。標籤上寫著「B 類重建・溫暖」。' },
   blowtorch: { name: '噴槍', desc: '104-CX 的施工噴槍。瓦斯罐烘熱之後就點得著了，藍色的火舌能化開冰。' },
@@ -98,6 +106,11 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.fillStyle = '#3b6f86'; ctx.fillRect(-18, -12, 36, 6);
       ctx.fillStyle = '#9aa8ae'; ctx.fillRect(-14, -2, 10, 11);
       ctx.fillStyle = '#c9a227'; ctx.fillRect(4, 0, 9, 7);
+      break;
+    case 'towel':
+      ctx.fillStyle = '#e8eef0'; ctx.beginPath(); ctx.roundRect(-16, -12, 32, 24, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(90,140,170,0.35)'; ctx.fillRect(-16, 2, 32, 10);
+      ctx.strokeStyle = '#b8c4c8'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-16, -2); ctx.lineTo(16, -2); ctx.stroke();
       break;
     case 'wool':
       ctx.fillStyle = '#8a3a2a'; ctx.fillRect(-20, -10, 34, 20);
