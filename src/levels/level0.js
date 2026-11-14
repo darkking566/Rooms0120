@@ -423,6 +423,8 @@ const chalkAt = P(-0.35, 0.39, 5.95);
 const cardQuad = faceQuad(0.15, 0.3, 0.45, 0.39, 5.899);
 const drawer0120 = wallQuad(1.05, 0.1, 0.35, 1.7, 2.4);
 const archDoor = archesR[1];
+const wormQuad = faceQuad(-0.55, -0.88, 0.55, -0.05, 6.95);
+const n04WarnQuad = faceQuad(-0.98, -0.45, -0.64, -0.1, 6.94);
 
 
 export const LEVEL0_SCENES = {
@@ -1511,6 +1513,9 @@ export const LEVEL0_SCENES = {
         }
       }
       poly(ctx, drawer0120, s.flags.archived_open ? '#0d0c08' : shade(R, '#8a8c84', 2));
+      poly(ctx, wormQuad, '#1f0d2b');
+      ctx.strokeStyle = '#62288a'; ctx.lineWidth = 2; poly(ctx, wormQuad); ctx.stroke();
+      paper(ctx, R, n04WarnQuad, 6.9, '#f2ecd8');
       box(ctx, R, archDesk);
       if (!s.flags.chalk) { seg(ctx, chalkAt, [chalkAt[0] + 10, chalkAt[1] - 1], '#f2f0e8', 3); }
       poly(ctx, cardQuad, shade(R, '#f2ecd8', 5.9));
@@ -1538,6 +1543,8 @@ export const LEVEL0_SCENES = {
         click: (g) => { g.flag('chalk'); g.give('chalk', '一截用到很短的粉筆。指尖沾上的粉，和隔間地上的箭頭是同一種白。'); },
       },
       { id: 'card', rect: bounds(cardQuad, 12), label: '桌上的卡片', cursor: 'look', click: (g) => g.read('n0i') },
+      { id: 'worm_note', rect: bounds(n04WarnQuad, 4), label: '洞口旁的紙條', cursor: 'look', click: (g) => g.read('n04_warn') },
+      { id: 'wormhole', rect: bounds(wormQuad, 4), label: '牆後翻湧的宏蟲洞', cursor: 'go', click: (g) => g.go('l04_worm') },
     ],
   },
 

@@ -77,6 +77,13 @@ const { chromium } = require('playwright');
         await hit('trek');
         await hit('ahead');
       },
+      l04: async () => {
+        await page.evaluate(() => window.__rooms.g.go('l0_archive'));
+        await hit('wormhole');
+        await hit('worm_enter');
+        await hit('worm_enter');
+        await hit('cross_veil');
+      },
     };
     async function reload() {
       await page.reload(); await page.click('#btnCont');
@@ -559,6 +566,70 @@ const { chromium } = require('playwright');
     await hit('back'); await hit('back'); await hit('back');
     check((await state()).scene === 'c1e_outskirts' && (await state()).flags.c1s_delivered, 'Junjun delivered to East Boat City medical dept and subspaces vanish');
 
+    console.log('Level 0.4 — 碾城');
+    await start();
+    await page.evaluate(() => window.__rooms.g.go('l0_archive'));
+    await hit('worm_note'); await closeDoc();
+    check((await state()).notes.includes('n04_warn'), 'reads Level 0.4 macro-wormhole warning note');
+    await hit('wormhole');
+    check((await state()).scene === 'l04_worm', 'enters macro-wormhole entrance');
+    const preWarnSan = (await state()).sanity;
+    await hit('worm_enter');
+    check((await state()).scene === 'l04_worm' && (await state()).flags.l04_warned && (await state()).sanity <= preWarnSan - 5, 'first click warns and drains 5 sanity before wormhole');
+    await hit('worm_enter');
+    check((await state()).scene === 'l04_veil', 'second click reaches starry veil');
+    await hit('cross_veil');
+    const l04Hud = await page.evaluate(() => ({
+      name: document.getElementById('lvlName').textContent,
+      sub: document.getElementById('lvlSub').textContent,
+    }));
+    check((await state()).scene === 'l04_outer' && l04Hud.name === 'LEVEL 0.4' && l04Hud.sub.includes('碾城'), 'crossing veil enters Level 0.4 Grinding City');
+    await shot('sub-15-l04-outer');
+    for (const sc of ['l04_outer', 'l04_wei', 'l04_inner', 'l04_wolf']) {
+      await page.evaluate((target) => window.__rooms.g.go(target), sc);
+      const ids = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+      check(!ids.includes('back'), `no back exit hotspot in ${sc}`);
+    }
+    // Collect max 3 supplies across Grinding City and read the three faction notes
+    await page.evaluate(() => window.__rooms.g.go('l04_outer'));
+    await hit('outer_supply');
+    check((await state()).inv.filter((id) => id === 'bar').length === 1, 'outer ring grants 1 bar');
+    await hit('to_wei');
+    await hit('talk_hunter'); await closeDoc();
+    await hit('wei_supply');
+    check((await state()).inv.includes('can') && (await state()).notes.includes('n04_hunter'), 'Wei Chi Ave grants 1 can and hunter note');
+    await hit('to_inner');
+    await hit('talk_pioneer'); await closeDoc();
+    check((await state()).flags.l04_confirmed_deadend && (await state()).notes.includes('n04_pioneer'), 'Inner ring pioneer confirms dead end');
+    await reload();
+    check((await state()).scene === 'l04_inner' && (await state()).flags.l04_confirmed_deadend, 'reloading mid-0.4 keeps scene and flags');
+    // Trigger layer fission from inside city -> crimson sky, city unchanged, Wolf Domain shifts
+    await page.evaluate(() => window.__rooms.g.flag('l04_fission_t', 89.9));
+    await page.waitForTimeout(350);
+    check((await state()).flags.l04_red_sky === true && (await state()).flags.l04_fission_count >= 1, 'layer fission triggers crimson sky warning');
+    const innerHsAfter = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check(innerHsAfter.includes('talk_pioneer') && innerHsAfter.includes('stay_here'), 'city area layout unchanged by layer fission');
+    await hit('to_wei');
+    await hit('to_outer');
+    await hit('to_wolf');
+    await hit('talk_ronin'); await closeDoc();
+    check((await state()).notes.includes('n04_ronin'), 'reads ronin note in Wolf Domain');
+    const wolfVariantOneHs = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check(wolfVariantOneHs.includes('wolf_silhouette') && !wolfVariantOneHs.includes('wolf_crate'), 'Wolf Domain flipped to silhouette variant after fission');
+    // Trigger second fission so crate variant exposes the 3rd supply
+    await page.evaluate(() => { window.__rooms.g.flag('l04_fission_rem', 0); window.__rooms.g.flag('l04_fission_t', 89.9); });
+    await page.waitForTimeout(350);
+    const wolfVariantZeroHs = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check(wolfVariantZeroHs.includes('wolf_crate') && !wolfVariantZeroHs.includes('wolf_silhouette'), 'Wolf Domain shifts back to crate variant on next fission');
+    await hit('wolf_crate');
+    check((await state()).inv.includes('almond'), 'Wolf Domain crate grants 3rd and final supply (almond)');
+    await hit('to_outer'); await hit('to_wei'); await hit('to_inner');
+    await hit('stay_here');
+    check(await page.locator('#ending:not([hidden])').count() === 1, 'staying in Level 0.4 reaches dead_end ending');
+    await shot('sub-16-l04-ending');
+    await page.click('#btnRetry');
+    check((await state()).scene === 'l04_outer', 'retry from dead_end restores 0.4 checkpoint');
+
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
     page = await mobile.newPage(); watch(page);
@@ -597,6 +668,12 @@ const { chromium } = require('playwright');
     check((await state()).scene === 'l0_annex', 'existing v1 saves can enter the new branches');
     await hit((await state()).flags.l01_mark);
     check((await state()).flags.l01_walk === 1, 'old saves get a B.N.T.G. arrow to follow');
+    await page.evaluate(() => window.__rooms.g.go('l0_dry'));
+    await hit('c1_box');
+    check((await state()).scene === 'c1_entry', 'old saves can enter Level C-1');
+    await page.evaluate(() => window.__rooms.g.go('l0_archive'));
+    await hit('wormhole');
+    check((await state()).scene === 'l04_worm', 'old saves can enter Level 0.4 wormhole');
     check(errors.length === 0, `no browser errors: ${errors.join(', ')}`);
     console.log('\nAll sublevel checks passed');
   } finally {
