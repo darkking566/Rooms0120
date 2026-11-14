@@ -38,12 +38,17 @@ The second suite walks all four sublevels, including unsafe repairs, cold and pu
 | File | What it does |
 | --- | --- |
 | `src/render.js` | Procedural one-point-perspective renderer: rooms, boxes, pipes, notes, the flashlight darkness mask, the smiler, film grain and the camcorder overlay. Every scene is drawn in code; there are no image files. |
-| `src/scenes.js` | The scene graph: each scene's room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
+| `src/scenes.js` | The scene graph's index: the level table and every scene, gathered from the files below. |
+| `src/scenes/level0.js`, `level1.js`, `level2.js` | One file per main level: each scene's room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
+| `src/scenes/common.js` | Palettes, flicker curves, the back/forward hotspots, smiler helpers and props shared between levels. |
 | `src/sublevels.js` | The B.N.T.G. pillar route and the four sublevels: procedural scenery, repair puzzles, cold, pursuit and historical districts. |
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
-| `src/main.js` | State, input, inventory, the camcorder viewfinder, modals (notes, keypad, pressure dials), saving and the game loop. |
+| `src/main.js` | State, input, inventory, the HUD, the camcorder viewfinder and the game loop. |
+| `src/modals.js` | The dialogs: reading a note, the notes list, the keypad and the pressure dials. |
+| `src/save.js` | The new-game state, and the autosave and checkpoint slots in `localStorage`. |
+| `src/endings.js` | Ending texts, and which variant of the escape ending a run has earned. |
 
 ### Mechanics
 

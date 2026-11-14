@@ -5,18 +5,14 @@ import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
 import { Sound } from './audio.js';
 import { drawDrowned, drawGrowler } from './sublevels.js';
+import { SAVE_KEY, CP_KEY, fresh, store, valid, clearSaves } from './save.js';
+import { endingText } from './endings.js';
+import { createModals } from './modals.js';
 
-const SAVE_KEY = 'rooms0120.save.v1';
-const CP_KEY = 'rooms0120.checkpoint.v1';
 const $ = (s) => document.querySelector(s);
 const cv = $('#game');
 const ctx = cv.getContext('2d');
 const sound = new Sound();
-
-const fresh = () => ({
-  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false, thirst: 100, hunger: 100,
-  loops: 0, maze: 0, bo: null, holes: null, dread: 0, ghost: null, seen: {}, moves: 0, clock: 0, flicker: null,
-});
 
 let S = fresh();
 let playing = false;
@@ -28,22 +24,15 @@ let fade = 0, scareT = 0, scareBack = null, scareMsg = null;
 let lightT = 0, stare = 0, panicT = 0;
 // seconds spent in the current scene, and the shake left over from a hum surge
 let sceneT = 0, surgeT = 0;
-let docAfter = null;
 let scareKind = 'smiler';
-let modal = null;
 let msgTimer = null;
 let ended = false;
 // while moving between scenes, messages are collected and shown together
 let collecting = null;
 let lostTimer = null;
 
-const store = {
-  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
-  del(k) { try { localStorage.removeItem(k); } catch { /* storage unavailable */ } },
-};
-const valid = (s) => s && s.v === 1 && SCENES[s.scene] && Array.isArray(s.inv);
 const save = () => { if (playing && !ended) store.set(SAVE_KEY, S); };
+const modals = createModals({ sound, onClose: () => { updateHud(); save(); } });
 
 // ---------- the API that scenes and items talk to ----------
 const g = {
@@ -113,11 +102,7 @@ const g = {
   flag(k, v = true) { S.flags[k] = v; },
   read(id, after = null) {
     if (!S.notes.includes(id)) S.notes.push(id);
-    docAfter = after;
-    sound.sfx('page');
-    $('#docTitle').textContent = NOTES[id].title;
-    $('#docBody').textContent = NOTES[id].body;
-    openModal('doc');
+    modals.doc(NOTES[id], after);
   },
   sanity(d) {
     S.sanity = clamp(S.sanity + d, 0, 100);
@@ -150,8 +135,10 @@ const g = {
     save();
   },
   checkpoint() { store.set(CP_KEY, S); },
-  keypad(code, ok) { openKeypad(code, ok); },
-  dials(cfg) { openDials(cfg); },
+  keypad(code, ok) { modals.keypad(code, ok); },
+  dials(cfg) {
+    modals.dials(cfg, { start: S.flags.dials || [0, 0, 0], change: (vals) => { S.flags.dials = vals; }, done: save });
+  },
   scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。', dmg = 25, kind = null) {
     if (scareT > 0 || ended) return;
     scareT = 1.1;
@@ -170,9 +157,9 @@ const g = {
   end(kind) {
     if (ended) return;
     ended = true;
-    closeModal();
+    modals.close();
     sound.setHum(null);
-    if (kind === 'escape') { store.del(SAVE_KEY); store.del(CP_KEY); }
+    if (kind === 'escape') clearSaves();
     showEnding(kind);
   },
 };
@@ -255,7 +242,7 @@ function toCanvas(e) {
 
 cv.addEventListener('pointermove', (e) => {
   mouse = toCanvas(e);
-  if (!playing || modal) return;
+  if (!playing || modals.current) return;
   hover = hitTest(mouse.x, mouse.y);
   cv.dataset.cursor = hover ? hover.cursor || 'look' : '';
   const tip = $('#tip');
@@ -272,7 +259,7 @@ cv.addEventListener('pointermove', (e) => {
 cv.addEventListener('pointerleave', () => { $('#tip').hidden = true; });
 
 cv.addEventListener('pointerdown', (e) => {
-  if (!playing || modal || scareT > 0 || ended) return;
+  if (!playing || modals.current || scareT > 0 || ended) return;
   mouse = toCanvas(e);
   const h = hitTest(mouse.x, mouse.y);
   $('#tip').hidden = true;
@@ -299,11 +286,11 @@ cv.addEventListener('pointerdown', (e) => {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (modal) closeModal();
+    if (modals.current) modals.close();
     else if (selected) { selected = null; renderInv(); }
   }
-  if ((e.key === 'f' || e.key === 'F') && playing && !modal && g.has('torch')) g.setLight(!S.light);
-  if ((e.key === 'v' || e.key === 'V') && playing && !modal && !ended && g.has('camcorder')) g.setView(!S.view);
+  if ((e.key === 'f' || e.key === 'F') && playing && !modals.current && g.has('torch')) g.setLight(!S.light);
+  if ((e.key === 'v' || e.key === 'V') && playing && !modals.current && !ended && g.has('camcorder')) g.setView(!S.view);
 });
 
 // ---------- inventory ----------
@@ -336,7 +323,7 @@ function renderInv() {
   }
 }
 function onSlot(id) {
-  if (!playing || modal || ended) return;
+  if (!playing || modals.current || ended) return;
   const item = ITEMS[id];
   if (selected && selected !== id) {
     const comb = ITEMS[selected].combine?.[id];
@@ -383,7 +370,7 @@ function updateHud() {
   bv.textContent = `觀景窗：${S.view ? '開' : '關'}`;
   bv.setAttribute('aria-pressed', S.view ? 'true' : 'false');
 }
-$('#btnView').addEventListener('click', () => { if (playing && !modal && !ended) g.setView(!S.view); });
+$('#btnView').addEventListener('click', () => { if (playing && !modals.current && !ended) g.setView(!S.view); });
 $('#btnLight').addEventListener('click', () => g.setLight(!S.light));
 $('#btnSave').addEventListener('click', () => { g.say(store.set(SAVE_KEY, S) ? '已存檔。' : '這個瀏覽器無法存檔。'); });
 $('#btnMute').addEventListener('click', () => {
@@ -391,87 +378,8 @@ $('#btnMute').addEventListener('click', () => {
   $('#btnMute').textContent = `音效：${sound.muted ? '關' : '開'}`;
 });
 $('#btnNotes').addEventListener('click', () => {
-  const ul = $('#notesList');
-  ul.innerHTML = '';
-  if (!S.notes.length) { const li = document.createElement('li'); li.textContent = '還沒有撿到任何紙條。'; ul.append(li); }
-  for (const id of S.notes) {
-    const li = document.createElement('li');
-    const b = document.createElement('button');
-    b.textContent = NOTES[id].title;
-    b.addEventListener('click', () => { closeModal(); g.read(id); });
-    li.append(b); ul.append(li);
-  }
-  openModal('notes');
+  modals.notesList(S.notes.map((id) => ({ id, title: NOTES[id].title })), (id) => g.read(id));
 });
-
-// ---------- modals ----------
-function openModal(id) { closeModal(); modal = id; $(`#${id}`).hidden = false; $('#tip').hidden = true; }
-function closeModal() {
-  if (!modal) return;
-  $(`#${modal}`).hidden = true;
-  const was = modal;
-  modal = null;
-  if (was === 'doc' && docAfter) { const f = docAfter; docAfter = null; f(); }
-  updateHud();
-  save();
-}
-$('#docClose').addEventListener('click', closeModal);
-$('#notesClose').addEventListener('click', closeModal);
-$('#kpClose').addEventListener('click', closeModal);
-$('#dialsClose').addEventListener('click', closeModal);
-for (const m of document.querySelectorAll('.modal')) m.addEventListener('pointerdown', (e) => { if (e.target === m) closeModal(); });
-
-function openKeypad(code, ok) {
-  let entry = '';
-  const screen = $('#kpScreen');
-  const show = () => { screen.textContent = entry.padEnd(code.length, '_'); };
-  const keys = $('#kpKeys');
-  keys.innerHTML = '';
-  for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'OK']) {
-    const b = document.createElement('button');
-    b.textContent = k === 'C' ? '清除' : k === 'OK' ? '確認' : k;
-    b.dataset.k = k.toLowerCase();
-    b.addEventListener('click', () => {
-      if (k === 'C') entry = '';
-      else if (k === 'OK') {
-        if (entry === code) { sound.sfx('ok'); closeModal(); ok(); return; }
-        sound.sfx('error');
-        screen.classList.remove('err'); void screen.offsetWidth; screen.classList.add('err');
-        entry = '';
-      } else if (entry.length < code.length) { entry += k; sound.sfx('beep'); }
-      show();
-    });
-    keys.append(b);
-  }
-  show();
-  openModal('keypad');
-}
-
-function openDials(cfg) {
-  const vals = (S.flags.dials || [0, 0, 0]).slice();
-  const cols = $('#dialCols');
-  cols.innerHTML = '';
-  vals.forEach((v, i) => {
-    const col = document.createElement('div');
-    col.className = 'dial';
-    col.style.setProperty('--c', cfg.colors[i]);
-    const up = document.createElement('button'); up.className = 'up'; up.dataset.i = i; up.textContent = '▲'; up.setAttribute('aria-label', `${cfg.names[i]}色 增加`);
-    const val = document.createElement('output'); val.textContent = v;
-    const dn = document.createElement('button'); dn.className = 'down'; dn.dataset.i = i; dn.textContent = '▼'; dn.setAttribute('aria-label', `${cfg.names[i]}色 減少`);
-    const name = document.createElement('span'); name.textContent = cfg.names[i];
-    const set = (d) => { vals[i] = (vals[i] + d + 10) % 10; val.textContent = vals[i]; S.flags.dials = vals.slice(); sound.sfx('click'); };
-    up.addEventListener('click', () => set(1));
-    dn.addEventListener('click', () => set(-1));
-    col.append(name, up, val, dn);
-    cols.append(col);
-  });
-  $('#dialsOk').onclick = () => {
-    closeModal();
-    if (vals.every((v, i) => v === cfg.answer[i])) cfg.onRight(); else cfg.onWrong();
-    save();
-  };
-  openModal('dials');
-}
 
 // ---------- title / ending ----------
 function startGame(state) {
@@ -502,124 +410,13 @@ function startGame(state) {
   save();
 }
 
-const ENDINGS = {
-  escape: {
-    title: '— 逃脫結局 —',
-    lines: [
-      '你推開那扇門。',
-      '……風。真正的、冷冷的風。',
-      '你站在一條陌生的街上，天快要亮了。路燈還亮著——發出熟悉的嗡嗡聲。',
-      '攝影機還在錄。你低頭看螢幕——畫面裡的街道，和你眼前的一模一樣。',
-      '口袋裡多了一張紙條。是你自己的筆跡：',
-      '「記錄 0120：已歸檔。下一次，請小心一點。」署名被水暈開了，只看得出一個 J。',
-      '你試著想起 J.H. 是誰。你想起一條走廊、一盞燈、一個坐在牆角的人。……你想不起自己的名字。',
-    ],
-  },
-  fall: {
-    title: '— 墜落結局 —',
-    lines: [
-      '燈光暗下去的那一瞬間，你一腳踩空。',
-      '下墜的時間長得不合理。',
-      '你一直在等撞擊。',
-      '它一直沒有來。',
-    ],
-  },
-  red: {
-    title: '— 紅房間結局 —',
-    lines: [
-      '你往紅光更深的地方走。',
-      '轉過一個彎，又一個彎。每一個轉角後面，都是同一間紅色的房間。',
-      '攝影機的螢幕早就只剩雜訊。',
-      '你開始在牆上刻記號，好記住自己繞了幾圈。',
-      '……正、正、正、正、正、正……',
-    ],
-  },
-  archive: {
-    title: '— 0120 —',
-    lines: [
-      '你把攝影機放進抽屜。紅燈還亮著。',
-      '你關上抽屜。嗡嗡聲變得很遠、很遠。',
-      '……',
-      '在某個黃色的房間裡，有人醒了過來。',
-      '牆上貼著一張皺巴巴的紙條。字跡……莫名地眼熟。',
-    ],
-  },
-  thirst: {
-    title: '— 脫水結局 —',
-    lines: [
-      '你的嘴唇裂開了，舌頭腫得說不出話。',
-      '地毯吸飽了水，踩下去會冒出來。',
-      '你跪下來，把臉貼在濕地毯上。',
-      '那股鹹味，是你最後記得的東西。',
-    ],
-  },
-  starve: {
-    title: '— 飢餓結局 —',
-    lines: [
-      '你已經很多天沒有吃東西了。',
-      '你蜷在牆角，數著燈管閃爍的次數，好忘記胃裡的痛。',
-      '嗡嗡聲越來越遠。',
-      '這一層不會讓你餓死。它只會讓你忘記自己為什麼要站起來。',
-    ],
-  },
-  void: {
-    title: '— 虛空結局 —',
-    lines: [
-      '你回頭。門口不在那裡了。',
-      '沒有牆，沒有地板的邊，沒有聲音——連自己的腳步聲都沒有。',
-      '你開始數步數。數到一萬的時候，你發現自己一直站在原地。',
-      '攝影機的螢幕是黑的。不是沒電，是它也找不到任何東西可以錄。',
-    ],
-  },
-  filed: {
-    title: '— 記錄 0120：歸檔 —',
-    lines: [
-      '你按下輸入鍵。游標停止了閃爍。',
-      '牆上所有的螢幕同時切換成同一個畫面：一間黃色的房間。',
-      '有人在房間裡醒過來，摸到牆上一張皺巴巴的紙條。',
-      '你看著他讀紙條。你知道他接下來會往哪裡走，會在哪裡停下來，會在哪裡哭。',
-      '桌上有一疊紙和一支筆。',
-      '你拿起筆。該寫下一張了。',
-      '「如果你在讀這張紙條，代表你又『切出去』了。」',
-    ],
-  },
-  lost: {
-    title: '— 迷失結局 —',
-    lines: [
-      '嗡嗡聲越來越大，',
-      '大到你分不清那是燈管，還是你自己的聲音。',
-      '你靠著牆坐了下來。',
-      '其實這裡……也沒那麼糟，對吧？',
-    ],
-  },
-};
-
 function showEnding(kind) {
-  const E = ENDINGS[kind];
+  const { title, lines } = endingText(kind, S);
   const el = $('#ending');
   el.dataset.kind = kind;
-  $('#endTitle').textContent = E.title;
+  $('#endTitle').textContent = title;
   const box = $('#endLines');
   box.innerHTML = '';
-  let lines = E.lines.slice();
-  if (kind === 'escape' && S.flags.rec === 'name') {
-    // the true ending: the subject wrote their own name into record 0120
-    $('#endTitle').textContent = '— 結案 —';
-    lines = [
-      '你推開那扇門。',
-      '外面是真正的早晨。路燈已經熄了，沒有嗡嗡聲。',
-      '攝影機的紅燈熄了。這一次，沒有人在錄。',
-      '口袋裡的紙條是空白的。你把它留在門邊，給下一個需要它的人——不，你希望不會再有下一個人了。',
-      '你記得自己的名字。你一路小聲念著它，走回家。',
-    ];
-    if (S.flags.freed_jh) lines.splice(3, 0, '街角有個人朝你點了點頭。他的臉終於對準了焦。然後他轉身，走進了人群。');
-  } else if (kind === 'escape' && S.flags.freed_jh) {
-    $('#endTitle').textContent = '— 歸檔結局 —';
-    lines.splice(1, 0, '你身後傳來另一個腳步聲。你回頭——街上只有你一個人。可是地上有兩排腳印。');
-    lines.splice(lines.length - 2, 2, '「記錄 0120：對象離開了。對象們離開了。」', '紙條背面還有一行小字：「下一次，換誰坐在牆角？」');
-  } else if (kind === 'escape' && S.flags.met_jh) lines.splice(lines.length - 1, 0, '你想起馬尼拉房間牆角的那個人。他後來站起來了嗎？');
-  if (kind === 'escape' && S.flags.rec === 'left') lines.splice(lines.length - 1, 0, '你想起監視室終端上那兩個自己冒出來的字：「未歸檔」。');
-  if (kind === 'escape' && S.flags.rec !== 'name' && S.flags.wrote_start) lines.push('你在口袋裡摸到一截粉筆。你不記得自己把它帶出來了。');
   lines.forEach((t, i) => {
     const p = document.createElement('p');
     p.textContent = t;
@@ -637,8 +434,8 @@ $('#btnRetry').addEventListener('click', () => {
   const cp = store.get(CP_KEY);
   if (valid(cp)) startGame({ ...cp, sanity: Math.max(cp.sanity, 60), thirst: Math.max(cp.thirst ?? 100, 60), hunger: Math.max(cp.hunger ?? 100, 60) });
 });
-$('#btnAgain').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
-$('#btnNew').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
+$('#btnAgain').addEventListener('click', () => { clearSaves(); startGame(fresh()); });
+$('#btnNew').addEventListener('click', () => { clearSaves(); startGame(fresh()); });
 $('#btnCont').addEventListener('click', () => { const s = store.get(SAVE_KEY); if (valid(s)) startGame(s); });
 $('#btnCont').hidden = !valid(store.get(SAVE_KEY));
 
@@ -651,7 +448,7 @@ function frame(now) {
   const sc = SCENES[S.scene];
   if (playing) S.clock += dt;
 
-  const active = playing && !modal && scareT <= 0 && !ended;
+  const active = playing && !modals.current && scareT <= 0 && !ended;
   if (active && S.sanity > 0) sc.update?.(g, dt);
   if (active && S.flicker) {
     const f = S.flicker;
@@ -727,7 +524,7 @@ function frame(now) {
   }
   ctx.restore();
 
-  if (playing && !modal) {
+  if (playing && !modals.current) {
     if (visible().some((h) => h.id === 'back')) {
       ctx.save();
       ctx.globalAlpha = hover?.id === 'back' ? 0.85 : 0.3;
@@ -787,7 +584,7 @@ requestAnimationFrame(frame);
 window.__rooms = {
   g,
   get state() { return S; },
-  get modal() { return modal; },
+  get modal() { return modals.current; },
   get ended() { return ended; },
   hotspots: () => visible().map((h) => ({ id: h.id, rect: h.rect, label: h.label })),
 };
