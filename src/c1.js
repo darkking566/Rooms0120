@@ -514,8 +514,13 @@ export const C1_SCENES = {
         poly(ctx, qsub(wq, 0.2, 0.2, 0.46, 0.42), '#25292e');
         poly(ctx, qsub(wq, 0.56, 0.2, 0.82, 0.42), '#25292e');
       }
-      const inward = x < 0 ? x + 0.26 : x - 0.26;
-      poly(ctx, [P(x, 0.9, z1), P(inward, 0.96, z1), P(inward, 1, z2), P(x, 1, z2)], '#524234');
+      // Subtle low jagged earth mounds tucked tight against the base of freshly-erupted walls
+      const dir = x < 0 ? 1 : -1;
+      const zm1 = z1 + (z2 - z1) * 0.28, zm2 = z1 + (z2 - z1) * 0.68;
+      poly(ctx, [
+        P(x, 0.95, z1), P(x + dir * 0.05, 0.99, z1 + 0.1), P(x, 0.92, zm1),
+        P(x + dir * 0.07, 1, zm1 + 0.15), P(x, 0.94, zm2), P(x + dir * 0.04, 1, z2), P(x, 1, z2), P(x, 1, z1),
+      ], '#463b31');
       if (rebars) {
         for (const u of [0.22, 0.5, 0.78]) {
           const zr = z1 + (z2 - z1) * u;
@@ -606,11 +611,11 @@ export const C1_SCENES = {
             [-2.2, -1.35, -1.15, '#596067'], [-1.1, -1.55, -0.15, '#4f555c'],
             [0.25, -1.4, 1.2, '#545b62'], [1.25, -1.15, 2.2, '#60676e'],
           ]);
-          drawCityBlock(ctx, R, -1.8, -0.95, 1.9, 3.6, '#6d7378', true, false);
-          drawCityBlock(ctx, R, -1.8, -1.15, 4.2, 5.7, '#646a70', true);
           drawCityBlock(ctx, R, -1.8, -0.9, 6.2, 7.6, '#5c6268', true);
-          drawCityBlock(ctx, R, 1.8, -1.05, 3.0, 4.6, '#666c72', true);
+          drawCityBlock(ctx, R, -1.8, -1.15, 4.2, 5.7, '#646a70', true);
+          drawCityBlock(ctx, R, -1.8, -0.95, 1.9, 3.6, '#6d7378', true, false);
           drawCityBlock(ctx, R, 1.8, -1.25, 5.3, 7.0, '#5c6267', true);
+          drawCityBlock(ctx, R, 1.8, -1.05, 3.0, 4.6, '#666c72', true);
           // Paved checkpoint road leading through the outer gatehouse arch
           for (const z of [1.8, 3.6, 5.6]) {
             poly(ctx, [P(-0.04, 1, z), P(0.04, 1, z), P(0.04, 1, z + 0.8), P(-0.04, 1, z + 0.8)], 'rgba(218, 224, 228, 0.35)');
@@ -652,11 +657,11 @@ export const C1_SCENES = {
             [0.12, -1.35, 1.35, '#545f57'], [1.45, -1.55, 2.5, '#52585e'],
           ]);
           // Three-Union Research Institute building facade on the left + right blocks along the boulevard
-          drawCityBlock(ctx, R, -1.8, -1.08, 1.75, 3.85, '#646e76', false);
           drawCityBlock(ctx, R, -1.85, -1.2, 4.6, 6.8, '#585e64', true);
           drawCityBlock(ctx, R, 1.85, -1.1, 4.3, 6.6, '#5c6268', true);
+          drawCityBlock(ctx, R, -1.8, -1.08, 1.75, 3.85, '#646e76', false);
           // Streetlamps flanking the open boulevard
-          for (const z of [2.1, 5.2]) {
+          for (const z of [5.2, 2.1]) {
             for (const sx of [-1.72, 1.72]) {
               const sb = P(sx, 1, z), st = P(sx, -0.75, z);
               seg(ctx, sb, st, '#40454a', 2.4);
@@ -1587,7 +1592,7 @@ export const C1_SCENES = {
           for (const [x1, topY, x2] of [[-2.0, -0.78, -0.65], [-0.5, -0.58, 0.45], [0.62, -0.86, 2.0]]) {
             poly(ctx, faceQuad(x1, topY, x2, 1, 7.92), '#121111');
           }
-          for (const [hx, z1, z2] of [[-1.7, 1.85, 3.8], [-1.7, 4.3, 6.4], [1.7, 2.2, 4.0], [1.7, 4.5, 6.7]]) {
+          for (const [hx, z1, z2] of [[-1.7, 4.3, 6.4], [1.7, 4.5, 6.7], [-1.7, 1.85, 3.8], [1.7, 2.2, 4.0]]) {
             const hxOut = hx < 0 ? hx - 0.7 : hx + 0.7;
             poly(ctx, [P(hx, -0.82, z1), P(hxOut, -0.82, z1), P(hxOut, 1, z1), P(hx, 1, z1)], shade(R, '#161414', z1));
             const hq = wallQuad(hx, -0.82, 1, z1, z2);
