@@ -4,6 +4,7 @@
 //   Level 0.5 "Drenched Sanatorium" (FuneralBouncer), Level 0.7 "The Reminiscence District" (T-Dragon).
 // Credits are in README.md and the in-game footer. Puzzles, scene text and J.H. notes are original.
 import { P, W, H, bounds, wallQuad, faceQuad, poly, seg, box, boxRect, paper, shade, drawSmiler } from './render.js';
+import { rand, pick } from './rng.js';
 
 export const SUBLEVELS = {
   '0.1': { name: 'LEVEL 0.1', sub: '天頂站', drain: 1, thirst: 1.5, hunger: 1 },
@@ -99,7 +100,7 @@ const walkPillars = [
 const pillarRect = (b) => bounds([P(b.x1, -1, b.z1), P(b.x2, 1, b.z1)], 8);
 const walkSide = { left: walkPillars[0], right: walkPillars[1] };
 const walkNote = faceQuad(-0.3, 0.1, 0.05, 0.4, 2.999);
-const newMark = (g) => g.flag('l01_mark', Math.random() < 0.5 ? 'left' : 'right');
+const newMark = (g) => g.flag('l01_mark', rand() < 0.5 ? 'left' : 'right');
 function walkStep(g, side) {
   const n = g.s.flags.l01_walk || 0;
   if (side !== g.s.flags.l01_mark) {
@@ -656,7 +657,7 @@ function restoreL02(g) {
 function collapse(g, msg) {
   g.flag('l02_collapsed'); g.flag('l02_seen');
   g.flag('l02_until', clockOf(g.s) + L02_COLLAPSE);
-  g.flag('l02_crack', Math.random() < 0.5 ? 'left' : 'right');
+  g.flag('l02_crack', rand() < 0.5 ? 'left' : 'right');
   g.sfx('open');
   g.go('l02_frame', { free: true, msg });
 }
@@ -1292,7 +1293,7 @@ export const SUBLEVEL_SCENES = {
       hit('window', bounds(bigWindow, 0), '看著球殼的中心', (g) => g.read('n01_core')),
       hit('console', boxRect(lastConsole, 6), '一直在閃的廣播台', (g) => g.read('n01_last')),
       hit('noclip', bounds(breach, 4), '從閃爍的裂口切出去', (g) => {
-        if (Math.random() < 0.25) return g.go('l0_pillar', { msg: '你穿過裂口，眼前一黑——腳下又是濕地毯。切出把你丟回了 Level 0，一根柱子旁邊。' });
+        if (rand() < 0.25) return g.go('l0_pillar', { msg: '你穿過裂口，眼前一黑——腳下又是濕地毯。切出把你丟回了 Level 0，一根柱子旁邊。' });
         g.flag('l1_via_zenith'); g.flag('l1_fresh', 'zenith');
         g.go('l1_arrive', { msg: '你穿過閃爍的裂口。玻璃、甲板、球殼一起被抽走，腳下變成了冰冷潮濕的水泥。' });
       }, 'go'),
@@ -1368,7 +1369,7 @@ export const SUBLEVEL_SCENES = {
       hit('clipboard', bounds(clipboard, 6), '夾在牆上的郵件', (g) => g.read('n03_mail')),
       hit('radio', bounds(radioQ, 6), '對講機', (g) => {
         g.sfx('static');
-        g.say(['只有雜訊。', '雜訊裡有人在數數：「一〇四、一〇五、一〇七……」然後斷了。', '「……Planes？你們在哪——」雜訊吞掉了後面的字。'][Math.floor(Math.random() * 3)]);
+        g.say(pick(['只有雜訊。', '雜訊裡有人在數數：「一〇四、一〇五、一〇七……」然後斷了。', '「……Planes？你們在哪——」雜訊吞掉了後面的字。']));
       }),
       { ...hit('wool', boxRect(rugRoll, 6), '捲起來的羊毛地毯', (g) => {
         if (!once(g, 'l03_wool')) return;
@@ -1776,7 +1777,7 @@ export const SUBLEVEL_SCENES = {
     viewMsg: '觀景窗裡，右邊門口趴著一個四隻腳的東西，臉貼在地上，嘴在動。',
     enter(g, { first }) {
       if (first) g.say('天花板高得看不見。水晶吊燈從黑暗裡垂下來，鏈子長得沒有盡頭。左邊掛著一幅掛毯，右邊的門口裡……有人在說話。');
-      else if (Math.random() < 0.5) g.say('右邊的門口又傳來那個聲音：「喂——這邊！我也是流浪者！你聽得見嗎？」');
+      else if (rand() < 0.5) g.say('右邊的門口又傳來那個聲音：「喂——這邊！我也是流浪者！你聽得見嗎？」');
     },
     draw(ctx, t, s, R) {
       for (const sd of [-1, 1]) {
@@ -1826,7 +1827,7 @@ export const SUBLEVEL_SCENES = {
     level: '0.7', title: '中世紀石廊', room: castleR,
     hazard: () => '15°C・黑暗中有東西・跟著火把走',
     enter(g, { first }) {
-      const lit = ['left', 'right', 'ahead'][Math.floor(Math.random() * 3)];
+      const lit = pick(['left', 'right', 'ahead']);
       g.flag('l07_lit', lit);
       if (first) g.say('黃色的石頭砌成的城堡走廊。冷，大約只有十五度。三個拱門，只有一個旁邊點著火把。別的拱門後面黑得像墨——那種黑裡有東西在動。');
     },

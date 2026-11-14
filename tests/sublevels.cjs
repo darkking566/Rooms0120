@@ -36,8 +36,9 @@ const { chromium } = require('playwright');
       await page.mouse.click(b.x + ((x + w / 2) / 960) * b.width, b.y + ((y + hh / 2) / 540) * b.height);
       await page.waitForTimeout(80);
     }
+    // fixed seed: random events happen the same way every run
     async function start() {
-      await page.goto(url);
+      await page.goto(`${url}?seed=120`);
       await page.click('#btnNew');
     }
     // Each sublevel has its own way in, spread across Level 0.
@@ -118,8 +119,8 @@ const { chromium } = require('playwright');
     await start(); await enter.zenith(); await waitClock(doorOpenNow); await hit('forward');
     await page.evaluate(() => { const g = window.__rooms.g; g.flag('l01_cut', 'airlock'); });
     await hit('back'); check((await state()).scene === 'l01_ring', 'a frozen airlock cannot be reopened');
-    await hit('forward'); await page.evaluate(() => { window.__rand = Math.random; Math.random = () => 0.9; });
-    await hit('noclip'); await page.evaluate(() => { Math.random = window.__rand; });
+    await hit('forward'); await page.evaluate(() => window.__rooms.setRandom(() => 0.9));
+    await hit('noclip'); await page.evaluate(() => window.__rooms.seed(120));
     check(['l1_arrive', 'l0_pillar'].includes((await state()).scene), 'the hull breach noclips you out of the station');
     await shot('sub-07-arrive-zenith');
     const s0 = (await state()).sanity; await hit('hull');
@@ -238,7 +239,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(1000);
     check((await state()).flags.l05_pursuit === huntPaused, 'reading pauses the pursuer'); await closeDoc();
     const beforeHunt = (await state()).sanity;
-    await page.waitForTimeout(12500);
+    await page.waitForFunction((b) => window.__rooms.state.scene === 'l05_platform' && window.__rooms.state.sanity <= b - 16, beforeHunt, { timeout: 20000, polling: 50 }).catch(() => {});
     check((await state()).sanity <= beforeHunt - 16 && (await state()).scene === 'l05_platform', 'waiting lets the Drowned catch you');
     await reload(); check((await state()).flags.l05_hunted, 'reload preserves an active pursuit');
     await page.evaluate(() => window.__rooms.g.go('l05_corridor'));

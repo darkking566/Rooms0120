@@ -5,6 +5,7 @@ import {
   P, W, H, box, boxRect, bounds, wallQuad, faceQuad, poly, paper, bottle, pipe, shade, drawSmiler, seg, rgb, mul, hex,
 } from './render.js';
 import { SUBLEVELS, SUBLEVEL_SCENES, drawAnnexEntrance, annexDoor } from './sublevels.js';
+import { rand, pick } from './rng.js';
 
 export const LEVELS = {
   // drain: sanity per step; thirst / hunger: how fast water and food run out per step
@@ -173,7 +174,7 @@ const l0Blackout = {
   backDoor: { x1: -0.4, x2: 0.4, top: -0.6 },
   openings: [{ side: -1, z1: 2.2, z2: 3.0, top: -0.6 }, { side: 1, z1: 2.2, z2: 3.0, top: -0.6 }],
 };
-const pickDir = (prev) => { const o = DIRS.filter((d) => d !== prev); return o[Math.floor(Math.random() * o.length)]; };
+const pickDir = (prev) => { const o = DIRS.filter((d) => d !== prev); return pick(o); };
 function blackoutStep(g, dir) {
   const b = g.s.bo || { step: 0, dir: pickDir() };
   if (dir !== b.dir) {
@@ -273,9 +274,9 @@ const laneTile = (lane, z1 = 1.7, z2 = 2.5) => {
   return [P(a + 0.06, 1, z1), P(b - 0.06, 1, z1), P(b - 0.06, 1, z2), P(a + 0.06, 1, z2)];
 };
 export function newHoleRow() {
-  const pits = LANES.map(() => Math.random() < 0.6);
-  if (pits.every(Boolean)) pits[Math.floor(Math.random() * 3)] = false;
-  if (!pits.some(Boolean)) pits[Math.floor(Math.random() * 3)] = true;
+  const pits = LANES.map(() => rand() < 0.6);
+  if (pits.every(Boolean)) pits[Math.floor(rand() * 3)] = false;
+  if (!pits.some(Boolean)) pits[Math.floor(rand() * 3)] = true;
   return pits;
 }
 // decorative far pits, fixed so the grid reads as a grid
@@ -462,7 +463,7 @@ const PAL1 = {
 // the fog hall: keep the red landmark light in front of you, or walk in circles
 export const FOG_STEPS = 3;
 const FOG_DIRS = ['left', 'ahead', 'right'];
-const pickFog = (prev) => { const o = FOG_DIRS.filter((d) => d !== prev); return o[Math.floor(Math.random() * o.length)]; };
+const pickFog = (prev) => { const o = FOG_DIRS.filter((d) => d !== prev); return pick(o); };
 const l1Fog = {
   ...l1Base, wallTex: undefined, hw: 3.2, depth: 11, fogEnd: 4.6, pal: PAL1.fog, lights: [2.2], flickerLights: [0],
 };
@@ -1357,7 +1358,7 @@ export const SCENES = {
       {
         id: 'steps', rect: [140, 300, 120, 60], label: '數一數階數', cursor: 'look',
         click: (g) => {
-          const n = 11 + Math.floor(Math.random() * 7);
+          const n = 11 + Math.floor(rand() * 7);
           g.say(`你數了一下，一共 ${n} 階。${g.s.flags.stairs_counted ? `上次數的時候是 ${g.s.flags.stairs_counted} 階。` : ''}`);
           g.flag('stairs_counted', n);
         },
@@ -1481,7 +1482,7 @@ export const SCENES = {
       })),
       {
         id: 'passage', when: (s) => s.holes?.row >= HOLE_ROWS, rect: bounds(faceQuad(0.7, -0.5, 1.3, 1, 6.999), 10), label: '對面牆上的黑洞', cursor: 'go',
-        click: (g) => { g.s.holes = null; g.s.bo = { step: 0, dir: ['left', 'ahead', 'right'][Math.floor(Math.random() * 3)] }; g.go('l0_blackout', { msg: '你走進對面牆上的洞口。燈光在身後一下子就消失了。' }); },
+        click: (g) => { g.s.holes = null; g.s.bo = { step: 0, dir: pick(['left', 'ahead', 'right']) }; g.go('l0_blackout', { msg: '你走進對面牆上的洞口。燈光在身後一下子就消失了。' }); },
       },
       {
         id: 'bag', when: (s) => s.holes?.row >= HOLE_ROWS && !s.flags.holes_bag, rect: boxRect(bag, 8), label: '帆布背包', cursor: 'take',

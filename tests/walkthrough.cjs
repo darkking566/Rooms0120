@@ -19,10 +19,10 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(url);
+  await page.goto(`${url}?seed=120`); // fixed seed: random events happen the same way every run
 
   const scene = () => page.evaluate(() => window.__rooms.state.scene);
-  const shot = async (name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.locator('#stage').screenshot({ path: path.join(SHOTS, `${name}.png`) }); } };
+  const shot = async (name) => { if (SHOTS) { await page.waitForTimeout(300); fs.mkdirSync(SHOTS, { recursive: true }); await page.locator('#stage').screenshot({ path: path.join(SHOTS, `${name}.png`) }); } };
   async function hit(id) {
     const hs = await page.evaluate(() => window.__rooms.hotspots());
     const h = hs.find((x) => x.id === id);
@@ -36,6 +36,11 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
     await page.waitForTimeout(120);
   }
   const closeDoc = async () => { await page.click('#docClose'); };
+  // wait for game state instead of sleeping for a fixed time
+  const until = (fn, arg, timeout = 20000) => page.waitForFunction(fn, arg, { timeout, polling: 50 }).then(() => true, () => false);
+  const waitScene = (id) => until((i) => window.__rooms.state.scene === i && !window.__rooms.scaring && !window.__rooms.ended, id);
+  const endingIs = (kind) => until((k) => { const e = document.querySelector('#ending'); return !e.hidden && e.dataset.kind === k; }, kind);
+  const started = () => until(() => !document.querySelector('#hud').hidden && !window.__rooms.ended);
   const slot = async (id) => { await page.click(`.slot[data-id="${id}"]`); };
   const has = (id) => page.evaluate((i) => window.__rooms.state.inv.includes(i), id);
 
@@ -56,8 +61,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
 
   console.log('Level 0 — Threshold');
   await shot('00-title');
-  await page.click('#btnNew');
-  await page.waitForTimeout(400);
+  await page.click('#btnNew'); await started();
   check(await scene() === 'l0_start', 'starts in l0_start');
   await shot('01-l0_start');
   await hit('almond'); check(await has('almond_wet'), 'picked up the bottle soaking in the carpet');
@@ -76,7 +80,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await page.evaluate(() => JSON.parse(localStorage.getItem('rooms0120.checkpoint.v1')).scene) === 'l0_arches', 'resting in the arches stores a checkpoint');
   { const s1 = await sanity(); await hit('rest'); check(await sanity() === s1, 'cannot rest again straight away'); }
   await hit('back'); await hit('down'); check(await scene() === 'l0_holes', 'went down to the holes');
-  await page.waitForTimeout(200); await shot('05-l0_holes');
+  await shot('05-l0_holes');
   await page.evaluate(() => window.__rooms.g.give('almond_wet'));
   { const st = await page.evaluate(() => window.__rooms.state.holes); const pitLane = ['left', 'mid', 'right'][st.pits.indexOf(true)];
     await slot('almond_wet'); await hit(pitLane); check(!(await has('almond_wet')) && (await flags()).holes_drop, 'a bottle dropped into a pit never lands'); }
@@ -93,13 +97,13 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('note'); await closeDoc();
   await hit('rod'); check(await has('rod'), 'picked up the metal rod');
   await hit('blackout'); check(await scene() === 'l0_blackout', 'entered the Blackout Zone');
-  await page.waitForTimeout(200); await shot('07-l0_blackout');
+  await shot('07-l0_blackout');
   const bo = () => page.evaluate(() => window.__rooms.state.bo);
   { const b = await bo(); await hit(['left', 'ahead', 'right'].find((d) => d !== b.dir)); }
   check((await bo()).step === 0 && await scene() === 'l0_blackout', 'walking away from the hum loses you in the dark');
   for (let i = 0; i < 3; i++) await hit((await bo()).dir);
   check(await scene() === 'l0_manila', 'following the moving hum leads to the Manila Room');
-  await page.waitForTimeout(200); await shot('08-l0_manila');
+  await shot('08-l0_manila');
   for (let i = 0; i < 5; i++) await hit('jh');
   check((await flags()).met_jh && await has('almond'), 'talked to the figure in the Manila Room and got clean almond water');
   await hit('note'); await closeDoc();
@@ -111,14 +115,14 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await slot('rod'); await hit('tile');
   check(await has('camcorder') && await has('rod'), 'poking the tile with the rod drops the camcorder (the rod is kept)');
   await page.click('#btnView'); check(await view(), 'viewfinder raised');
-  await page.waitForTimeout(200); await shot('11-l0_wet-viewfinder');
+  await shot('11-l0_wet-viewfinder');
   await hit('dryroom'); check(await scene() === 'l0_dry', 'the carpet dries out in the corridor off the wet room'); await shot('12-l0_dry');
   await hit('ladder'); check(await has('ladder'), 'picked up the folding ladder');
   await hit('door'); check(await scene() === 'l02_room' && await page.textContent('#lvlName') === 'LEVEL 0.2', 'entered Level 0.2');
-  await page.waitForTimeout(200); await shot('13-l02_room');
+  await shot('13-l02_room');
   await hit('forward'); check(await scene() === 'l02_office', 'site office at the end of the remodelled hall');
   await hit('toolbox'); check(await has('screwdriver') && (await flags()).l02_collapsed && await scene() === 'l02_frame', 'taking the screwdriver makes the remodelled rooms collapse');
-  await page.waitForTimeout(300); await shot('14-l02_house');
+  await shot('14-l02_house');
   await hit('tape2'); check(await has('tape2'), 'found tape #2 in the half-built house');
   await hit('back'); await hit((await flags()).l02_crack === 'left' ? 'right' : 'left');
   check(await scene() === 'l02_exit', 'crossed the caved-in hall on the sound joist');
@@ -128,18 +132,18 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await slot('screwdriver'); await hit('outlet'); check(await has('tape3'), 'unscrewing the whispering outlet reveals tape #3');
   await hit('back'); await hit('lowroom');
   await slot('ladder'); await hit('hole'); check(await scene() === 'l0_ceiling', 'climbed the ladder into the space above the ceiling');
-  await page.waitForTimeout(200); await shot('15-l0_ceiling');
+  await shot('15-l0_ceiling');
   await hit('note'); await closeDoc();
   await hit('stash'); check((await flags()).ceil_stash, 'found the stash above the ceiling');
   await hit('forward'); check(await scene() === 'l0_ceiling2', 'crawled further along the ceiling space');
   await hit('duct'); await slot('rod'); await hit('duct'); check(await has('key'), 'hooked the key out of the duct with the rod');
   await slot('screwdriver'); await hit('grille'); check((await flags()).grille_open, 'unscrewed the grille above the faded room');
-  await page.waitForTimeout(200); await shot('16-l0_ceiling2');
+  await shot('16-l0_ceiling2');
   await hit('wetdrop'); check(await scene() === 'l0_wet', 'dropped down into the wet room through its ceiling hole');
   await hit('back'); await hit('back'); await hit('side'); await hit('stairs'); await hit('up');
   await hit('door'); check(await scene() === 'l0_arches', 'the door in the arches is locked');
   await slot('key'); await hit('door'); await hit('door'); check(await scene() === 'l0_archive', 'the key opens the archive behind the arches');
-  await page.waitForTimeout(200); await shot('17-l0_archive');
+  await shot('17-l0_archive');
   await hit('drawers'); await closeDoc(); await hit('card'); await closeDoc();
   await hit('drawer0120'); await hit('chalk'); check(await has('chalk'), 'took the chalk from the archive desk');
   await hit('back'); await hit('back'); await hit('back'); await hit('back');
@@ -158,9 +162,9 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await scene() === 'l0_maze' && (await page.evaluate(() => window.__rooms.state.maze)) === 0, 'a wrong turn sends you back to the first cubicle');
   for (const d of ['right', 'ahead', 'left', 'right']) await hit(d);
   check(await scene() === 'l0_faded', 'following the chalk arrows leads to the faded room');
-  await page.waitForTimeout(200); await shot('20-l0_faded-viewfinder');
+  await shot('20-l0_faded-viewfinder');
   await page.click('#btnView'); check(!(await view()), 'viewfinder lowered');
-  await page.waitForTimeout(200); await shot('21-l0_faded');
+  await shot('21-l0_faded');
   await hit('note'); await closeDoc();
   { const st0 = await page.evaluate(() => window.__rooms.state);
     check(st0.thirst < 100 && st0.hunger < 100, `walking uses up water and food (水分 ${st0.thirst.toFixed(1)}, 飽足 ${st0.hunger.toFixed(1)})`); }
@@ -189,11 +193,11 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   const hs2 = await ids();
   check(!hs2.includes('wall'), 'no flickering wall to the naked eye on the 2nd loop');
   await hit('forward');
-  await page.waitForTimeout(300); await shot('22-l0_loop-wall');
+  await shot('22-l0_loop-wall');
   await hit('forward'); check((await ids()).includes('redroom'), 'a red-lit corner appears after wandering long enough');
   await hit('redroom'); check(await scene() === 'l0_red', 'stepped into the Red Rooms');
   await hit('tape4'); check(await has('tape4'), 'grabbed tape #4 off the sticky carpet');
-  await page.waitForTimeout(300); await shot('23-l0_red');
+  await shot('23-l0_red');
   await hit('back'); check(await scene() === 'l0_loop', 'turning back at once gets you out of the Red Rooms');
   for (const t of ['tape2', 'tape3', 'tape4']) { await slot(t); await slot('camcorder'); await closeDoc(); }
   check(await page.evaluate(() => ['tape2', 'tape3', 'tape4'].every((t) => window.__rooms.state.flags[`watched_${t}`])), 'watched all three extra tapes');
@@ -205,7 +209,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('back'); await hit('back'); await hit('forward'); await hit('forward');
   if (!(await view())) await page.click('#btnView');
   await hit('wall'); check(await scene() === 'l1_arrive', 'recording, you throw yourself through the flickering wall into Level 1');
-  await page.waitForTimeout(300); await shot('24-l1_arrive');
+  await shot('24-l1_arrive');
 
   { const st = await page.evaluate(() => window.__rooms.state);
     console.log(`  · entering Level 1 after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
@@ -214,12 +218,10 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('forward'); check(await scene() === 'l1_crates', 'warehouse'); await shot('25-l1_crates');
   await hit('note'); await closeDoc();
   await hit('crate'); check(await has('battery'), 'found battery');
-  await page.waitForTimeout(2200);
-  check(await page.evaluate(() => !!window.__rooms.state.flicker && window.__rooms.state.flicker.delay <= 0), 'Flickering event started');
+  check(await until(() => !!window.__rooms.state.flicker && window.__rooms.state.flicker.delay <= 0), 'Flickering event started');
   await shot('26-l1_flicker');
   let san = await sanity();
-  await page.waitForTimeout(12500);
-  check(await page.evaluate(() => window.__rooms.state.flicker === null), 'Flickering ended after the timeout');
+  check(await until(() => window.__rooms.state.flicker === null && !window.__rooms.scaring), 'Flickering ended after the timeout');
   check(await sanity() < san, `staying in the halls during Flickering hurt you (${san} → ${await sanity()})`);
   await hit('exitdoor'); check(await scene() === 'l1_corridor', 'went through the green EXIT door'); await shot('27-l1_corridor');
   await hit('almond'); await hit('note'); await closeDoc();
@@ -250,7 +252,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('shears'); check(await has('shears'), 'took the shears from the workers\' cart');
   await hit('back'); await hit('back'); await hit('back'); await hit('back');
   check(await scene() === 'l1_arrive', 'back at the warehouse entrance');
-  await hit('fog'); check(await scene() === 'l1_fog', 'into the fog'); await page.waitForTimeout(200); await shot('32-l1_fog');
+  await hit('fog'); check(await scene() === 'l1_fog', 'into the fog'); await shot('32-l1_fog');
   const fogDir = () => page.evaluate(() => window.__rooms.state.fogNav.dir);
   { const d = await fogDir(); await hit('fog_' + ['left', 'ahead', 'right'].find((x) => x !== d)); }
   check(await page.evaluate(() => window.__rooms.state.fogNav.step) === 0, 'walking away from the red light brings you back to the start');
@@ -271,19 +273,19 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('forward'); await hit('forward');
   check(await scene() === 'l1_deep', 'deeper warehouse with pipes appearing'); await shot('35-l1_deep');
   await hit('forward'); check(await scene() === 'l2_pipes', 'smooth threshold into Level 2');
-  await page.waitForTimeout(300); await shot('36-l2_pipes');
+  await shot('36-l2_pipes');
 
   console.log('Level 2 — Abandoned Utility Halls');
   await slot('almond'); await slot('almond'); await slot('almond'); await slot('almond');
   await hit('note'); await closeDoc();
   await hit('side'); check(await scene() === 'l2_dark', 'dark side passage with flashlight ON');
-  await page.waitForTimeout(2600);
+  await waitScene('l2_pipes');
   check(await scene() === 'l2_pipes', 'the light drew the smiler in and scared you back');
   await page.click('#btnLight'); check(!(await light()), 'flashlight switched off');
   await hit('side'); await page.waitForTimeout(200);
   await shot('37-l2_dark-smiler');
   await hit('back');
-  await page.waitForTimeout(2200);
+  await waitScene('l2_pipes');
   check(await scene() === 'l2_pipes', 'panicking (clicking away) gets you chased');
   await hit('side');
   await hold('smiler', 3400);
@@ -292,13 +294,13 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.click('#btnLight');
   await hit('tube'); check(await has('tube'), 'found the spare fluorescent tube');
   await hit('almond'); await hit('note'); await closeDoc();
-  await page.mouse.move(480, 300); await page.waitForTimeout(200); await shot('38-l2_dark-lit');
+  await page.mouse.move(480, 300); await shot('38-l2_dark-lit');
   await hit('back');
   const before = await sanity();
   await slot('almond'); await slot('almond');
   check(await sanity() > before || before === 100, 'drinking almond water restores sanity');
   await hit('camp'); check(await scene() === 'l2_camp', 'the cream steel door opens on an abandoned newcomer camp');
-  await page.waitForTimeout(300); await shot('38b-l2_camp');
+  await shot('38b-l2_camp');
   await hit('register'); await closeDoc(); await hit('board');
   await hit('toolbox'); check(await has('wrench'), 'found the wrench in the toolbox');
   await hit('barrel'); await hit('bunk');
@@ -316,7 +318,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.click('#dialsOk');
   check((await flags()).solved, 'R5 B8 Y3 solves the panel');
   await hit('door'); check(await scene() === 'l2_boiler', 'the pressure door opens on the boiler room');
-  await page.waitForTimeout(300); await shot('39b-l2_boiler');
+  await shot('39b-l2_boiler');
   { const w0 = await page.evaluate(() => window.__rooms.state.thirst);
     await page.waitForTimeout(2600);
     check(await page.evaluate(() => window.__rooms.state.thirst) < w0, 'the heat drains water over time');
@@ -334,64 +336,61 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.keyboard.press('v'); check((await page.evaluate(() => window.__rooms.state.view)), 'viewfinder raised in the void');
   await hit('forward'); await hit('forward'); await hit('forward');
   check(await has('tape5') && !(await page.isVisible('#ending')), 'recording the doorway lets you walk deep enough to find tape #5');
-  await page.waitForTimeout(300); await shot('39d-l2_void');
+  await shot('39d-l2_void');
   await hit('back'); check(await scene() === 'l2_rail', 'walked back to the doorway');
   await page.keyboard.press('v');
   await slot('tape5'); await slot('camcorder');
   check((await flags()).watched_tape5, 'watched tape #5'); await closeDoc();
   await hit('forward'); check(await scene() === 'l2_narrow', 'into the narrow brick corridor'); await shot('39e-l2_narrow');
-  await hit('window'); await page.waitForTimeout(1400);
+  await hit('window'); await waitScene('l2_rail');
   check(await scene() === 'l2_rail', 'approaching the window scares you back');
   await hit('forward'); await hit('door'); check(await scene() === 'l2_monitor', 'the monitor room');
-  await page.waitForTimeout(300); await shot('39f-l2_monitor');
+  await shot('39f-l2_monitor');
   await hit('screens'); await hit('terminal');
   check(await page.evaluate(() => window.__rooms.hotspots().some((h) => h.id === 'rec_name')), 'the terminal asks for one line');
   await shot('39g-l2_terminal');
   await hit('rec_name'); check((await flags()).rec === 'name', 'after tape #5 you can write your own name');
   await hit('door'); check(await scene() === 'l2_hall', 'into the unlit hall (flashlight on)');
-  await page.waitForTimeout(2400);
+  await waitScene('l2_monitor');
   check(await scene() === 'l2_monitor', 'light near the smiler nest gets you scared back');
   await page.click('#btnLight');
-  await hit('door'); await page.waitForTimeout(300); await shot('40-l2_hall-dark');
+  await hit('door'); await shot('40-l2_hall-dark');
   await hit('forward'); check(await scene() === 'l2_hall', 'cannot walk into the dark nest');
   await slot('tube'); await hit('fixture');
   check((await flags()).circuit, 'replacing the tube restores the series circuit');
-  await page.waitForTimeout(400); await shot('41-l2_hall-lit');
+  await shot('41-l2_hall-lit');
   await hit('forward'); check(await scene() === 'l2_exit', 'reached the EXIT corridor');
   { const st = await page.evaluate(() => window.__rooms.state);
     console.log(`  · at the exit after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
   await hit('exit');
-  await page.waitForTimeout(7500);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'escape', 'escape ending shown');
+  check(await endingIs('escape'), 'escape ending shown');
   check((await page.textContent('#endTitle')).includes('結案'), 'writing your name gives the closed-case ending');
   await shot('42-ending');
 
   console.log('Save / load');
-  await page.click('#btnAgain'); await page.waitForTimeout(300);
+  await page.click('#btnAgain'); await started();
   await hit('side');
-  await page.reload(); await page.waitForTimeout(300);
+  await page.reload(); await page.waitForSelector('#btnNew');
   check(await page.isVisible('#btnCont'), 'continue button offered after reload');
-  await page.click('#btnCont'); await page.waitForTimeout(300);
+  await page.click('#btnCont'); await started();
   check(await scene() === 'l0_pillar', 'save restored the scene');
 
   console.log('Red Rooms ending');
   await page.evaluate(() => window.__rooms.g.go('l0_red', { free: true }));
-  await page.waitForTimeout(9800);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'red', 'lingering in the Red Rooms ends the game');
+  check(await endingIs('red'), 'lingering in the Red Rooms ends the game');
   check(await page.isVisible('#btnRetry'), 'retry offered after the Red Rooms ending');
 
   console.log('Dehydration');
-  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await page.click('#btnRetry'); await started();
   await page.evaluate(() => { const st = window.__rooms.state; st.thirst = 0.5; st.sanity = 6; });
   { const s0 = await sanity(); await page.evaluate(() => window.__rooms.g.go('l0_stairs'));
     check(await sanity() <= s0 - 4, 'running out of water drains extra sanity'); }
   await page.evaluate(() => window.__rooms.g.go('l0_pillar'));
-  await page.waitForTimeout(1200);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'thirst', 'losing all sanity while dehydrated gives the dehydration ending');
+  check(await endingIs('thirst'), 'losing all sanity while dehydrated gives the dehydration ending');
   check(await page.isVisible('#btnRetry'), 'retry offered after the dehydration ending');
 
   console.log('Holes ending');
-  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await page.click('#btnRetry'); await started();
   await page.evaluate(() => { const r = window.__rooms; r.state.holes = { row: 3, pits: [false, false, false] }; r.g.go('l0_holes', { free: true }); });
   await hit('passage'); check(await scene() === 'l0_blackout', 'a passage beyond the holes leads into the Blackout Zone');
   await page.evaluate(() => { const r = window.__rooms; r.g.give('ladder'); r.state.holes = { row: 0, pits: [true, true, false] }; r.g.go('l0_holes', { free: true }); });
@@ -403,31 +402,29 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.evaluate(() => { const r = window.__rooms; r.g.go('l0_stairs', { free: true }); r.state.holes = { row: 0, pits: [true, false, false] }; r.g.go('l0_holes', { free: true }); });
   await page.waitForTimeout(200);
   await hit('left');
-  await page.waitForTimeout(300);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'fall', 'stepping into a pit ends the game');
+  check(await endingIs('fall'), 'stepping into a pit ends the game');
 
   console.log('Archive ending');
-  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await page.click('#btnRetry'); await started();
   await page.evaluate(() => { const r = window.__rooms; if (!r.state.inv.includes('camcorder')) r.g.give('camcorder'); r.state.flags.archive_open = true; r.g.go('l0_archive', { free: true }); });
   await page.waitForTimeout(200);
   await slot('camcorder'); await hit('drawer0120');
-  await page.waitForTimeout(300);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'archive', 'filing the camcorder in drawer 0120 gives the 0120 ending');
+  check(await endingIs('archive'), 'filing the camcorder in drawer 0120 gives the 0120 ending');
 
   console.log('Void and filed endings');
-  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await page.click('#btnRetry'); await started();
   await page.evaluate(() => window.__rooms.g.go('l2_rail', { free: true }));
   if (await page.evaluate(() => window.__rooms.state.view)) await page.keyboard.press('v');
   await hit('void'); await hit('forward');
   check(!(await page.isVisible('#ending')), 'one step into the void is survivable');
-  await hit('forward'); await page.waitForTimeout(300);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'void', 'going deeper without recording loses the doorway');
-  await page.click('#btnRetry'); await page.waitForTimeout(300);
+  await hit('forward');
+  check(await endingIs('void'), 'going deeper without recording loses the doorway');
+  await page.click('#btnRetry'); await started();
   await page.evaluate(() => { const r = window.__rooms; r.state.flags.rec = null; r.g.go('l2_monitor', { free: true }); });
   await hit('terminal'); await hit('rec_name');
   check(!(await page.evaluate(() => window.__rooms.state.flags.rec)) || (await page.evaluate(() => window.__rooms.state.flags.watched_tape5)), 'your name stays out of reach without tape #5');
-  await hit('rec_filed'); await page.waitForTimeout(300);
-  check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'filed', 'filing record 0120 gives the filed ending');
+  await hit('rec_filed');
+  check(await endingIs('filed'), 'filing record 0120 gives the filed ending');
 
   console.log('Phone layout');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });

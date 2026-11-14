@@ -5,6 +5,9 @@ import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
 import { Sound } from './audio.js';
 import { drawDrowned, drawGrowler } from './sublevels.js';
+import { rand, pick, seedRandom, setRandom } from './rng.js';
+import { migrate, SAVE_VERSION } from './save.js';
+import { ENDINGS } from './endings.js';
 
 const SAVE_KEY = 'rooms0120.save.v1';
 const CP_KEY = 'rooms0120.checkpoint.v1';
@@ -14,7 +17,7 @@ const ctx = cv.getContext('2d');
 const sound = new Sound();
 
 const fresh = () => ({
-  v: 1, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false, thirst: 100, hunger: 100,
+  v: SAVE_VERSION, scene: 'l0_start', inv: [], flags: {}, sanity: 100, notes: [], light: false, view: false, thirst: 100, hunger: 100,
   loops: 0, maze: 0, bo: null, holes: null, dread: 0, ghost: null, seen: {}, moves: 0, clock: 0, flicker: null,
 });
 
@@ -42,7 +45,10 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
   del(k) { try { localStorage.removeItem(k); } catch { /* storage unavailable */ } },
 };
-const valid = (s) => s && s.v === 1 && SCENES[s.scene] && Array.isArray(s.inv);
+// Saves go through migrate() on the way in, so old versions, renamed scenes and missing fields are fixed up
+// instead of the save being silently thrown away.
+const load = (k) => migrate(store.get(k), fresh());
+const valid = (s) => !!s && !!SCENES[s.scene];
 const save = () => { if (playing && !ended) store.set(SAVE_KEY, S); };
 
 // ---------- the API that scenes and items talk to ----------
@@ -76,13 +82,13 @@ const g = {
         needs(LEVELS[sc.level]);
       }
       // Level 0: the hum sometimes surges without warning
-      if (sc.level === 0 && !free && !sc.trap && !sc.hum && !sc.quiet && S.moves > 4 && Math.random() < 0.07) {
+      if (sc.level === 0 && !free && !sc.trap && !sc.hum && !sc.quiet && S.moves > 4 && rand() < 0.07) {
         sound.sfx('surge'); surgeT = 1.6; g.sanity(-2);
         g.say('嗡嗡聲忽然暴漲，像有人把音量轉到最大。你摀住耳朵，直到它慢慢退下去。');
       }
       if (sc.level !== prevLevel) store.set(CP_KEY, S);
       follower(sc, id, free);
-      if (S.sanity > 0 && S.sanity < 50 && !msg && Math.random() < 0.4) g.say(WHISPERS[Math.floor(Math.random() * WHISPERS.length)]);
+      if (S.sanity > 0 && S.sanity < 50 && !msg && rand() < 0.4) g.say(pick(WHISPERS));
     } finally {
       const msgs = collecting;
       collecting = null;
@@ -209,8 +215,8 @@ function follower(sc, id, free) {
   if (sc.safe) { if (S.dread >= 3) g.say('你靠在門後，聽著外面的腳步聲慢慢走遠。'); S.dread = 0; return; }
   if (sc.level !== 1 || !sc.hall || free) return;
   // a supply crate can appear behind you, and vanish once you stop looking
-  if (!S.ghost && Math.random() < 0.15) {
-    S.ghost = { scene: id, loot: GHOST_LOOT[Math.floor(Math.random() * GHOST_LOOT.length)] };
+  if (!S.ghost && rand() < 0.15) {
+    S.ghost = { scene: id, loot: pick(GHOST_LOOT) };
     g.say('你回頭的時候，身後多了一個木箱。剛才明明沒有。');
   }
   S.dread = (S.dread || 0) + (S.flicker ? 2 : 1);
@@ -262,11 +268,9 @@ cv.addEventListener('pointermove', (e) => {
   if (hover && e.pointerType !== 'touch') {
     tip.textContent = selected ? `用「${ITEMS[selected].name}」→ ${hover.label}` : hover.label;
     tip.hidden = false;
-    const r = cv.getBoundingClientRect();
     const st = $('#stage').getBoundingClientRect();
     tip.style.left = `${e.clientX - st.left + 14}px`;
     tip.style.top = `${e.clientY - st.top + 16}px`;
-    void r;
   } else tip.hidden = true;
 });
 cv.addEventListener('pointerleave', () => { $('#tip').hidden = true; });
@@ -477,11 +481,9 @@ function openDials(cfg) {
 function startGame(state) {
   clearTimeout(lostTimer); lostTimer = null;
   sound.init();
-  S = state;
-  S.thirst ??= 100; S.hunger ??= 100;
-  // drop items and notes that no longer exist (saves from older versions)
-  S.inv = S.inv.filter((id) => ITEMS[id]);
-  S.notes = (S.notes || []).filter((id) => NOTES[id]);
+  S = migrate(state, fresh());
+  const relocated = S.relocated;
+  delete S.relocated;
   ended = false;
   selected = null;
   playing = true;
@@ -496,103 +498,14 @@ function startGame(state) {
   sound.setHum(SCENES[S.scene].hum?.(S) ?? null);
   renderInv();
   updateHud();
-  if (!store.get(CP_KEY)) store.set(CP_KEY, S);
+  if (!valid(load(CP_KEY))) store.set(CP_KEY, S);
   SCENES[S.scene].enter?.(g, { first: !S.seen[S.scene] });
   S.seen[S.scene] = true;
+  if (relocated) {
+    g.say('你記得的那個地方已經不在了。你在一片熟悉的黃色裡醒來。');
+  }
   save();
 }
-
-const ENDINGS = {
-  escape: {
-    title: '— 逃脫結局 —',
-    lines: [
-      '你推開那扇門。',
-      '……風。真正的、冷冷的風。',
-      '你站在一條陌生的街上，天快要亮了。路燈還亮著——發出熟悉的嗡嗡聲。',
-      '攝影機還在錄。你低頭看螢幕——畫面裡的街道，和你眼前的一模一樣。',
-      '口袋裡多了一張紙條。是你自己的筆跡：',
-      '「記錄 0120：已歸檔。下一次，請小心一點。」署名被水暈開了，只看得出一個 J。',
-      '你試著想起 J.H. 是誰。你想起一條走廊、一盞燈、一個坐在牆角的人。……你想不起自己的名字。',
-    ],
-  },
-  fall: {
-    title: '— 墜落結局 —',
-    lines: [
-      '燈光暗下去的那一瞬間，你一腳踩空。',
-      '下墜的時間長得不合理。',
-      '你一直在等撞擊。',
-      '它一直沒有來。',
-    ],
-  },
-  red: {
-    title: '— 紅房間結局 —',
-    lines: [
-      '你往紅光更深的地方走。',
-      '轉過一個彎，又一個彎。每一個轉角後面，都是同一間紅色的房間。',
-      '攝影機的螢幕早就只剩雜訊。',
-      '你開始在牆上刻記號，好記住自己繞了幾圈。',
-      '……正、正、正、正、正、正……',
-    ],
-  },
-  archive: {
-    title: '— 0120 —',
-    lines: [
-      '你把攝影機放進抽屜。紅燈還亮著。',
-      '你關上抽屜。嗡嗡聲變得很遠、很遠。',
-      '……',
-      '在某個黃色的房間裡，有人醒了過來。',
-      '牆上貼著一張皺巴巴的紙條。字跡……莫名地眼熟。',
-    ],
-  },
-  thirst: {
-    title: '— 脫水結局 —',
-    lines: [
-      '你的嘴唇裂開了，舌頭腫得說不出話。',
-      '地毯吸飽了水，踩下去會冒出來。',
-      '你跪下來，把臉貼在濕地毯上。',
-      '那股鹹味，是你最後記得的東西。',
-    ],
-  },
-  starve: {
-    title: '— 飢餓結局 —',
-    lines: [
-      '你已經很多天沒有吃東西了。',
-      '你蜷在牆角，數著燈管閃爍的次數，好忘記胃裡的痛。',
-      '嗡嗡聲越來越遠。',
-      '這一層不會讓你餓死。它只會讓你忘記自己為什麼要站起來。',
-    ],
-  },
-  void: {
-    title: '— 虛空結局 —',
-    lines: [
-      '你回頭。門口不在那裡了。',
-      '沒有牆，沒有地板的邊，沒有聲音——連自己的腳步聲都沒有。',
-      '你開始數步數。數到一萬的時候，你發現自己一直站在原地。',
-      '攝影機的螢幕是黑的。不是沒電，是它也找不到任何東西可以錄。',
-    ],
-  },
-  filed: {
-    title: '— 記錄 0120：歸檔 —',
-    lines: [
-      '你按下輸入鍵。游標停止了閃爍。',
-      '牆上所有的螢幕同時切換成同一個畫面：一間黃色的房間。',
-      '有人在房間裡醒過來，摸到牆上一張皺巴巴的紙條。',
-      '你看著他讀紙條。你知道他接下來會往哪裡走，會在哪裡停下來，會在哪裡哭。',
-      '桌上有一疊紙和一支筆。',
-      '你拿起筆。該寫下一張了。',
-      '「如果你在讀這張紙條，代表你又『切出去』了。」',
-    ],
-  },
-  lost: {
-    title: '— 迷失結局 —',
-    lines: [
-      '嗡嗡聲越來越大，',
-      '大到你分不清那是燈管，還是你自己的聲音。',
-      '你靠著牆坐了下來。',
-      '其實這裡……也沒那麼糟，對吧？',
-    ],
-  },
-};
 
 function showEnding(kind) {
   const E = ENDINGS[kind];
@@ -628,19 +541,19 @@ function showEnding(kind) {
   });
   const found = S.notes.length, total = Object.keys(NOTES).length;
   $('#endStats').textContent = `走了 ${S.moves} 步・找到 ${found} / ${total} 張紙條`;
-  $('#btnRetry').hidden = kind === 'escape' || !valid(store.get(CP_KEY));
+  $('#btnRetry').hidden = kind === 'escape' || !valid(load(CP_KEY));
   el.hidden = false;
   playing = false;
   $('#hud').hidden = true;
 }
 $('#btnRetry').addEventListener('click', () => {
-  const cp = store.get(CP_KEY);
+  const cp = load(CP_KEY);
   if (valid(cp)) startGame({ ...cp, sanity: Math.max(cp.sanity, 60), thirst: Math.max(cp.thirst ?? 100, 60), hunger: Math.max(cp.hunger ?? 100, 60) });
 });
 $('#btnAgain').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
 $('#btnNew').addEventListener('click', () => { store.del(SAVE_KEY); store.del(CP_KEY); startGame(fresh()); });
-$('#btnCont').addEventListener('click', () => { const s = store.get(SAVE_KEY); if (valid(s)) startGame(s); });
-$('#btnCont').hidden = !valid(store.get(SAVE_KEY));
+$('#btnCont').addEventListener('click', () => { const s = load(SAVE_KEY); if (valid(s)) startGame(s); });
+$('#btnCont').hidden = !valid(load(SAVE_KEY));
 
 // ---------- render loop ----------
 let last = performance.now();
@@ -700,11 +613,11 @@ function frame(now) {
   ctx.fillRect(0, 0, W, H);
   if (surgeT > 0) { surgeT = Math.max(0, surgeT - dt); ctx.translate((Math.random() - 0.5) * surgeT * 6, (Math.random() - 0.5) * surgeT * 6); }
   if (stress > 0.6) ctx.translate(Math.sin(t * 2.1) * (stress - 0.6) * 10, Math.cos(t * 1.7) * (stress - 0.6) * 6);
-  const R = roomOf(sc);
+  // a per-frame copy, so per-frame tweaks (and the renderer's R.lum) never leak into the shared room definitions
+  const R = { ...roomOf(sc) };
   const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
-  if (stutter) R.bright = Math.random() < 0.5 ? 0.25 : 1;
+  if (stutter) R.bright = (R.bright ?? 1) * (Math.random() < 0.5 ? 0.25 : 1);
   drawRoom(ctx, R, t);
-  if (stutter || R.bright !== 1) R.bright = 1;
   sc.draw?.(ctx, t, S, R);
   if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t, S.view && sc.nightshot ? 0.55 : 0.97);
   sc.drawOver?.(ctx, t, S, R);
@@ -783,11 +696,18 @@ renderInv();
 $('#hud').hidden = true;
 requestAnimationFrame(frame);
 
+// ?seed=<n> makes every random event repeatable
+seedRandom(new URLSearchParams(location.search).get('seed') ?? undefined);
+
 // Small hook for automated tests and debugging.
 window.__rooms = {
   g,
+  seed: seedRandom,
+  setRandom,
+  migrate: (s) => migrate(s, fresh()),
   get state() { return S; },
   get modal() { return modal; },
   get ended() { return ended; },
+  get scaring() { return scareT > 0; },
   hotspots: () => visible().map((h) => ({ id: h.id, rect: h.rect, label: h.label })),
 };

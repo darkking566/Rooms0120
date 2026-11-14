@@ -29,9 +29,11 @@ Then open <http://localhost:8080>. There are no dependencies; Node 18 or newer i
 npm test
 ```
 
-Plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
+First runs a quick static check (`tests/integrity.mjs`, no browser): every scene, item, note, ending and flag the code names must exist, and save migration must keep old saves playable. `npm run test:integrity` runs only that part. Then it plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
 
-The second suite walks all four sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`.
+The second suite walks all four sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`. Otherwise install the pinned Playwright with `npm install` and `npx playwright install chromium`. GitHub Actions runs `npm test` on every push and pull request (`.github/workflows/test.yml`).
+
+The browser tests load the game with `?seed=120`, so every random event happens the same way on every run. You can do the same while playing to reproduce a run.
 
 ## How it's built
 
@@ -44,6 +46,9 @@ The second suite walks all four sublevels, including unsafe repairs, cold and pu
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
 | `src/main.js` | State, input, inventory, the camcorder viewfinder, modals (notes, keypad, pressure dials), saving and the game loop. |
+| `src/endings.js` | The ending texts. |
+| `src/save.js` | Save migration. Every save and checkpoint goes through it, so old saves keep working. When you rename a scene, add it to `SCENE_ALIASES`; when you change the save format, bump `SAVE_VERSION` and add a step to `MIGRATIONS`. A save whose scene no longer exists wakes up in Level 0 instead of being thrown away. |
+| `src/rng.js` | Gameplay randomness (`rand()`, `pick()`), seedable with `?seed=<n>`. Use it for anything that changes what happens; cosmetic noise can keep using `Math.random`. |
 
 ### Mechanics
 
