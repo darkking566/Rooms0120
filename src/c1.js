@@ -560,12 +560,13 @@ export const C1_SCENES = {
           ctx.restore();
           // Locked freestanding wooden cabin (C-100 mention only)
           drawTimberCabin(ctx, cabinQuad);
-          // Craggy right rocky hillock with dark cave mouth
+          // Craggy right rocky hillock with dark cave mouth seated onto the grass ground
           const cr = bounds(cavePathQuad);
-          poly(ctx, [[cr[0] - 48, cr[1] + cr[3] + 18], [cr[0] - 12, cr[1] - 24], [W + 10, cr[1] - 42], [W + 10, cr[1] + cr[3] + 24]], '#40443f');
-          poly(ctx, [[cr[0] - 28, cr[1] + cr[3] + 16], [cr[0] + 4, cr[1] - 8], [cr[0] + cr[2] + 35, cr[1] - 16], [W, cr[1] + cr[3] + 18]], '#2f332e');
-          poly(ctx, [[cr[0] + 6, cr[1] + cr[3]], [cr[0] + 10, cr[1] + 12], [cr[0] + cr[2] * 0.5, cr[1] + 2], [cr[0] + cr[2] - 8, cr[1] + 14], [cr[0] + cr[2] - 4, cr[1] + cr[3]]], '#0d0f0d');
-          poly(ctx, [P(1.4, 1, 4.6), P(1.85, 1, 4.4), P(1.25, 1, 2.1), P(0.75, 1, 2.2)], 'rgba(95, 92, 84, 0.42)');
+          const baseLineY = hy + 28;
+          poly(ctx, [[cr[0] - 58, hy + 10], [cr[0] - 24, cr[1] - 6], [cr[0] + 18, cr[1] - 34], [cr[0] + 68, cr[1] - 24], [W, cr[1] - 48], [W, baseLineY + 12], [cr[0] - 42, baseLineY]], '#3d423c');
+          poly(ctx, [[cr[0] - 32, baseLineY - 2], [cr[0] + 4, cr[1] - 12], [cr[0] + 54, cr[1] - 28], [W, cr[1] - 18], [W, baseLineY + 10]], '#2d322c');
+          poly(ctx, [[cr[0] + 4, baseLineY - 6], [cr[0] + 8, cr[1] + 14], [cr[0] + cr[2] * 0.5, cr[1] + 2], [cr[0] + cr[2] - 6, cr[1] + 16], [cr[0] + cr[2] - 2, baseLineY - 6]], '#0c0e0c');
+          poly(ctx, [[cr[0] - 8, baseLineY - 8], [cr[0] + cr[2] + 8, baseLineY - 8], [cr[0] + cr[2] - 25, baseLineY + 62], [cr[0] - 68, baseLineY + 56]], 'rgba(84, 82, 74, 0.44)');
           // Planted SE trail signpost
           drawSignPost(ctx, trekSignQuad, '東南 7.9 km ▶', 'OCEANUS', '#48545c', '#8ca0ac');
           drawGrassField(ctx, hy, 44, 2, 'rgba(62, 82, 54, 0.62)', 22);
