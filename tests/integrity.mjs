@@ -13,7 +13,9 @@ import { GHOST_LOOT } from '../src/flavor.js';
 import { migrate, SCENE_ALIASES, FALLBACK_SCENE, SAVE_VERSION, MIGRATIONS } from '../src/save.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const files = ['main', 'scenes', 'sublevels', 'items'].map((f) => [f, fs.readFileSync(path.join(root, 'src', `${f}.js`), 'utf8')]);
+// game code that names scenes, items, notes and flags: main.js, items.js and every level file
+const files = ['main', 'items', ...fs.readdirSync(path.join(root, 'src', 'levels')).filter((f) => f.endsWith('.js')).map((f) => `levels/${f.slice(0, -3)}`)]
+  .map((f) => [f, fs.readFileSync(path.join(root, 'src', `${f}.js`), 'utf8')]);
 
 let failures = 0;
 const check = (cond, msg) => { if (cond) console.log(`  ✓ ${msg}`); else { failures++; console.error(`  ✗ ${msg}`); } };

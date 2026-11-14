@@ -3,7 +3,8 @@
 // Each function draws at the shaken centre (x, y); k runs from 1.1 down to 0 over the scare, and a is
 // the overlay's opacity.
 import { H, drawSmiler, drawFigure } from './render.js';
-import { drawDrowned, drawGrowler } from './sublevels.js';
+import { drawDrowned } from './levels/level0-5.js';
+import { drawGrowler } from './levels/level0-7.js';
 
 export const SCARES = {
   smiler: (ctx, x, y, k, a, t) => drawSmiler(ctx, x, y, 5 + (1.1 - k) * 4, a, t),

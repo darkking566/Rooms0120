@@ -40,13 +40,17 @@ The browser tests load the game with `?seed=120`, so every random event happens 
 | File | What it does |
 | --- | --- |
 | `src/render.js` | Procedural one-point-perspective renderer: rooms, boxes, pipes, notes, the flashlight darkness mask, the smiler, film grain and the camcorder overlay. Every scene is drawn in code; there are no image files. |
-| `src/scenes.js` | The scene graph: each scene's room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
-| `src/sublevels.js` | The B.N.T.G. pillar route and the four sublevels: procedural scenery, repair puzzles, cold, pursuit and historical districts. |
+| `src/scenes.js` | The scene graph: collects every level's scenes into one map and defines the levels (`LEVELS`). Each scene has room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
+| `src/levels/level0.js`, `level1.js`, `level2.js` | The scenes of Levels 0, 1 and 2, with their scenery and puzzles. Shared helpers (`BACK`, `FORWARD`, palettes, smilers) are in `src/levels/common.js`. |
+| `src/sublevels.js` | Collects the sublevels' scenes and defines their levels. |
+| `src/levels/level0-1.js` … `level0-7.js` | The B.N.T.G. pillar route and Levels 0.1, 0.2, 0.3, 0.5 and 0.7 (plus the old Level 1 behind 0.7's rift): procedural scenery, repair puzzles, cold, pursuit and historical districts. Their shared helpers are in `src/levels/sublevel-kit.js`. |
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
 | `src/main.js` | State, input, inventory, the camcorder viewfinder, modals (notes, keypad, pressure dials), saving and the game loop. |
-| `src/endings.js` | The ending texts. |
+| `src/endings.js` | The ending texts, and `COMPLETIONS`: the endings that finish the game (they clear the save and offer no retry). |
+| `src/scares.js` | The jump-scare drawing for each kind of monster. To add a monster, add its drawing here and pass its name to `g.scare()`. |
+| `src/flavor.js` | Whispers at low sanity and what Level 1's phantom supply crates can hold. |
 | `src/save.js` | Save migration. Every save and checkpoint goes through it, so old saves keep working. When you rename a scene, add it to `SCENE_ALIASES`; when you change the save format, bump `SAVE_VERSION` and add a step to `MIGRATIONS`. A save whose scene no longer exists wakes up in Level 0 instead of being thrown away. |
 | `src/rng.js` | Gameplay randomness (`rand()`, `pick()`), seedable with `?seed=<n>`. Use it for anything that changes what happens; cosmetic noise can keep using `Math.random`. |
 
