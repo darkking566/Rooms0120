@@ -84,7 +84,14 @@ export class Sound {
       add(this.node('Oscillator', { type: 'sawtooth', frequency: 118 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 260 }), this.node('Gain', { gain: 0.05 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 59 }), this.node('Gain', { gain: 0.05 }));
       add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 3200, Q: 0.7 }), this.node('Gain', { gain: 0.006 }));
-    } else if (lv === 1) {
+    } else if (lv === '1.2') {
+      // the garden: no machinery at all, just air moving through leaves
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 520 }), this.node('Gain', { gain: 0.05 }));
+    } else if (lv === '1.5') {
+      // no hum, only whispering
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 2400, Q: 6 }), this.node('Gain', { gain: 0.02 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.6) this.burst(0.5 + Math.random() * 0.5, 0.035, 'bandpass', 1800 + Math.random() * 1600); }, 1100));
+    } else if (lv === 1 || lv === '1.1' || lv === '1.3') {
       add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 300 }), this.node('Gain', { gain: 0.12 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 50 }), this.node('Gain', { gain: 0.02 }));
       this.timers.push(setInterval(() => { if (Math.random() < 0.5) this.drip(); }, 1400));

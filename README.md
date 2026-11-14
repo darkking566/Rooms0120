@@ -13,6 +13,15 @@ Level 0 also has four optional sublevels. Their entrances are spread across Leve
 | 0.5 淵閉療舍 | Knee-deep brown water and an echo that hurts. Drinking it quenches thirst but makes you sick; a sparking lamp has to be passed between bursts. The hospital has beds — and sleeping in one wakes the Drowned, which follows you without rest and loops the corridors back to the water. Lure it into the water to dissolve it, sleep for real, then follow the corridor to the metal stairs down into Level 1. |
 | 0.7 憶域 | A time bubble of past Level 0s: a modern stretch whose exits are sealed by "no signal" static, then bulbs and candles (toxic wallpaper, an N.T.G. pack with the only water), a Victorian hall where a voice calls from a doorway (don't answer), castle corridors where only the torch-lit archway is safe, a Roman marble hall and Egyptian corridors with a Growler in the dark. Rub the carving and get out by walking back, or sleep in the alcove: with something from the present you wake in the modern stretch, without it you wake beside a rift into an old Level 1. |
 
+Level 1 has four more, around the M.E.G. Alpha base. A stencilled "ALPHA →" side passage off Level 1's first corridor leads to the base's locked gate, a notice board and the entrances:
+
+| Level | Way in | Based on the article |
+| --- | --- | --- |
+| 1.1 腐敗的走廊 | The corridor due south of Alpha. | One straight corridor of whitewashed cinder block and blue tile, in zones. Zone 1 is safe (outpost 1's cot and fridge). Zone 2 tilts and glitches: touching the glitching wall noclips you somewhere random in Level 1, and a skin-stealer at the far end walks closer if you linger. The 通道幫 hideout, Jakob's cabin, holds their log. Zone 3 is pitch black, with a smiler to stare down; outpost 4's crate opens with the casualty count of the M.E.G. expedition from the Alpha notice board. Past the warning sign, Zone 4 is a black-and-white deadzone that drains sanity, and the arrow-shaped light of "Zone 5" leads only into the void. |
+| 1.2 砼苑 | A doorway grown shut at the far end of the Garden; the shears cut it open. | Level 1 overgrown with sunflowers, lilacs and ivy. Every step and every ten seconds inside makes you bloom; bloom fully and you are thrown back out. The sunflowers all face the heart of the garden, so follow their faces through the rows (a wrong turn costs extra bloom). At the heart, a person-shaped bed of lilacs and a botanist's kit with a pressed lilac that restores sanity. |
+| 1.3 惡性腫瘤 | Tear the seals off the white wall beside Alpha and squeeze through the slit. | The soft white clinic, taken by Decay. The abandoned M.E.G. ward has autopsy reports, the supervisor's memo and a spool of plastic line. Lower the line into a hole or a detox zone and pull it back: if most of it is gone, that place has decayed. One of the three detox zones (random per run) is still clean and heals you once, then decays behind you; the others maim you. |
+| 1.5 顛倒 | A sunny window in the windowless Level 1 office. Click it twice to climb through. | The lights pour out darkness and everything else glows (the scene is drawn colour-inverted), with furniture fixed to the ceiling. There is no way back. The whispers get quieter the closer you are to whoever is whispering, so follow the loudest way three times to reach a thin wall and noclip back to Level 1. Head for the quiet twice and the "mother" pulls you into a warm, beating corridor. |
+
 These routes, puzzles and J.H. notes are game adaptations, rather than a full reproduction of each article. The original Level 0 → 1 → 2 route remains available. New levels use the same inventory, autosave and entry checkpoints; existing v1 saves remain compatible.
 
 ## Run
@@ -31,7 +40,7 @@ npm test
 
 Plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
 
-The second suite walks all four sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`.
+The second suite walks all four Level 0 sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. The third suite walks Level 1's sublevels: the Alpha base, the zones of 1.1 (the random noclip, the smiler, the crate code and the void ending), blooming in 1.2, the line test and healing in 1.3, and the whisper route and the "mother" in 1.5. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`.
 
 ## How it's built
 
@@ -41,6 +50,7 @@ The second suite walks all four sublevels, including unsafe repairs, cold and pu
 | `src/scenes.js` | The scene graph's index: the level table and every scene, gathered from the files below. |
 | `src/scenes/level0.js`, `level1.js`, `level2.js` | One file per main level: each scene's room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
 | `src/scenes/common.js` | Palettes, flicker curves, the back/forward hotspots, smiler helpers and props shared between levels. |
+| `src/scenes/level1subs.js` | The M.E.G. Alpha base and Level 1's four sublevels: zones, blooming, Decay and the inverted halls. |
 | `src/sublevels.js` | The B.N.T.G. pillar route and the four sublevels: procedural scenery, repair puzzles, cold, pursuit and historical districts. |
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
@@ -99,3 +109,7 @@ The added sublevel settings are adapted from these Chinese Wiki pages, each unde
 | [Level 0.3 — 冰室](https://backrooms-wiki-cn.wikidot.com/level-0-3) | CursedSliver | Ambersight |
 | [Level 0.5 — 淵閉療舍](https://backrooms-wiki-cn.wikidot.com/level-0-5) | FuneralBouncer | xuziqi |
 | [Level 0.7 — 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7), including its linked historical district archive | T-Dragon | jiaoyanerlan2, KkKkK_1234, owl4513 |
+| [Level 1.1 — 腐敗的走廊](https://backrooms-wiki-cn.wikidot.com/level-1-1) | CutTheBirch | INSide_497 |
+| [Level 1.2 — 砼苑](https://backrooms-wiki-cn.wikidot.com/level-1-2) | Praetor3005 | Deip\*isoster |
+| [Level 1.3 — 惡性腫瘤](https://backrooms-wiki-cn.wikidot.com/level-1-3) (written in Saria's Decay setting, with permission) | DivineAtlas | Deip\*isoster |
+| [Level 1.5 — 顛倒](https://backrooms-wiki-cn.wikidot.com/level-1-5) | Tesserax (Chaosraider98) | Ambersight |

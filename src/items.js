@@ -93,6 +93,11 @@ export const ITEMS = {
   },
   photo: { name: '拍立得照片', desc: '一間黃色的房間，牆角坐著一個人，臉被拍糊了。背面寫著：「第一次」。翻回正面時，牆角是空的。' },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
+  line: { name: '塑膠線', desc: '一捲藍色的塑膠線，剪成一碼一碼的。M.E.G. 拿它來測試洞裡有沒有衰退：垂下去，拉回來，看還剩多少。' },
+  lilac: {
+    name: '壓乾的丁香', desc: '夾在植物圖鑑裡的一小枝丁香。乾了很久，還是很香。（再點一次直接使用）',
+    self: (g) => { g.take('lilac'); g.sanity(15); g.say('你把丁香湊到鼻子前面。你想起了一件很久以前的小事——一個下午，一扇窗，有人在叫你吃飯。你不知道那是誰的記憶，但你決定把它留下來。'); },
+  },
 };
 
 export function drawIcon(ctx, id, s = 56) {
@@ -184,6 +189,15 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.fillStyle = '#c8ccd0'; ctx.fillRect(-14, -10, 28, 20);
       ctx.fillStyle = '#fff';
       for (const [x, y] of [[-7, -4], [0, -4], [7, -4], [-7, 4], [0, 4]]) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); }
+      break;
+    case 'line':
+      ctx.strokeStyle = '#4a8ac8'; ctx.lineWidth = 3;
+      for (const r of [14, 10, 6]) { ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.6, 0, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(14, 0); ctx.quadraticCurveTo(20, 10, 12, 18); ctx.stroke();
+      break;
+    case 'lilac':
+      ctx.strokeStyle = '#5a7a3a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(0, -6); ctx.stroke();
+      for (let i = 0; i < 9; i++) { ctx.fillStyle = i % 2 ? '#b59ad8' : '#9a80c0'; ctx.beginPath(); ctx.arc(((i % 3) - 1) * 6, -8 - Math.floor(i / 3) * 6, 3.5, 0, Math.PI * 2); ctx.fill(); }
       break;
     case 'photo':
       ctx.rotate(0.15);

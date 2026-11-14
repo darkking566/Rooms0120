@@ -497,6 +497,11 @@ function frame(now) {
   ctx.fillRect(0, 0, W, H);
   if (surgeT > 0) { surgeT = Math.max(0, surgeT - dt); ctx.translate((Math.random() - 0.5) * surgeT * 6, (Math.random() - 0.5) * surgeT * 6); }
   if (stress > 0.6) ctx.translate(Math.sin(t * 2.1) * (stress - 0.6) * 10, Math.cos(t * 1.7) * (stress - 0.6) * 6);
+  // Level 1.1: some zones have a tilted, heaving floor
+  if (sc.tilt) {
+    const a = sc.tilt(S, t), k = 1 + 1.8 * Math.abs(a); // zoom in just enough to hide the corners
+    ctx.translate(W / 2, H / 2); ctx.rotate(a); ctx.scale(k, k); ctx.translate(-W / 2, -H / 2);
+  }
   const R = roomOf(sc);
   const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
   if (stutter) R.bright = Math.random() < 0.5 ? 0.25 : 1;

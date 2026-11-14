@@ -5,7 +5,7 @@
   "description": "An original 2D point-and-click horror game set in the Backrooms.",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node tests/walkthrough.cjs && node tests/sublevels.cjs"
+    "test": "node tests/walkthrough.cjs && node tests/sublevels.cjs && node tests/level1subs.cjs"
   },
   "engines": {
     "node": ">=18"

@@ -13,6 +13,7 @@ const ARRIVALS = {
   zenith: '你回頭看——身後只有一面水泥牆。一塊結霜的金屬板躺在你腳邊，是天頂站的外殼碎片，跟著你一起切了出來。左邊的出口外面，是一片白茫茫的霧。',
   flood: '你身上還在滴水，每走一步就在水泥地上留下一個濕腳印。牆邊擺著一條摺好的毯子，上面別著一張紙條。左邊的出口外面，是一片白茫茫的霧。',
   memory: '馬廄和乾草都不見了，柱子變回了現在的樣子。只有腳邊一塊馬蹄鐵，證明你剛才不是在做夢。左邊的出口外面，是一片白茫茫的霧。',
+  inverted: '你從牆裡摔出來，跌在潮濕的水泥地上。燈是亮的——光就是光，暗就是暗。你盯著頭頂的燈管看了很久，確定它沒有在往下滴黑色的東西。左邊的出口外面，是一片白茫茫的霧。',
 };
 const hullPlate = [P(0.05, 1, 2.35), P(0.6, 1, 2.3), P(0.55, 1, 2.8), P(0.1, 1, 2.85)];
 const blanket = { x1: -2.2, x2: -1.7, y1: 0.86, y2: 1, z1: 2.3, z2: 2.75, color: '#5a6a4a', edge: true };
@@ -84,7 +85,8 @@ const n2Quad = faceQuad(0.9, 0.05, 1.25, 0.4, 2.999);
 const exitDoorL1 = wallQuad(-2.4, -0.6, 1, 4, 5);
 const exitSignL1 = wallQuad(-2.4, -0.8, -0.66, 4.2, 4.8);
 
-const l1Corridor = { hw: 1, depth: 6, fogEnd: 9, pal: PAL.corridor, floorTex: 'concrete', baseboard: false, lights: [1.6, 3.6], backDoor: { x1: -0.35, x2: 0.35, top: -0.5 } };
+const l1Corridor = { hw: 1, depth: 6, fogEnd: 9, pal: PAL.corridor, floorTex: 'concrete', baseboard: false, lights: [1.6, 3.6], backDoor: { x1: -0.35, x2: 0.35, top: -0.5 }, openings: [{ side: 1, z1: 3.2, z2: 4.4, top: -0.55 }] };
+const alphaWay = wallQuad(1, -0.55, 1, 3.2, 4.4);
 const officeDoor = wallQuad(-1, -0.6, 1, 2.6, 3.4);
 const nMegQuad = wallQuad(1, 0.1, 0.4, 2.0, 2.4);
 const megAlmond = { p: P(0.5, 1, 2.3), z: 2.3 };
@@ -93,6 +95,8 @@ const l1Office = { ...l1Base, wallTex: undefined, hw: 1.4, depth: 4, fogEnd: 9, 
 const desk = { x1: -0.7, x2: 0.7, y1: 0.35, y2: 1, z1: 2.4, z2: 3.1, color: '#5d4a36', edge: true };
 const lockbox = { x1: -0.2, x2: 0.2, y1: 0.14, y2: 0.35, z1: 2.55, z2: 2.85, color: '#3d4247', edge: true };
 const calendar = faceQuad(0.55, -0.6, 1.0, -0.1, 3.999);
+// Level 1.5's way in: a window that should not be there, in an office in the middle of the building.
+const fakeWindow = faceQuad(-1.1, -0.6, -0.3, 0.1, 3.999);
 
 const l1Deep = { ...l1Base, hw: 1.6, depth: 9, fogEnd: 7, pal: PAL.deep, lights: [2, 4.5, 7], flickerLights: [2] };
 
@@ -150,6 +154,8 @@ const vines = Array.from({ length: 22 }, (_, i) => {
 });
 const plantMan = { x: 1.1, z: 3.4 };
 const vineBag = { x1: -1.2, x2: -0.7, y1: 0.72, y2: 1, z1: 2.5, z2: 2.9, color: '#5b4a34', edge: true };
+// Level 1.2's way in: a doorway at the far end, grown shut
+const ivyDoor = faceQuad(-0.45, -0.55, 0.45, 1, 8.99);
 
 // corridor rooms off the safer corridors
 const l1Corridor2 = { hw: 1, depth: 8, fogEnd: 9, pal: PAL.corridor, floorTex: 'concrete', baseboard: false, lights: [1.6, 4.4], flickerLights: [1], flick: flickery, backDoor: { x1: -0.35, x2: 0.35, top: -0.5 } };
@@ -272,11 +278,13 @@ export const LEVEL1_SCENES = {
       ctx.fillStyle = shade(R, '#b8e02a', 2.3);
       ctx.beginPath(); ctx.ellipse(c[0], c[1] + 2, 40, 9, 0, 0, Math.PI * 2); ctx.fill();
       if (!s.flags.meg_almond) bottle(ctx, R, megAlmond.p[0], megAlmond.p[1], 42, megAlmond.z);
+      const ac = P(1, -0.68, 3.8); ctx.save(); ctx.fillStyle = shade(R, '#e8e2c0', 3.8); ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText('ALPHA →', ac[0] - 8, ac[1]); ctx.restore();
     },
     hotspots: [
       BACK('l1_crates', '回到倉庫'),
       { ...FORWARD('l1_corridor2', '走廊往裡延伸'), rect: bounds(faceQuad(-0.35, -0.5, 0.35, 1, 6), 14) },
       { id: 'office', rect: bounds(officeDoor, 4), label: '一扇門', cursor: 'go', click: (g) => g.go('l1_office') },
+      { id: 'alpha', rect: bounds(alphaWay, 6), label: '漆著「ALPHA →」的岔路', cursor: 'go', click: (g) => g.go('l1_alpha', { msg: '你跟著牆上的箭頭走。岔路越走越寬，牆上的 M.E.G. 標誌越來越多。' }) },
       { id: 'note', rect: bounds(nMegQuad, 8), label: '貼在牆上的紙條', cursor: 'look', click: (g) => g.read('n_meg') },
       {
         id: 'almond', when: (s) => !s.flags.meg_almond, rect: [megAlmond.p[0] - 22, megAlmond.p[1] - 52, 44, 60], label: '螢光布上的瓶子', cursor: 'take',
@@ -288,6 +296,12 @@ export const LEVEL1_SCENES = {
   l1_office: {
     level: 1, title: '辦公室', room: l1Office, safe: true,
     draw(ctx, t, s, R) {
+      const [wx, wy, ww, wh] = bounds(fakeWindow);
+      const sky = ctx.createLinearGradient(0, wy, 0, wy + wh);
+      sky.addColorStop(0, '#9ccbf0'); sky.addColorStop(0.62, '#d8ecf8'); sky.addColorStop(0.63, '#6aa048'); sky.addColorStop(1, '#4a8030');
+      ctx.save(); ctx.shadowColor = 'rgba(255,250,220,0.8)'; ctx.shadowBlur = 24; poly(ctx, fakeWindow, sky); ctx.restore();
+      seg(ctx, [wx + ww / 2, wy], [wx + ww / 2, wy + wh], '#e8e4d8', 3); seg(ctx, [wx, wy + wh / 2], [wx + ww, wy + wh / 2], '#e8e4d8', 3);
+      ctx.strokeStyle = '#e8e4d8'; ctx.lineWidth = 4; poly(ctx, fakeWindow); ctx.stroke();
       poly(ctx, calendar, shade(R, '#e9e4d4', 4));
       const c = P(0.775, -0.5, 4);
       ctx.fillStyle = shade(R, '#a3241c', 4); ctx.font = 'bold 11px sans-serif'; ctx.fillText('JAN', c[0] - 10, c[1]);
@@ -304,6 +318,16 @@ export const LEVEL1_SCENES = {
     hotspots: [
       BACK('l1_corridor'),
       { id: 'calendar', rect: bounds(calendar, 8), label: '月曆', cursor: 'look', click: (g) => g.say('月曆停在一月。20 號被紅筆圈了好幾圈。') },
+      {
+        id: 'window', rect: bounds(fakeWindow, 4), label: '窗戶', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.l15_window) {
+            g.flag('l15_window');
+            return g.say('一扇窗戶。窗外是一片晴天底下的草地，遠處有一棟紅屋頂的房子。\n……這間辦公室在一整片水泥建築的正中央。它不可能有窗戶。');
+          }
+          g.go('l15_window', { msg: '你推開窗戶。風是暖的，有青草的味道。你翻過窗台——腳落地的那一刻，草地的聲音全都不見了。' });
+        },
+      },
       {
         id: 'lockbox', rect: boxRect(lockbox, 14), label: '上鎖的鐵盒', cursor: 'look',
         click: (g) => {
@@ -458,6 +482,13 @@ export const LEVEL1_SCENES = {
       ctx.beginPath(); ctx.arc(f[0], f[1] - w * 1.65, w * 0.32, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = shade(R, '#c8a0b8', plantMan.z);
       for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(f[0] - w * 0.3 + i * w * 0.15, f[1] - w * 1.9 - (i % 2) * 5, 3, 0, Math.PI * 2); ctx.fill(); }
+      poly(ctx, ivyDoor, '#050704');
+      if (!s.flags.l12_open) {
+        const [x, y, w, h] = bounds(ivyDoor);
+        for (let i = 0; i < 9; i++) seg(ctx, [x + (i / 8) * w, y], [x + ((i * 5) % 9 / 8) * w, y + h], shade(R, '#3f6a32', 8.5, 1.1), 3);
+      } else {
+        const c = P(0, 0.3, 9); ctx.fillStyle = 'rgba(232,192,48,0.7)'; ctx.beginPath(); ctx.arc(c[0], c[1], 6, 0, Math.PI * 2); ctx.fill();
+      }
       box(ctx, R, vineBag);
       if (!s.flags.vines_cut) {
         for (let i = 0; i < 6; i++) seg(ctx, P(-1.25 + i * 0.1, 0.65, 2.5), P(-1.3 + i * 0.12, 1, 2.9), shade(R, '#3f6a32', 2.6), 3);
@@ -465,6 +496,20 @@ export const LEVEL1_SCENES = {
     },
     hotspots: [
       BACK('l1_outpost', '退回前哨站'),
+      {
+        id: 'ivy', rect: bounds(ivyDoor, 10), label: '藤蔓後面的門洞', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.l12_open) return g.say('花園的最深處，藤蔓密得像一面牆。藤蔓後面有風——那裡是一個門洞。徒手扯不開。');
+          g.go('l12_gate', { msg: '你鑽過門洞。藤蔓在你身後慢慢合上了。' });
+        },
+        use: {
+          shears: (g) => {
+            if (g.s.flags.l12_open) return g.say('門洞已經剪開了。');
+            g.flag('l12_open'); g.sfx('screw');
+            g.say('你一刀一刀剪開藤蔓。門洞後面是另一片水泥柱子——同樣的 Level 1，只是開滿了向日葵。');
+          },
+        },
+      },
       {
         id: 'man', rect: [P(plantMan.x, 1, plantMan.z)[0] - 40, P(plantMan.x, 1, plantMan.z)[1] - 110, 80, 115], label: '坐在藤蔓裡的人', cursor: 'look',
         click: (g) => {
