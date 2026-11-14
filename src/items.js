@@ -53,7 +53,14 @@ export const ITEMS = {
   },
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
-    self: (g) => { g.take('almond'); g.sanity(30); g.drink(35); g.sfx('drink'); g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。'); },
+    self: (g) => {
+      g.take('almond'); g.sanity(30); g.drink(35); g.sfx('drink');
+      if (g.s.flags.c1s_plague) {
+        g.flag('c1s_plague', false);
+        return g.say('你喝下杏仁水。冰甜的液體順著喉嚨下去，原本燒得發昏的高熱與疫疾慢慢退開了。');
+      }
+      g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。');
+    },
   },
   almond_wet: {
     name: '濕掉的杏仁水', desc: '從濕地毯上撿來的。瓶蓋是鬆的，瓶底沾滿了地毯裡的水。',

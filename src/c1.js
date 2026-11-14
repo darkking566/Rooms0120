@@ -346,8 +346,8 @@ export const C1_SCENES = {
 
     const hollows = [P(-1.3, 0.99, 2.3), P(-0.6, 0.99, 2.3), P(-0.6, 0.99, 3.0), P(-1.3, 0.99, 3.0)];
     const cabinQuad = wallQuad(-2.2, -0.15, 0.78, 4.4, 5.6);
-    const cavePathQuad = wallQuad(2.2, -0.2, 0.85, 3.6, 4.9);
-    const trekSignQuad = faceQuad(1.1, 0.25, 1.75, 0.95, 2.5);
+    const cavePathQuad = wallQuad(2.2, -0.55, 0.35, 3.8, 5.1);
+    const trekSignQuad = faceQuad(0.85, 0.42, 1.48, 0.98, 2.2);
     const cityArchQuad = faceQuad(-0.72, -0.35, 0.72, 0.95, 8.999);
 
     const gateNoticeQuad = wallQuad(-1.8, -0.45, 0.35, 2.2, 3.2);
@@ -380,6 +380,9 @@ export const C1_SCENES = {
         level: 'C1.2', title: '平原邊緣', room: plainRoom, quiet: 0.65,
         viewMsg: '觀景窗裡，遠處東舟市尚未抹灰的水泥輪廓清楚了不少，地上圓坑的邊緣也顯得分外整齊。',
         enter(g, { first }) {
+          if (g.s.flags.c1s_rescued && once(g, 'c1s_delivered')) {
+            return g.say('東舟市三方接應小組把高燒的落君送往醫療部門。幾天之後傳來消息：盤踞在俄刻阿諾斯號入口的所有子空間忽然全部消失，再也沒有出現過。');
+          }
           if (g.s.flags.c1e_in_city) {
             g.flag('c1e_in_city', false);
             g.sfx('groan');
@@ -414,7 +417,7 @@ export const C1_SCENES = {
           back('c1_hall', '翻回偏路的窗戶', '你抓住漂浮在草坡邊的窗框翻了回去，身後重新合上冷白一塵不染的長廊。'),
           hit('hollows', bounds(hollows, 8), '地面的圓形凹痕', (g) => g.say('草皮底下陷著幾個異常規整的圓坑。傳說懸浮島、不倒岩群與逆流瀑布曾懸在這裡，如今只剩空蕩蕩的凹痕。')),
           hit('cabin', bounds(cabinQuad, 8), '上鎖的小木屋', (g) => g.say('一間上了重鎖的獨棟木屋。封條印著「M.E.G. 破門項目（C-100 方向）——生人勿進」。')),
-          hit('trek', bounds(trekSignQuad, 8), '東南方向路標（7.9 km）', (g) => g.say('路標朝向東南方約七點九公里處的山體。遠望過去像有一截巨大的金屬艦身卡在山脊裡——待把城裡的線索摸清楚再去看看吧。')),
+          hit('trek', bounds(trekSignQuad, 8), '向東南步行 7.9 公里（俄刻阿諾斯號）', (g) => g.go('c1e_trek'), 'go'),
           hit('to_cave', bounds(cavePathQuad, 8), '山壁下的洞穴', (g) => g.go('c1e_cave', { msg: '你沿著石礫小徑走進山壁底下的陰暗洞口。' }), 'go'),
           hit('to_city', bounds(cityArchQuad, 8), '前往東舟市外環', (g) => g.go('c1e_gate'), 'go'),
         ],
@@ -1028,6 +1031,384 @@ export const C1_SCENES = {
             }
             g.read('n_c1x_progenitor');
           }),
+        ],
+      },
+    };
+  })(),
+
+  // ---------- Report IV: 俄刻阿諾斯號 (Level C-1.4) ----------
+  ...(() => {
+    const trekPal = pal('#707c84', '#829098', '#525e4f', '#8c99a2', '#d6e0e6');
+    const hullPal = pal('#525b64', '#6d7882', '#444b52', '#707b85', '#ccd6df');
+    const shipPal = pal('#2b343e', '#1a2026', '#212830', '#10141a', '#7aaef0');
+    const fogPal = pal('#424e48', '#222a26', '#2d3730', '#1a211d', '#98aba0');
+    const townPal = pal('#383634', '#1d1c1b', '#2b2927', '#100f0e', '#e4bf7c');
+    const metroPal = pal('#4a3c2f', '#2c231b', '#33281f', '#120e0a', '#c9a678');
+    const seaPal = pal('#1e2d3b', '#121c26', '#16354d', '#09141d', '#68a2cf');
+    const hPal = pal('#282e36', '#181c22', '#20262c', '#0d1014', '#9ec2df');
+    const hidePal = pal('#302b27', '#1c1816', '#24201c', '#0f0c0a', '#d8c4a6');
+
+    const trekRoom = room(trekPal, { hw: 2.2, depth: 9.5, fogEnd: 16, baseboard: false, lights: [] });
+    const hullRoom = room(hullPal, { hw: 2.0, depth: 8.5, fogEnd: 15, baseboard: false, lights: [] });
+    const shipRoom = room(shipPal, { hw: 1.5, depth: 8.5, fogEnd: 12, lights: [1.8, 4.4, 7.0], flickerLights: [1] });
+    const fogRoom = room(fogPal, { hw: 1.8, depth: 7.5, fogEnd: 5.5, lights: [] });
+    const townRoom = room(townPal, { hw: 1.7, depth: 8, fogEnd: 11, lights: [2.4] });
+    const metroRoom = room(metroPal, { hw: 1.5, depth: 8, fogEnd: 9.5, lights: [] });
+    const seaRoom = room(seaPal, { hw: 1.8, depth: 8, fogEnd: 11, lights: [2.6, 5.8] });
+    const hRoom = room(hPal, { hw: 1.7, depth: 7.5, fogEnd: 11, lights: [2.2, 5.2] });
+    const hideRoom = room(hidePal, { hw: 1.4, depth: 6.5, fogEnd: 8.5, lights: [2.5] });
+
+    let seaDripT = 1.8;
+
+    const c1sHazard = (s) => (s.flags.c1s_plague ? '疫疾正在消耗神智（需要杏仁水治療）' : null);
+
+    function c1sEnter(g, msg) {
+      if (!g.s.flags.c1s_seed) g.flag('c1s_seed', 1);
+      if (g.s.flags.c1s_plague) g.sanity(-1);
+      if (msg) g.say(msg);
+    }
+
+    function remainingSubspaces(s) {
+      const list = [];
+      if (!s.flags.c1s_v_fog) list.push('c1s_fog');
+      if (!s.flags.c1s_v_town) list.push('c1s_town');
+      if (!s.flags.c1s_v_metro) list.push('c1s_metro');
+      return list;
+    }
+
+    function subspaceTarget(s, slot) {
+      const rem = remainingSubspaces(s);
+      if (!rem.length) return null;
+      return rem[((s.flags.c1s_seed || 1) + slot) % rem.length];
+    }
+
+    function allSubspacesSeen(s) {
+      return !!s.flags.c1s_v_fog && !!s.flags.c1s_v_town && !!s.flags.c1s_v_metro;
+    }
+
+    const trekAhead = faceQuad(-0.6, -0.3, 0.6, 0.95, 9.2);
+    const hullNote = wallQuad(-2.0, -0.25, 0.3, 2.3, 3.0);
+    const hullDoor = faceQuad(-0.45, -0.45, 0.45, 1, 8.499);
+
+    const hallWinL = wallQuad(-1.5, -0.52, 0.35, 3.6, 5.0);
+    const hallWinR = wallQuad(1.5, -0.52, 0.35, 3.6, 5.0);
+    const hallDoor0 = wallQuad(-1.5, -0.55, 1, 1.9, 2.8);
+    const hallDoor1 = faceQuad(-0.65, -0.55, -0.02, 1, 8.499);
+    const hallDoor2 = wallQuad(1.5, -0.55, 1, 1.9, 2.8);
+    const hallDoorSea = faceQuad(0.18, -0.55, 0.85, 1, 8.499);
+
+    const fogTrees = faceQuad(-0.9, -0.55, 0.9, 0.9, 5.5);
+    const townBooth = { x1: -1.3, x2: -0.75, y1: -0.35, y2: 1, z1: 2.6, z2: 3.3, color: '#992828', top: '#b83838', edge: true };
+    const metroRails = faceQuad(-0.7, 0.45, 0.3, 0.98, 5.2);
+    const metroRats = { x1: 0.45, x2: 1.25, y1: 0.58, y2: 1, z1: 2.3, z2: 3.1, color: '#3b332e', top: '#4a403a', edge: true };
+    const seaAhead = faceQuad(-0.45, -0.5, 0.45, 1, 7.999);
+    const seaWaterLook = [170, 320, 620, 130];
+
+    const hButlerRect = [395, 165, 170, 225];
+    const hHideoutDoor = faceQuad(-1.45, -0.5, -0.78, 1, 6.9);
+    const hButlerToggle = [585, 210, 190, 95];
+
+    const hideJunjunRect = [370, 175, 220, 225];
+    const hideRescueRect = [615, 240, 180, 90];
+
+    const winHitMsg = '深藍色的舷窗帶著微微暖意。無論徒手捶打還是拿隨身器物敲上去，玻璃始終完好如初。';
+    const winToolUse = {
+      knife: (g) => g.say(winHitMsg),
+      wrench: (g) => g.say(winHitMsg),
+      rod: (g) => g.say(winHitMsg),
+      screwdriver: (g) => g.say(winHitMsg),
+      ladder: (g) => g.say(winHitMsg),
+    };
+
+    return {
+      c1e_trek: {
+        level: 'C1.2', title: '東南荒原・長途步行', room: trekRoom, quiet: 0.65,
+        viewMsg: '觀景窗盡頭的山脊裡斜插著龐大的灰暗金屬輪廓。',
+        enter(g, { first }) {
+          g.sanity(-6);
+          g.drink(-6);
+          g.eat(-6);
+          g.say(first
+            ? '從東舟市平原邊緣朝東南整整走了近七點九公里。荒草割過褲管，冷風一路耗盡體力，前方山體中終於露出巨大的金屬壁面。'
+            : '再次徒步穿過這七點九公里的荒原，體力與精神又被抽走一截。');
+        },
+        draw(ctx, t, s, R) {
+          poly(ctx, [P(-2.2, -0.35, 9.2), P(2.2, -0.35, 9.2), P(2.2, 1, 9.2), P(-2.2, 1, 9.2)], '#3f4850');
+          poly(ctx, trekAhead, '#29323b');
+          txt(ctx, '俄刻阿諾斯號（7.9 km）', CX(trekAhead), CY(trekAhead), '#cddae4', 12);
+        },
+        hotspots: [
+          back('c1e_outskirts', '折返東舟市平原'),
+          hit('ahead', bounds(trekAhead, 8), '走近山體上的巨型艦殼', (g) => g.go('c1s_hull'), 'go'),
+        ],
+      },
+
+      c1s_hull: {
+        level: 'C1.4', title: '山體上的金屬壁', room: hullRoom, quiet: 0.55,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗裡，那道橫度達六百七十九公尺的金屬結構深處隱約閃著微弱的藍光。',
+        enter(g, { first }) {
+          c1sEnter(g, first ? '橫度約六百七十九公尺的巨型金屬艦殼硬生生突出在山體之中。破開的檢修口正對著山腰。' : null);
+        },
+        draw(ctx, t, s, R) {
+          poly(ctx, [P(-1.8, -0.85, 8.2), P(1.8, -0.85, 8.2), P(1.8, 1, 8.2), P(-1.8, 1, 8.2)], '#3a444e');
+          paper(ctx, R, hullNote, 2.6, '#e6e8ea');
+          poly(ctx, hullDoor, '#12161c');
+          txt(ctx, 'OCEANUS', CX(hullDoor), hullDoor[0][1] - 14, '#8db4d4', 12);
+        },
+        hotspots: [
+          back('c1e_trek', '離開方舟回東舟市方向'),
+          hit('log_page', bounds(hullNote, 8), '芦葦小隊殘篇 C-1.00', (g) => g.read('n_c1s_log')),
+          hit('ahead', bounds(hullDoor, 8), '穿過撕開的金屬艙門', (g) => g.go('c1s_hall'), 'go'),
+        ],
+      },
+
+      c1s_hall: {
+        level: 'C1.4', title: '艦內長廊', room: shipRoom, quiet: 0.4,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗裡，兩側深藍舷窗泛著不合理的暖意，幾道門框背後的空間結構卻正在無聲扭曲。',
+        enter(g, { first }) {
+          c1sEnter(g, null);
+          g.flag('c1s_seed', ((g.s.flags.c1s_seed || 1) * 5 + 3) % 97);
+          if (g.s.flags.c1s_rescued) {
+            return g.say('扶著落君走過這段長廊時，兩側原本連向霧林、小鎮與地鐵的門框一個接一個黯淡發黑，所有子空間都徹底熄滅了。');
+          }
+          if (first) g.say('長廊兩側嵌著溫熱卻砸不破的深藍舷窗。能源庫離線之後，外部空間已經開始無縫「插進」這段廊道。');
+        },
+        draw(ctx, t, s, R) {
+          for (const wq of [hallWinL, hallWinR]) {
+            poly(ctx, wq, '#123d73');
+            ctx.strokeStyle = '#5c7c9e'; ctx.lineWidth = 2; poly(ctx, wq); ctx.stroke();
+          }
+          const rem = remainingSubspaces(s);
+          const off = !!s.flags.c1s_rescued;
+          const doorSpecs = [
+            [hallDoor0, 0], [hallDoor1, 1], [hallDoor2, 2],
+          ];
+          for (const [dq, idx] of doorSpecs) {
+            const active = !off && idx < rem.length;
+            poly(ctx, dq, active ? '#323c46' : '#060709');
+            ctx.strokeStyle = active ? '#738596' : '#181c22';
+            ctx.lineWidth = 2;
+            poly(ctx, dq); ctx.stroke();
+          }
+          if (allSubspacesSeen(s)) {
+            poly(ctx, hallDoorSea, '#1a364d');
+            txt(ctx, '海水區・H區 →', CX(hallDoorSea), CY(hallDoorSea), '#a6d6f5', 10);
+          }
+        },
+        hotspots: [
+          back('c1s_hull', '走出艦內長廊'),
+          hit('win_l', bounds(hallWinL, 8), '深藍舷窗', (g) => g.say(winHitMsg), 'look', { use: winToolUse }),
+          hit('win_r', bounds(hallWinR, 8), '右側深藍舷窗', (g) => g.say(winHitMsg), 'look', { use: winToolUse }),
+          hit('door_sub0', bounds(hallDoor0, 8), '左牆插入的門框', (g) => {
+            const t = subspaceTarget(g.s, 0);
+            if (t) g.go(t);
+          }, 'go', { when: (s) => !s.flags.c1s_rescued && remainingSubspaces(s).length > 0 }),
+          hit('door_sub1', bounds(hallDoor1, 8), '前側插入的門框', (g) => {
+            const t = subspaceTarget(g.s, 1);
+            if (t) g.go(t);
+          }, 'go', { when: (s) => !s.flags.c1s_rescued && remainingSubspaces(s).length > 1 }),
+          hit('door_sub2', bounds(hallDoor2, 8), '右牆插入的門框', (g) => {
+            const t = subspaceTarget(g.s, 2);
+            if (t) g.go(t);
+          }, 'go', { when: (s) => !s.flags.c1s_rescued && remainingSubspaces(s).length > 2 }),
+          hit('door_sea', bounds(hallDoorSea, 8), '第四扇深處通道（海水區）', (g) => g.go('c1s_sea'), 'go', {
+            when: (s) => allSubspacesSeen(s),
+          }),
+        ],
+      },
+
+      c1s_fog: {
+        level: 'C1.4', title: '子空間：霧林', room: fogRoom, dark: true, quiet: 0.6,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗在濃霧裡勉強照出金屬天花板與成排樹冠交疊的怪異接縫。',
+        enter(g, { first }) {
+          g.flag('c1s_v_fog', true);
+          c1sEnter(g, first ? '推開門後竟然是一片林子——可抬起頭，樹梢上方依然扣著俄刻阿諾斯號冷硬的艦內天花板。' : null);
+        },
+        draw(ctx, t, s, R) {
+          for (const tx of [-1.2, -0.5, 0.2, 0.9, 1.3]) {
+            poly(ctx, [P(tx - 0.12, -0.85, 4.8), P(tx + 0.12, -0.85, 4.8), P(tx + 0.16, 1, 4.8), P(tx - 0.16, 1, 4.8)], '#1f2822');
+          }
+        },
+        hotspots: [
+          back('c1s_hall', '退回艦內長廊'),
+          hit('trees', bounds(fogTrees, 8), '霧裡的林木與金屬頂棚', (g) => g.say('樹幹上結著船艙冷凝的水珠。這座森林只是硬生生插進走廊裡的外部空間碎片，看不見盡頭。')),
+        ],
+      },
+
+      c1s_town: {
+        level: 'C1.4', title: '子空間：昏暗小鎮', room: townRoom, quiet: 0.65,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗掃過每一扇發黑的民居窗框，唯獨角落那座紅色電話亭裡還剩微光。',
+        enter(g, { first }) {
+          g.flag('c1s_v_town', true);
+          c1sEnter(g, first ? '一條昏暗寂靜的小鎮街道平白接在船艙後面。每一扇窗後全都暗著，只有街邊立著一座舊電話亭。' : null);
+        },
+        draw(ctx, t, s, R) {
+          for (const z of [2.5, 5.0]) {
+            poly(ctx, wallQuad(1.7, -0.5, 0.2, z, z + 1.0), '#151413');
+          }
+          box(ctx, R, townBooth);
+          glow(ctx, 290, 265, 58, '#e8a254', 0.28);
+        },
+        hotspots: [
+          back('c1s_hall', '退回艦內長廊'),
+          hit('phone_booth', boxRect(townBooth, 8), '街邊電話亭', (g) => {
+            if (once(g, 'c1s_booth_loot')) {
+              return g.give('almond', '電話亭話筒歪斜地垂著，置物架裡還塞著一瓶密封完好的杏仁水。');
+            }
+            g.say('電話亭裡只剩下「嘟、嘟」的空洞忙音，其他東西都已被拿空了。');
+          }),
+        ],
+      },
+
+      c1s_metro: {
+        level: 'C1.4', title: '子空間：土穴地鐵', room: metroRoom, quiet: 0.45,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗裡，土壁陰影角落那一團東西微微蠕動著——千萬別一腳踩上去。',
+        enter(g, { first }) {
+          g.flag('c1s_v_metro', true);
+          c1sEnter(g, first ? '生鏽的地鐵軌道沿著潮濕土洞一路延伸，車廂在遠處停住。角落的陰暗腐堆旁好像有東西正在窸窣作響。' : null);
+        },
+        draw(ctx, t, s, R) {
+          seg(ctx, P(-0.45, 1, 1.4), P(-0.32, 1, 7.6), '#5a4e44', 3);
+          seg(ctx, P(0.15, 1, 1.4), P(0.18, 1, 7.6), '#5a4e44', 3);
+          poly(ctx, metroRails, '#25211e');
+          box(ctx, R, metroRats);
+          const rp = [CX([P(0.45, 0.65, 2.5), P(1.25, 0.95, 2.9)]), CY([P(0.45, 0.65, 2.5), P(1.25, 0.95, 2.9)])];
+          ctx.fillStyle = '#1b1715';
+          for (let i = 0; i < 6; i++) {
+            ctx.beginPath(); ctx.ellipse(rp[0] + (i - 2.5) * 11, rp[1] + (i % 2) * 5, 7, 4, 0.2, 0, Math.PI * 2); ctx.fill();
+          }
+        },
+        hotspots: [
+          back('c1s_hall', '退回艦內長廊'),
+          hit('rails', bounds(metroRails, 8), '廢棄地鐵軌道', (g) => g.say('泥土隧道裡靜靜停著漆黑的地鐵列車外殼，只剩軌道鐵鏽的味道。')),
+          hit('corpse_rats', boxRect(metroRats, 8), '角落蠕動的屍鼠堆', (g) => {
+            g.sanity(-8);
+            g.sfx('sting');
+            g.flag('c1s_plague', true);
+            g.say('鞋跟不小心踢進腐臭的屍鼠堆！幾隻濕冷灰影擦過腳踝竄開——轉眼間一陣異常高熱與寒戰爬上背脊，你染上了疫疾。');
+          }),
+        ],
+      },
+
+      c1s_sea: {
+        level: 'C1.4', title: '子空間：海水區', room: seaRoom, quiet: 0.4,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗裡，漫過腳踝的微苦海水正輕輕冒著細泡，前方通道寫著「H 區」。',
+        enter(g, { first }) {
+          seaDripT = 1.4;
+          c1sEnter(g, first ? '第四扇門後灌滿了及膝深的海水。又苦又涼的海水裡泛著淡淡海沫，簡直像外界「混沌海」滲了進來。' : null);
+        },
+        update(g, dt) {
+          seaDripT -= dt;
+          if (seaDripT <= 0) {
+            seaDripT = 1.6 + rand() * 1.4;
+            g.sfx('drip');
+          }
+        },
+        draw(ctx, t, s, R) {
+          poly(ctx, [P(-1.8, 0.45, 1.2), P(1.8, 0.45, 1.2), P(1.8, 0.98, 7.9), P(-1.8, 0.98, 7.9)], 'rgba(20, 62, 92, 0.72)');
+          poly(ctx, seaAhead, '#1b242c');
+          txt(ctx, 'H 區', CX(seaAhead), CY(seaAhead), '#b4d6ef', 13);
+        },
+        hotspots: [
+          back('c1s_hall', '涉水返回艦內長廊'),
+          hit('water', seaWaterLook, '及膝的苦澀海水', (g) => g.say('冰冷的鹽水在金屬牆壁之間微微晃動，把腳踝浸得發麻。')),
+          hit('ahead', bounds(seaAhead, 8), '走向 H 區', (g) => g.go('c1s_h'), 'go'),
+        ],
+      },
+
+      c1s_h: {
+        level: 'C1.4', title: 'H 區', room: hRoom, quiet: 0.5,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗對準管家 1399 時，關節處一針針手工焊接的修補痕跡異常明顯。',
+        enter(g, { first }) {
+          c1sEnter(g, first ? '地上散落著撞毀的無人機殘骸。牆邊站著一具人形機械「管家 1399（ACMA-E-442）」，胸口一顆微弱燈號忽明忽滅。' : null);
+        },
+        draw(ctx, t, s, R) {
+          // Drone debris on left floor
+          box(ctx, R, { x1: -1.35, x2: -0.75, y1: 0.78, y2: 1, z1: 2.8, z2: 3.4, color: '#394149', edge: true });
+          // Static NPC Butler 1399 (center)
+          ctx.fillStyle = '#48525c'; ctx.fillRect(454, 210, 52, 130);
+          ctx.fillStyle = '#626e7a'; ctx.beginPath(); ctx.arc(480, 190, 20, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#e5a93c'; ctx.fillRect(470, 186, 6, 4); ctx.fillRect(484, 186, 6, 4);
+          ctx.fillStyle = s.flags.c1s_butler_following ? '#52d17c' : '#5aa6e8';
+          ctx.beginPath(); ctx.arc(480, 248, 5, 0, Math.PI * 2); ctx.fill();
+          // Hideout doorway (left wall)
+          poly(ctx, hHideoutDoor, '#191614');
+          txt(ctx, '隱蔽處', CX(hHideoutDoor), CY(hHideoutDoor), '#d6c4ae', 10);
+          // Follow toggle button panel on right
+          if (!s.flags.c1s_rescued) {
+            ctx.fillStyle = '#242c34'; ctx.fillRect(585, 210, 190, 95);
+            ctx.strokeStyle = s.flags.c1s_butler_following ? '#62c47e' : '#587896'; ctx.strokeRect(585, 210, 190, 95);
+            txt(ctx, s.flags.c1s_butler_following ? '管家：跟隨中（點此留下他）' : '管家：留在原地（點此同行）', 680, 260, '#dce6ee', 11);
+          }
+        },
+        hotspots: [
+          back('c1s_sea', '退回海水區'),
+          hit('butler_general', [395, 165, 170, 95], '向管家 1399 詢問方舟機密', (g) => {
+            g.say('管家 1399 胸口燈號冷淡閃了兩下：「關於艦船用途與加密核心——無可奉告。」');
+          }),
+          hit('butler_zhihui', [395, 265, 170, 60], '追問「至慧」與大災來歷', (g) => g.read('n_c1s_butler')),
+          hit('butler_junjun', [395, 330, 170, 60], '問起無人機殘骸與倖存者', (g) => {
+            g.say('「我在這一帶發現這些無人機殘骸時便推測，尚存的『舊人』倖存者正刻意避開外界探員。……若需與她交涉取得口令權限，我可隨行。」');
+          }),
+          hit('butler_follow', hButlerToggle, '切換是否帶管家 1399 同行', (g) => {
+            const next = !g.s.flags.c1s_butler_following;
+            g.flag('c1s_butler_following', next);
+            g.say(next
+              ? '管家 1399 發出細微的金屬伺服音，默默跟上你的腳步。「帶我一同前往吧。」'
+              : '你示意管家留在無人機殘骸旁待命，自己單獨行動。');
+          }, 'go', { when: (s) => !s.flags.c1s_rescued }),
+          hit('to_hideout', bounds(hHideoutDoor, 8), '走進深處躲藏處', (g) => {
+            g.flag('c1s_butler_near', !!g.s.flags.c1s_butler_following);
+            g.go('c1s_hideout');
+          }, 'go'),
+        ],
+      },
+
+      c1s_hideout: {
+        level: 'C1.4', title: '躲藏處', room: hideRoom, quiet: 0.6,
+        hazard: c1sHazard,
+        viewMsg: '觀景窗裡，角落那名女子的體溫偏高——疫疾還在折騰著她。',
+        enter(g, { first }) {
+          c1sEnter(g, g.s.flags.c1s_butler_near
+            ? '狹窄的設備維修室裡躲著最後的「舊人」落君。可你身後跟著管家 1399 的金屬身影——她一看見那具機械就別過臉緊閉嘴唇。'
+            : (first ? '你獨自穿過漆黑狹縫。設備箱後面縮著一位高燒未退、死死抓著布毯的女子——「落君」。' : null));
+        },
+        draw(ctx, t, s, R) {
+          if (s.flags.c1s_butler_near) {
+            ctx.fillStyle = '#3c4650'; ctx.fillRect(150, 210, 44, 118);
+            ctx.fillStyle = '#e5a93c'; ctx.fillRect(164, 194, 5, 4); ctx.fillRect(175, 194, 5, 4);
+          }
+          if (!s.flags.c1s_rescued) {
+            ctx.fillStyle = '#4f463d'; ctx.fillRect(442, 235, 76, 112);
+            ctx.fillStyle = '#d4b49c'; ctx.beginPath(); ctx.arc(480, 212, 18, 0, Math.PI * 2); ctx.fill();
+            if (s.flags.c1s_junjun_met && !s.flags.c1s_butler_near) {
+              ctx.fillStyle = '#344c3c'; ctx.fillRect(615, 240, 180, 90);
+              ctx.strokeStyle = '#6ec288'; ctx.strokeRect(615, 240, 180, 90);
+              txt(ctx, '帶落君離開送醫', 705, 289, '#e4f7ea', 12);
+            }
+          }
+        },
+        hotspots: [
+          back('c1s_h', '退出躲藏處'),
+          hit('junjun', hideJunjunRect, '角落裡的落君', (g) => {
+            if (g.s.flags.c1s_rescued) return g.say('落君已經由醫療線轉送安排妥當，這間躲藏處空了下來。');
+            if (g.s.flags.c1s_butler_near) {
+              return g.say('落君死死盯著站在你身後的管家 1399，一言不發。只要那台機械還在場，她顯然拒絕跟你說半句話。');
+            }
+            g.flag('c1s_junjun_met', true);
+            g.read('n_c1s_junjun');
+          }),
+          hit('rescue_junjun', hideRescueRect, '扶起落君帶她離開方舟', (g) => {
+            g.flag('c1s_rescued', true);
+            g.say('你小心扶起發燒虛弱的落君。她點點頭跟了上來——只要帶她一路回到東舟市平原邊緣就能送醫救治。');
+          }, 'go', { when: (s) => !s.flags.c1s_rescued && !!s.flags.c1s_junjun_met && !s.flags.c1s_butler_near }),
         ],
       },
     };

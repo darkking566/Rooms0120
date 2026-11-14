@@ -72,6 +72,11 @@ const { chromium } = require('playwright');
         await page.evaluate(() => { window.__rooms.g.give('dragon_scale'); window.__rooms.g.go('c1_mirror'); });
         await hit('rift_portal');
       },
+      c1s: async () => {
+        await enter.c1e();
+        await hit('trek');
+        await hit('ahead');
+      },
     };
     async function reload() {
       await page.reload(); await page.click('#btnCont');
@@ -485,6 +490,74 @@ const { chromium } = require('playwright');
     check((await state()).notes.includes('n_c1x_eye_done'), 'three interferes trigger n_c1x_eye_done and torn_script ending');
     await page.click('#btnRetry');
     check((await state()).scene === 'c1x_rift', 'retrying torn_script restores C1.3 entry checkpoint');
+
+    console.log('Level C-1 — 俄刻阿諾斯號');
+    await start();
+    await enter.c1s();
+    check((await state()).scene === 'c1s_hull' && (await page.locator('#lvlSub').textContent()).includes('俄刻阿諾斯號'), 'trek enters c1s_hull');
+    await hit('log_page'); await closeDoc();
+    check((await state()).notes.includes('n_c1s_log'), 'reads ship log C-1.00');
+    await hit('ahead');
+    check((await state()).scene === 'c1s_hall', 'enters c1s_hall');
+    await hit('win_l');
+    // Visit all 3 inserted subspaces cleanly once each
+    const visitedSubs = new Set();
+    for (let i = 0; i < 3; i++) {
+      const hs = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+      check(!hs.includes('door_sea'), `door_sea stays closed until all 3 subspaces visited (${i}/3)`);
+      await hit('door_sub0');
+      const subScene = (await state()).scene;
+      visitedSubs.add(subScene);
+      if (subScene === 'c1s_town') {
+        await hit('phone_booth');
+        check((await state()).inv.includes('almond'), 'phone booth in dim town yields almond water');
+      } else if (subScene === 'c1s_metro') {
+        await hit('corpse_rats');
+        check((await state()).flags.c1s_plague, 'corpse rats inflict c1s_plague');
+      } else if (subScene === 'c1s_fog') {
+        await hit('trees');
+      }
+      await hit('back');
+    }
+    check(visitedSubs.size === 3, 'each of fog, town, metro inserted exactly once');
+    // Cure plague with almond water from phone booth (double click slot)
+    await page.click('.slot[data-id="almond"]');
+    await page.click('.slot[data-id="almond"]');
+    check(!(await state()).flags.c1s_plague, 'almond water cures c1s_plague');
+    const hallReady = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check(hallReady.includes('door_sea') && !hallReady.includes('door_sub0'), '4th door opens to sea once all 3 subspaces visited');
+    await hit('door_sea');
+    check((await state()).scene === 'c1s_sea', 'enters c1s_sea');
+    await hit('ahead');
+    check((await state()).scene === 'c1s_h', 'enters H section with Butler 1399');
+    await hit('butler_general');
+    await hit('butler_zhihui'); await closeDoc();
+    await hit('butler_junjun');
+    check((await state()).notes.includes('n_c1s_butler'), 'reads Butler 1399 interview notes');
+    // Bring Butler along -> Junjun refuses to talk
+    await hit('butler_follow');
+    await hit('to_hideout');
+    check((await state()).scene === 'c1s_hideout' && (await state()).flags.c1s_butler_near, 'entered hideout with Butler following');
+    await hit('junjun');
+    check(!(await state()).flags.c1s_junjun_met, 'Junjun refuses to open up while Butler is near');
+    // Leave Butler behind -> rescue succeeds
+    await hit('back');
+    await hit('butler_follow');
+    await hit('to_hideout');
+    await hit('junjun'); await closeDoc();
+    check((await state()).flags.c1s_junjun_met && (await state()).notes.includes('n_c1s_junjun'), 'Junjun opens up when visited alone');
+    // Verify forbidden password never appears anywhere in notes
+    const allNoteText = await page.evaluate(() => document.body.innerText);
+    check(!allNoteText.includes('All Things Must Pass'), 'forbidden password never revealed');
+    await hit('rescue_junjun');
+    check((await state()).flags.c1s_rescued, 'rescues Junjun');
+    await reload();
+    check((await state()).scene === 'c1s_hideout' && (await state()).flags.c1s_rescued, 'reloading preserves rescue progress');
+    // Walk all the way out -> subspaces extinguish -> delivered in東舟市
+    await hit('back'); await hit('back'); await hit('back');
+    check((await state()).scene === 'c1s_hall', 'back at c1s_hall during exit');
+    await hit('back'); await hit('back'); await hit('back');
+    check((await state()).scene === 'c1e_outskirts' && (await state()).flags.c1s_delivered, 'Junjun delivered to East Boat City medical dept and subspaces vanish');
 
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
