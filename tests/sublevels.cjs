@@ -55,6 +55,17 @@ const { chromium } = require('playwright');
       },
       memory: async () => { await page.evaluate(() => window.__rooms.g.go('l0_faded')); await hit('older'); },
       c1: async () => { await page.evaluate(() => window.__rooms.g.go('l0_dry')); await hit('c1_box'); },
+      c1e: async () => {
+        await enter.c1();
+        await hit('ahead');
+        while ((await state()).flags.c1_steps < 3 || (await state()).scene !== 'c1_hall') {
+          const st = await state();
+          if (st.scene === 'c1_hall') await hit('door_left');
+          else if (st.scene === 'c1_bench') await hit('ahead');
+          else if (st.scene === 'c1_mirror') await hit('back');
+        }
+        await hit('window');
+      },
     };
     async function reload() {
       await page.reload(); await page.click('#btnCont');
@@ -351,6 +362,72 @@ const { chromium } = require('playwright');
     check(true, 'c1_door triggers c2_door ending');
     await page.click('#btnRetry');
     check((await state()).scene.startsWith('c1_') && await page.locator('#lvlName').textContent() === 'LEVEL C-1', 'retrying c2_door keeps checkpoint in C1');
+
+    console.log('Level C-1 — 東舟市');
+    await start();
+    await enter.c1();
+    await hit('ahead');
+    await hit('window');
+    check((await state()).scene === 'c1_hall', 'c1_hall window stays shut before 3 steps');
+    while ((await state()).flags.c1_steps < 3 || (await state()).scene !== 'c1_hall') {
+      const st = await state();
+      if (st.scene === 'c1_hall') await hit('door_left');
+      else if (st.scene === 'c1_bench') await hit('ahead');
+      else if (st.scene === 'c1_mirror') await hit('back');
+    }
+    await hit('window');
+    check((await state()).scene === 'c1e_outskirts' && (await page.locator('#lvlSub').textContent()).includes('東舟市'), 'c1_hall window at steps >= 3 enters c1e_outskirts');
+    await hit('hollows');
+    await hit('cabin');
+    await hit('to_city');
+    check((await state()).scene === 'c1e_gate', 'enters c1e_gate');
+    await hit('notice'); await closeDoc();
+    await hit('recorder_desk');
+    check((await state()).inv.includes('recorder'), 'gate checkpoint issues first recorder');
+    await hit('ahead');
+    await hit('to_lab');
+    await hit('shiju'); await closeDoc();
+    check((await state()).notes.includes('n_c1e_lab'), 'reads 時駒 diffraction grating notes');
+    await hit('spare');
+    check(!(await state()).inv.includes('recorder2'), 'spare recorder refused before first is destroyed');
+    await hit('back');
+    await hit('to_garden');
+    await hit('rest'); await hit('fountain'); await hit('ration');
+    check((await state()).inv.includes('bar'), 'new age garden gives one bar');
+    await hit('back');
+    await hit('to_acma');
+    await use('recorder', 'cell_024'); await closeDoc();
+    check((await state()).notes.includes('n_c1e_024'), 'interviews E-024');
+    await hit('cell_025');
+    await use('recorder', 'cell_013'); await closeDoc();
+    check(!(await state()).inv.includes('recorder') && (await state()).inv.includes('dragon_scale'), 'E-013 burns recorder and drops dragon_scale');
+    await hit('back');
+    await hit('to_lab');
+    await hit('spare');
+    check((await state()).inv.includes('recorder2'), 'lab issues spare recorder2 after E-013 burns recorder');
+    await hit('back');
+    await hit('back');
+    const sanBeforeOut = (await state()).sanity;
+    await hit('back');
+    check((await state()).scene === 'c1e_outskirts' && (await state()).sanity <= sanBeforeOut - 3, 'leaving city to outskirts triggers distant growl sanity penalty');
+    await hit('to_cave');
+    await page.waitForTimeout(2400);
+    await hit('rock_wall');
+    await page.waitForTimeout(3000);
+    check(!(await state()).flags.c1e_002_heard, 'clicking hotspot in cave resets 5s 002 timer');
+    await page.waitForTimeout(2600);
+    await page.waitForSelector('#doc:not([hidden])');
+    await closeDoc();
+    check((await state()).flags.c1e_002_done && (await state()).notes.includes('n_c1e_002'), 'staying still 5s records E-002');
+    await reload();
+    check((await state()).scene === 'c1e_cave' && (await state()).flags.c1e_002_done, 'reloading mid-cave preserves progress');
+    await hit('back');
+    await hit('to_cave');
+    const caveHs = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check((await state()).flags.c1e_cave_gone && caveHs.includes('rubble') && !caveHs.includes('rock_wall'), 'cave collapses after single visit and shows rubble');
+    await hit('back');
+    await hit('back');
+    check((await state()).scene === 'c1_hall', 'returns from East Boat City back to c1_hall');
 
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
