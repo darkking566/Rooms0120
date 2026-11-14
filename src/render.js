@@ -95,6 +95,43 @@ export function drawRoom(ctx, R, t) {
   const hw = R.hw ?? 1, D = R.depth, pal = R.pal, zn = 1;
   R.lum = (R.bright ?? 1) * (R.flick ? R.flick(t) : 1);
 
+  if (R.open) {
+    const hy = P(0, 1, D)[1];
+    const sky = ctx.createLinearGradient(0, 0, 0, hy + 4);
+    sky.addColorStop(0, pal.ceil);
+    sky.addColorStop(0.68, pal.wall);
+    sky.addColorStop(1, pal.fog);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, hy + 4);
+    ctx.save();
+    for (let i = 0; i < 6; i++) {
+      const cx = ((i * 195 + t * (R.wind ?? 2.2) * (i % 2 ? 0.7 : 1.1)) % (W + 240)) - 120;
+      const cy = hy * (0.2 + (i % 3) * 0.22);
+      const rw = 160 + (i % 3) * 55, rh = 20 + (i % 2) * 10;
+      const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, rw);
+      g.addColorStop(0, rgb(hex(pal.light), 0.14));
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - rw, cy - rh, rw * 2, rh * 2);
+    }
+    ctx.restore();
+    const grd = ctx.createLinearGradient(0, hy, 0, H);
+    grd.addColorStop(0, pal.fog);
+    grd.addColorStop(0.24, shade(R, pal.floor, D * 0.65));
+    grd.addColorStop(1, pal.floor);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, hy, W, H - hy);
+    if (R.floorTex) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, hy, W, H - hy); ctx.clip();
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = texture(ctx, R.floorTex);
+      ctx.fillRect(0, hy, W, H - hy);
+      ctx.restore();
+    }
+    return;
+  }
+
   const ceil = [P(-hw, -1, zn), P(hw, -1, zn), P(hw, -1, D), P(-hw, -1, D)];
   const floor = [P(-hw, 1, zn), P(hw, 1, zn), P(hw, 1, D), P(-hw, 1, D)];
   poly(ctx, ceil, depthGrad(ctx, R, pal.ceil, zn, D, P(0, -1, zn), P(0, -1, D)));

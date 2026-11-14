@@ -2,7 +2,7 @@
 // Adopts the pre-incident state of Report V main text (prior to the /weed-toc event).
 // Layer-fission timing compression, puzzles, scene text and J.H. notes are original.
 
-import { P, bounds, box, boxRect, faceQuad, paper, poly, seg, wallQuad } from './render.js';
+import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, wallQuad } from './render.js';
 import { back, glow, hit, once, pal, room, txt } from './levels/sublevel-kit.js';
 
 export const L04_LEVELS = {
@@ -18,13 +18,13 @@ const crimsonWolfPal = pal('#6e242a', '#5c141a', '#422224', '#2a0c10', '#e67c78'
 
 const wormRoom = room(wormPal, { hw: 1.6, depth: 7, fogEnd: 9, baseboard: false, lights: [] });
 const outerRoom = room(outerPal, {
-  hw: 1.8, depth: 8.5, fogEnd: 13, lights: [2.4, 5.8], flickerLights: [0, 1],
-  flick: (t) => (Math.sin(t * 9.1) + Math.sin(t * 21.3) > 1.2 ? 0.45 : 0.92),
+  hw: 1.8, depth: 8.5, fogEnd: 13, open: true, floorTex: 'concrete', lights: [],
+  flick: (t) => (Math.sin(t * 9.1) + Math.sin(t * 21.3) > 1.2 ? 0.58 : 0.94),
 });
-const weiRoom = room(weiPal, { hw: 2.0, depth: 9, fogEnd: 15, lights: [2.2, 5.2, 7.6] });
-const innerRoom = room(innerPal, { hw: 1.8, depth: 8.5, fogEnd: 16, bright: 1.08, lights: [1.8, 4.2, 6.6] });
+const weiRoom = room(weiPal, { hw: 2.0, depth: 9, fogEnd: 15, open: true, floorTex: 'concrete', lights: [] });
+const innerRoom = room(innerPal, { hw: 1.8, depth: 8.5, fogEnd: 16, open: true, floorTex: 'concrete', bright: 1.08, lights: [] });
 const wolfRoomOf = (s) => room(s.flags.l04_red_sky ? crimsonWolfPal : wolfPal, {
-  hw: 2.2, depth: 9.5, fogEnd: 14, baseboard: false, lights: [],
+  hw: 2.2, depth: 9.5, fogEnd: 14, open: true, floorTex: 'carpet', baseboard: false, lights: [],
 });
 
 const wormHoleQuad = faceQuad(-0.68, -0.78, 0.68, 0.78, 6.2);
@@ -73,12 +73,66 @@ function l04Update(g, dt) {
   }
 }
 
-function drawCrimsonSky(ctx, s) {
+function drawCrimsonSky(ctx, s, hy = 295) {
   if (!s.flags.l04_red_sky) return;
+  const active = (s.flags.l04_fission_rem || 0) > 0;
   ctx.save();
-  ctx.fillStyle = (s.flags.l04_fission_rem || 0) > 0 ? 'rgba(180, 30, 38, 0.24)' : 'rgba(130, 22, 30, 0.14)';
-  ctx.fillRect(0, 0, 960, 250);
+  const gr = ctx.createLinearGradient(0, 0, 0, hy);
+  gr.addColorStop(0, active ? 'rgba(175, 22, 32, 0.36)' : 'rgba(120, 18, 26, 0.2)');
+  gr.addColorStop(1, 'rgba(90, 14, 20, 0)');
+  ctx.fillStyle = gr;
+  ctx.fillRect(0, 0, W, hy);
+  if (active) {
+    ctx.strokeStyle = 'rgba(255, 130, 120, 0.55)';
+    ctx.lineWidth = 2;
+    for (const [sx, sy, dx, dy] of [[220, 40, 28, 75], [690, 52, -32, 82]]) {
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dx, sy + dy * 0.5); ctx.lineTo(sx + dx * 0.4, sy + dy); ctx.stroke();
+    }
+  }
   ctx.restore();
+}
+
+function drawStreetRoad(ctx, hy, lamps, t, flicker = false) {
+  poly(ctx, [P(-0.9, 1, 8.5), P(0.9, 1, 8.5), P(2.1, 1, 1.1), P(-2.1, 1, 1.1)], '#2a2d32');
+  seg(ctx, P(-1.8, 1, 1.2), P(-0.85, 1, 8.5), '#555b62', 2);
+  seg(ctx, P(1.8, 1, 1.2), P(0.85, 1, 8.5), '#555b62', 2);
+  for (const z of [1.6, 3.0, 4.7, 6.6]) {
+    poly(ctx, [P(-0.04, 1, z), P(0.04, 1, z), P(0.04, 1, z + 0.65), P(-0.04, 1, z + 0.65)], 'rgba(205, 186, 120, 0.42)');
+  }
+  for (const [lx, z] of lamps) {
+    const bot = P(lx, 1, z), top = P(lx, -0.78, z);
+    const arm = P(lx * 0.65, -0.78, z);
+    seg(ctx, bot, top, '#3c4146', Math.max(2, 6 / z));
+    seg(ctx, top, arm, '#3c4146', Math.max(1.5, 5 / z));
+    const dim = flicker && Math.sin(t * 11 + z) > 0.7 ? 0.14 : 0.34;
+    glow(ctx, arm[0], arm[1] + 6, 48 / z, '#ffdba0', dim);
+    ctx.fillStyle = '#ffe6b0'; ctx.fillRect(arm[0] - 4, arm[1], 8, 3);
+  }
+}
+
+function drawTowerBlock(ctx, hy, x, w, h, shadeCol) {
+  ctx.fillStyle = shadeCol;
+  ctx.fillRect(x, hy - h, w, h + 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(x, hy - h, w, 4);
+  ctx.fillStyle = 'rgba(18, 22, 26, 0.65)';
+  for (let wy = hy - h + 14; wy < hy - 12; wy += 16) {
+    for (let wx = x + 8; wx < x + w - 10; wx += 14) ctx.fillRect(wx, wy, 7, 9);
+  }
+}
+
+function drawArchSign(ctx, pts, inner, trim, label) {
+  const b = bounds(pts);
+  poly(ctx, pts, trim);
+  ctx.fillStyle = inner;
+  ctx.fillRect(b[0] + 4, b[1] + 4, Math.max(4, b[2] - 8), Math.max(4, b[3] - 4));
+  if (label) {
+    ctx.fillStyle = '#1b1f24';
+    ctx.fillRect(b[0] + 2, b[1] - 18, b[2] - 4, 16);
+    ctx.strokeStyle = trim; ctx.lineWidth = 1;
+    ctx.strokeRect(b[0] + 2, b[1] - 18, b[2] - 4, 16);
+    txt(ctx, label, b[0] + b[2] * 0.5, b[1] - 6, '#e2e8ee', 10);
+  }
 }
 
 function l04WolfVariant(s) {
@@ -154,15 +208,18 @@ export const L04_SCENES = {
     },
     update: l04Update,
     draw(ctx, t, s, R) {
-      drawCrimsonSky(ctx, s);
-      for (const z of [2.0, 5.0]) {
-        poly(ctx, wallQuad(-1.8, -0.85, 1, z, z + 1.4), '#3d4147');
+      const hy = P(0, 1, R.depth)[1];
+      drawCrimsonSky(ctx, s, hy);
+      // Brutalist high-rise concrete blocks flanking the outer ring road
+      for (const [bx, bw, bh, c] of [[28, 128, 225, '#34383d'], [168, 98, 175, '#3b4046'], [796, 134, 215, '#32363b'], [688, 96, 165, '#3a3e44']]) {
+        drawTowerBlock(ctx, hy, bx, bw, bh, c);
       }
+      drawStreetRoad(ctx, hy, [[-1.55, 2.6], [1.55, 2.6], [-1.55, 5.4], [1.55, 5.4]], t, true);
       box(ctx, R, outerBox);
-      poly(ctx, outerToWei, '#2a2d32');
-      txt(ctx, '中環・尉遲大道', CX(outerToWei), CY(outerToWei), '#d0d7de', 11);
-      poly(ctx, outerToWolf, '#363230');
-      txt(ctx, '城外・狼領 →', CX(outerToWolf), CY(outerToWolf), '#dfd2cb', 11);
+      const ob = boxRect(outerBox);
+      ctx.fillStyle = '#c4962e'; ctx.fillRect(ob[0] + 6, ob[1] + 18, ob[2] - 12, 5);
+      drawArchSign(ctx, outerToWei, '#1b1f24', '#555d66', '中環・尉遲大道');
+      drawArchSign(ctx, outerToWolf, '#262321', '#5f5650', '城外・狼領 ▶');
     },
     hotspots: [
       hit('outer_supply', boxRect(outerBox, 8), '閃爍路燈旁的配電箱腳', (g) => {
@@ -185,14 +242,24 @@ export const L04_SCENES = {
     },
     update: l04Update,
     draw(ctx, t, s, R) {
-      drawCrimsonSky(ctx, s);
-      poly(ctx, weiHunterDoor, '#5c2628');
-      txt(ctx, '紅殿（獵手公會）', CX(weiHunterDoor), CY(weiHunterDoor), '#f2d8d8', 11);
+      const hy = P(0, 1, R.depth)[1];
+      drawCrimsonSky(ctx, s, hy);
+      // Distant Tower spire + Hunter Guild dwellings along Wei Chi Ave
+      for (const [bx, bw, bh, c] of [[18, 120, 180, '#3a3e44'], [815, 125, 175, '#393d43'], [360, 74, 108, '#41464d'], [526, 78, 118, '#3f444b']]) {
+        drawTowerBlock(ctx, hy, bx, bw, bh, c);
+      }
+      poly(ctx, [[470, hy - 140], [490, hy - 140], [500, hy], [460, hy]], '#4e555e');
+      drawStreetRoad(ctx, hy, [[-1.65, 2.3], [1.65, 2.3], [-1.65, 5.1], [1.65, 5.1], [-1.65, 7.6], [1.65, 7.6]], t);
+      // Crimson-walled Red Hall (Hunters Guild HQ) with columns & sconce glow
+      const hb = bounds(weiHunterDoor);
+      poly(ctx, weiHunterDoor, '#5c2427');
+      ctx.fillStyle = '#381618'; ctx.fillRect(hb[0] + hb[2] * 0.25, hb[1] + hb[3] * 0.24, hb[2] * 0.5, hb[3] * 0.76);
+      ctx.strokeStyle = '#9e4e52'; ctx.lineWidth = 2; poly(ctx, weiHunterDoor); ctx.stroke();
+      glow(ctx, hb[0] + hb[2] * 0.5, hb[1] + hb[3] * 0.3, 46, '#ff9966', 0.28);
+      txt(ctx, '紅殿・獵手公會', CX(weiHunterDoor), hb[1] - 10, '#f2d8d8', 11);
       box(ctx, R, weiCrate);
-      poly(ctx, weiToInner, '#4b5a68');
-      txt(ctx, '內環・鐵穹區', CX(weiToInner), CY(weiToInner), '#e2f4ff', 11);
-      poly(ctx, weiToOuter, '#383b40');
-      txt(ctx, '← 回外環街道', CX(weiToOuter), CY(weiToOuter), '#cfd6dc', 11);
+      drawArchSign(ctx, weiToInner, '#2d465a', '#6e94ad', '內環・鐵穹區');
+      drawArchSign(ctx, weiToOuter, '#24272c', '#585e64', '◀ 回外環街道');
     },
     hotspots: [
       hit('talk_hunter', bounds(weiHunterDoor, 8), '紅殿門前的獵手公會成員', (g) => g.read('n04_hunter')),
@@ -216,17 +283,36 @@ export const L04_SCENES = {
     },
     update: l04Update,
     draw(ctx, t, s, R) {
-      drawCrimsonSky(ctx, s);
-      glow(ctx, 480, 210, 140, '#72c8ff', 0.25);
-      poly(ctx, innerDomeBarrier, 'rgba(130, 205, 255, 0.28)');
+      const hy = P(0, 1, R.depth)[1];
+      drawCrimsonSky(ctx, s, hy);
+      // Clean futuristic Iron Dome towers shimmering behind the energy shield
+      for (const [bx, bw, bh, c] of [[325, 65, 130, '#5a6e7e'], [415, 85, 175, '#647b8e'], [520, 72, 145, '#586c7c']]) {
+        drawTowerBlock(ctx, hy, bx, bw, bh, c);
+      }
+      drawStreetRoad(ctx, hy, [[-1.5, 2.4], [1.5, 2.4], [-1.5, 5.2], [1.5, 5.2]], t);
+      glow(ctx, 480, 210, 170, '#72c8ff', 0.28);
+      const db = bounds(innerDomeBarrier);
+      poly(ctx, innerDomeBarrier, 'rgba(130, 205, 255, 0.24)');
+      ctx.save();
+      ctx.strokeStyle = 'rgba(170, 232, 255, 0.42)'; ctx.lineWidth = 1;
+      for (let gx = db[0] + 18; gx < db[0] + db[2] - 8; gx += 22) seg(ctx, [gx, db[1]], [gx, db[1] + db[3]], ctx.strokeStyle, 1);
+      const scanY = db[1] + ((t * 48) % db[3]);
+      seg(ctx, [db[0], scanY], [db[0] + db[2], scanY], 'rgba(200, 245, 255, 0.65)', 2);
+      ctx.restore();
       ctx.strokeStyle = '#9bdcff'; ctx.lineWidth = 2; poly(ctx, innerDomeBarrier); ctx.stroke();
+      // Lit Pioneer watch booth on left
+      const pb = bounds(innerPioneerQuad);
       poly(ctx, innerPioneerQuad, '#4c5b68');
-      txt(ctx, '先驅值班亭', CX(innerPioneerQuad), CY(innerPioneerQuad), '#e6f5ff', 11);
+      ctx.fillStyle = '#a4dbf8'; ctx.fillRect(pb[0] + 12, pb[1] + 16, pb[2] - 24, pb[3] * 0.46);
+      ctx.strokeStyle = '#9bb4c8'; ctx.lineWidth = 2; poly(ctx, innerPioneerQuad); ctx.stroke();
+      txt(ctx, '先驅值班亭', CX(innerPioneerQuad), pb[1] - 10, '#e6f5ff', 11);
+      // Solid concrete bench / resting plinth in foreground
+      const sb = bounds(innerStayQuad);
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(sb[0] + 8, sb[1] + sb[3] - 4, sb[2] - 16, 10);
       poly(ctx, innerStayQuad, '#38414a');
-      ctx.strokeStyle = '#8fa4b8'; ctx.strokeRect(innerStayQuad[0][0], innerStayQuad[0][1], innerStayQuad[1][0] - innerStayQuad[0][0], innerStayQuad[2][1] - innerStayQuad[0][1]);
-      txt(ctx, '在這裡待下去', 480, CY(innerStayQuad), '#d4e2ee', 12);
-      poly(ctx, innerToWei, '#464b52');
-      txt(ctx, '回尉遲大道 →', CX(innerToWei), CY(innerToWei), '#d8dee4', 11);
+      ctx.strokeStyle = '#8fa4b8'; ctx.lineWidth = 1.5; poly(ctx, innerStayQuad); ctx.stroke();
+      txt(ctx, '在這裡待下去', 480, CY(innerStayQuad) + 4, '#d4e2ee', 12);
+      drawArchSign(ctx, innerToWei, '#2a2e33', '#606870', '回尉遲大道 ▶');
     },
     hotspots: [
       hit('talk_pioneer', bounds(innerPioneerQuad, 8), '與穹頂光幕旁的先驅搭話', (g) => {
@@ -247,19 +333,24 @@ export const L04_SCENES = {
     },
     update: l04Update,
     draw(ctx, t, s, R) {
-      drawCrimsonSky(ctx, s);
+      const hy = P(0, 1, R.depth)[1];
+      drawCrimsonSky(ctx, s, hy);
+      // Craggy barren wasteland ridge & crumbling broken brick wall holding Ronin's note
+      poly(ctx, [[0, hy + 4], [190, hy - 32], [380, hy - 14], [610, hy - 38], [820, hy - 18], [W, hy + 2]], s.flags.l04_red_sky ? '#3b1e20' : '#35312f');
+      poly(ctx, [P(-2.3, -0.35, 2.0), P(-2.15, -0.25, 3.3), P(-2.15, 1, 3.3), P(-2.3, 1, 2.0)], '#46403c');
       paper(ctx, R, wolfRoninNote, 2.6, '#dedad2');
       const v = l04WolfVariant(s);
       if (v === 0) {
         box(ctx, R, wolfSupplyCrate);
         txt(ctx, s.flags.l04_sup_wolf ? '空物資箱' : '層裂變物資箱', CX([P(-1.15, 0.54, 2.8), P(-0.55, 0.54, 2.8)]), 325, '#e8dfd4', 10);
       } else {
-        ctx.fillStyle = 'rgba(28, 18, 20, 0.72)';
-        ctx.beginPath(); ctx.ellipse(480, 275, 22, 68, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(480, 198, 15, 0, Math.PI * 2); ctx.fill();
+        // Tall eerie wanderer silhouette standing motionless in blowing red dust haze
+        poly(ctx, [[452, 355], [462, 228], [498, 228], [508, 355]], 'rgba(22, 12, 14, 0.82)');
+        ctx.fillStyle = 'rgba(22, 12, 14, 0.85)';
+        ctx.beginPath(); ctx.arc(480, 208, 16, 0, Math.PI * 2); ctx.fill();
+        glow(ctx, 480, 260, 85, '#c94048', 0.16);
       }
-      poly(ctx, wolfToOuter, '#44464a');
-      txt(ctx, '回外環街道 →', CX(wolfToOuter), CY(wolfToOuter), '#dce2e8', 11);
+      drawArchSign(ctx, wolfToOuter, '#242629', '#5a5f66', '回外環街道 ▶');
     },
     hotspots: [
       hit('talk_ronin', bounds(wolfRoninNote, 8), '浪人留下的牆縫便條', (g) => g.read('n04_ronin')),

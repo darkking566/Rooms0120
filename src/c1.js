@@ -5,7 +5,7 @@
 // - Report IV "在那树荫下" (HOMESICK & Lovesicker)
 // Hub: Level C-1 報告集. Puzzles, inter-level connections, scene text, visuals and original endings are original.
 
-import { P, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from './render.js';
+import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from './render.js';
 import { rand } from './rng.js';
 import { back, glow, hit, once, pal, room, txt } from './levels/sublevel-kit.js';
 
@@ -96,39 +96,173 @@ function c1DrawOver(ctx) {
 }
 
 function drawWhiteDoor(ctx, pts, plate = null) {
-  poly(ctx, pts, '#fcfdfe');
-  ctx.strokeStyle = '#c9d2da';
-  ctx.lineWidth = 2;
+  const b = bounds(pts);
+  ctx.fillStyle = 'rgba(130, 145, 160, 0.22)';
+  ctx.fillRect(b[0] - 4, b[1] - 4, b[2] + 8, b[3] + 4);
+  poly(ctx, pts, '#fafcfd');
+  ctx.strokeStyle = '#c4cfd9';
+  ctx.lineWidth = 2.5;
   poly(ctx, pts);
   ctx.stroke();
-  const b = bounds(pts);
-  ctx.fillStyle = '#adb7c0';
-  ctx.beginPath();
-  ctx.arc(b[0] + b[2] * 0.82, b[1] + b[3] * 0.55, Math.max(2, b[2] * 0.04), 0, Math.PI * 2);
-  ctx.fill();
+  const mx = b[0] + b[2] * 0.14, mw = b[2] * 0.72;
+  ctx.strokeStyle = '#dde5ec';
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(mx, b[1] + b[3] * 0.09, mw, b[3] * 0.34);
+  ctx.strokeRect(mx, b[1] + b[3] * 0.50, mw, b[3] * 0.39);
+  ctx.fillStyle = '#9aa6b2';
+  ctx.fillRect(b[0] + b[2] * 0.76, b[1] + b[3] * 0.53, Math.max(4, b[2] * 0.11), Math.max(2, b[3] * 0.025));
   if (plate) {
-    ctx.fillStyle = '#cfd6dc';
-    ctx.fillRect(b[0] + b[2] * 0.25, b[1] + b[3] * 0.26, b[2] * 0.5, Math.max(12, b[3] * 0.09));
-    txt(ctx, plate, b[0] + b[2] * 0.5, b[1] + b[3] * 0.32, '#49545e', Math.max(9, Math.round(b[2] * 0.14)));
+    const px = b[0] + b[2] * 0.24, py = b[1] + b[3] * 0.25, pw = b[2] * 0.52, ph = Math.max(13, b[3] * 0.1);
+    ctx.fillStyle = '#d8e0e6';
+    ctx.fillRect(px, py, pw, ph);
+    ctx.strokeStyle = '#94a2ae';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px, py, pw, ph);
+    txt(ctx, plate, px + pw * 0.5, py + ph * 0.68, '#3f4a54', Math.max(9, Math.round(b[2] * 0.14)));
   }
 }
 
 function drawWhiteBench(ctx, R, z1, z2, x1 = 0.65, x2 = 1.32) {
-  box(ctx, R, { x1, x2, y1: 0.45, y2: 0.54, z1, z2, color: '#eef2f5', top: '#ffffff', edge: true });
+  poly(ctx, [P(x1, 1, z1), P(x2, 1, z1), P(x2, 1, z2), P(x1, 1, z2)], 'rgba(95, 108, 118, 0.16)');
   box(ctx, R, { x1: x1 + 0.08, x2: x1 + 0.16, y1: 0.54, y2: 1, z1: z1 + 0.08, z2: z1 + 0.18, color: '#dfe5ea', edge: true });
-  box(ctx, R, { x1: x2 - 0.16, x2: x2 - 0.08, y1: 0.54, y2: 1, z1: z2 - 0.18, z2: z2 - 0.08, color: '#dfe5ea', edge: true });
+  box(ctx, R, { x1: x2 - 0.16, x2: x2 - 0.08, y1: 0.54, y2: 1, z1: z1 + 0.08, z2: z1 + 0.18, color: '#dfe5ea', edge: true });
+  box(ctx, R, { x1: x1 + 0.08, x2: x1 + 0.16, y1: 0.54, y2: 1, z1: z2 - 0.18, z2: z2 - 0.08, color: '#d5dde4', edge: true });
+  box(ctx, R, { x1: x2 - 0.16, x2: x2 - 0.08, y1: 0.54, y2: 1, z1: z2 - 0.18, z2: z2 - 0.08, color: '#d5dde4', edge: true });
+  box(ctx, R, { x1, x2, y1: 0.45, y2: 0.54, z1, z2, color: '#edf2f5', top: '#ffffff', edge: true });
 }
 
 function drawCleanWindow(ctx, pts, hintColor = '#eef4f8') {
-  poly(ctx, pts, hintColor);
-  ctx.strokeStyle = '#cfd7de';
+  const b = bounds(pts);
+  ctx.save();
+  poly(ctx, pts); ctx.clip();
+  const gr = ctx.createLinearGradient(0, b[1], 0, b[1] + b[3]);
+  gr.addColorStop(0, hintColor);
+  gr.addColorStop(0.62, '#dbe6ed');
+  gr.addColorStop(0.63, '#c8d4ca');
+  gr.addColorStop(1, '#dce3dd');
+  ctx.fillStyle = gr;
+  ctx.fillRect(b[0], b[1], b[2], b[3]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = 4;
+  seg(ctx, [b[0] + b[2] * 0.18, b[1] + b[3] * 0.85], [b[0] + b[2] * 0.55, b[1] + b[3] * 0.12], 'rgba(255,255,255,0.4)', 3);
+  ctx.restore();
+  ctx.strokeStyle = '#c4cfd8';
   ctx.lineWidth = 3;
   poly(ctx, pts);
   ctx.stroke();
-  const [a, b, c, d] = pts;
-  const mxTop = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const [a, br, c, d] = pts;
+  const mxTop = [(a[0] + br[0]) / 2, (a[1] + br[1]) / 2];
   const mxBot = [(d[0] + c[0]) / 2, (d[1] + c[1]) / 2];
-  seg(ctx, mxTop, mxBot, '#cfd7de', 2);
+  seg(ctx, mxTop, mxBot, '#c4cfd8', 2);
+}
+
+function drawHills(ctx, hy, layers) {
+  for (const [color, baseAmp, phase, step = 64] of layers) {
+    ctx.beginPath();
+    ctx.moveTo(0, hy + 2);
+    for (let x = 0; x <= W; x += step) {
+      const y = hy - baseAmp * (0.55 + 0.45 * Math.sin(x * 0.0085 + phase) * Math.cos(x * 0.0042 - phase));
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, hy + 2);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+}
+
+function drawGrassField(ctx, hy, count, shift, color, tall = 26) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < count; i++) {
+    const tDepth = ((i * 37 + shift * 17) % 100) / 100;
+    const x = 18 + ((i * 79 + shift * 43) % (W - 36));
+    const y = hy + 18 + Math.pow(tDepth, 1.35) * (H - hy - 34);
+    const h = (0.35 + tDepth * 0.85) * tall;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.1 + tDepth * 1.4;
+    for (let b = -1; b <= 1; b++) {
+      ctx.beginPath();
+      ctx.moveTo(x + b * 3, y);
+      ctx.quadraticCurveTo(x + b * 6 - 3, y - h * 0.6, x + b * 8 - 2 + (i % 3), y - h);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawSignPost(ctx, pts, label, sub, bg = '#4c565c', edge = '#8fa0aa') {
+  const b = bounds(pts);
+  const px = b[0] + b[2] * 0.5, bottom = b[1] + b[3];
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(px, bottom + 6, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3c4146';
+  ctx.fillRect(px - 4, b[1] + 8, 8, bottom - b[1] + 2);
+  ctx.fillStyle = bg;
+  ctx.fillRect(b[0], b[1], b[2], b[3] * 0.56);
+  ctx.strokeStyle = edge; ctx.lineWidth = 1.5;
+  ctx.strokeRect(b[0], b[1], b[2], b[3] * 0.56);
+  txt(ctx, label, px, b[1] + b[3] * 0.3, '#ecf2f6', 11);
+  if (sub) txt(ctx, sub, px, b[1] + b[3] * 0.48, '#a8bcc8', 9);
+}
+
+function drawPortalArch(ctx, pts, inner, trim, label) {
+  const b = bounds(pts);
+  poly(ctx, pts, trim);
+  const inset = 5;
+  ctx.fillStyle = inner;
+  ctx.fillRect(b[0] + inset, b[1] + inset, Math.max(4, b[2] - inset * 2), Math.max(4, b[3] - inset));
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(b[0] + 1, b[1] + 1, b[2] - 2, b[3] - 2);
+  if (label) {
+    ctx.fillStyle = '#1e242a';
+    ctx.fillRect(b[0] + 4, b[1] - 18, b[2] - 8, 16);
+    ctx.strokeStyle = trim; ctx.lineWidth = 1;
+    ctx.strokeRect(b[0] + 4, b[1] - 18, b[2] - 8, 16);
+    txt(ctx, label, b[0] + b[2] * 0.5, b[1] - 6, '#e2ebf2', 10);
+  }
+}
+
+function drawTimberCabin(ctx, pts) {
+  const b = bounds(pts);
+  const [x, y, w, h] = b;
+  const roofH = Math.round(h * 0.32);
+  ctx.fillStyle = 'rgba(22, 30, 20, 0.3)';
+  ctx.beginPath(); ctx.ellipse(x + w * 0.55, y + h, w * 0.65, 8, 0, 0, Math.PI * 2); ctx.fill();
+  poly(ctx, [[x - 8, y + roofH], [x + w * 0.52, y - 4], [x + w + 8, y + roofH]], '#4a3525');
+  poly(ctx, [[x + w * 0.52, y - 4], [x + w + 8, y + roofH], [x + w + 14, y + roofH + 2], [x + w * 0.56, y - 2]], '#352418');
+  ctx.fillStyle = '#6c5039';
+  ctx.fillRect(x, y + roofH, w, h - roofH);
+  ctx.fillStyle = '#533b28';
+  ctx.fillRect(x + w * 0.68, y + roofH, w * 0.32, h - roofH);
+  ctx.fillStyle = '#3a291c';
+  ctx.fillRect(x + w * 0.2, y + roofH + (h - roofH) * 0.25, w * 0.34, (h - roofH) * 0.75);
+  ctx.fillStyle = '#d4b444';
+  ctx.fillRect(x + w * 0.14, y + roofH + (h - roofH) * 0.52, w * 0.46, 5);
+  ctx.strokeStyle = '#2d1e14'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(x, y + roofH, w, h - roofH);
+}
+
+function drawContainCell(ctx, pts, code, drawInside) {
+  const b = bounds(pts);
+  const [x, y, w, h] = b;
+  poly(ctx, pts, '#424950');
+  ctx.strokeStyle = '#7c8892'; ctx.lineWidth = 2.5; poly(ctx, pts); ctx.stroke();
+  const gx = x + w * 0.16, gy = y + h * 0.22, gw = w * 0.68, gh = h * 0.42;
+  ctx.save();
+  ctx.fillStyle = '#181e24';
+  ctx.fillRect(gx, gy, gw, gh);
+  ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip();
+  if (drawInside) drawInside(gx, gy, gw, gh);
+  seg(ctx, [gx + gw * 0.15, gy + gh * 0.85], [gx + gw * 0.65, gy + gh * 0.12], 'rgba(200,225,240,0.16)', 3);
+  ctx.restore();
+  ctx.strokeStyle = '#8fa0ac'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(gx, gy, gw, gh);
+  ctx.fillStyle = '#20262c';
+  ctx.fillRect(x + w * 0.2, y + 6, w * 0.6, 18);
+  txt(ctx, code, x + w * 0.5, y + 19, '#e0eaf2', 11);
+  ctx.fillStyle = '#e5a93c';
+  ctx.beginPath(); ctx.arc(x + w * 0.82, y + 15, 2.5, 0, Math.PI * 2); ctx.fill();
 }
 
 const c1EntryBox = { x1: 0.72, x2: 1.42, y1: 0.58, y2: 1, z1: 1.65, z2: 2.35, color: '#9c7d54', top: '#b8986b', edge: true };
@@ -168,8 +302,11 @@ export const C1_SCENES = {
       drawSpotless(ctx, R);
       drawCleanWindow(ctx, c1EntryWin, '#f5f8fa');
       drawWhiteBench(ctx, R, 3.6, 4.8, 0.68, 1.35);
+      poly(ctx, [P(0.68, 1, 1.62), P(1.45, 1, 1.62), P(1.45, 1, 2.38), P(0.68, 1, 2.38)], 'rgba(85, 72, 54, 0.2)');
       box(ctx, R, c1EntryBox);
-      poly(ctx, [P(0.8, 0.58, 1.72), P(1.34, 0.58, 1.72), P(1.34, 0.58, 2.28), P(0.8, 0.58, 2.28)], '#3a2d1d');
+      poly(ctx, [P(0.8, 0.58, 1.72), P(1.34, 0.58, 1.72), P(1.34, 0.58, 2.28), P(0.8, 0.58, 2.28)], '#2c2115');
+      poly(ctx, [P(0.72, 0.58, 1.65), P(1.42, 0.58, 1.65), P(1.48, 0.44, 1.56), P(0.68, 0.44, 1.56)], '#b69466');
+      poly(ctx, [P(1.42, 0.58, 1.65), P(1.42, 0.58, 2.35), P(1.56, 0.52, 2.35), P(1.56, 0.52, 1.65)], '#a58458');
       drawWhiteDoor(ctx, c1EntryDoor);
     },
     drawOver: c1DrawOver,
@@ -257,15 +394,22 @@ export const C1_SCENES = {
     update: c1Update,
     draw(ctx, t, s, R) {
       drawSpotless(ctx, R);
-      poly(ctx, c1MirrorWall, '#dce8ef');
-      ctx.strokeStyle = '#bac7d2'; ctx.lineWidth = 3; poly(ctx, c1MirrorWall); ctx.stroke();
       for (const sSide of [-1, 1]) {
         const mw = wallQuad(sSide * 1.5, -0.68, 0.88, 1.8, 6.2);
-        poly(ctx, mw, '#e2edf4');
-        ctx.strokeStyle = '#c4cfd8'; ctx.lineWidth = 2; poly(ctx, mw); ctx.stroke();
+        poly(ctx, mw, '#dbe7ef');
+        ctx.strokeStyle = '#bcc8d2'; ctx.lineWidth = 2.5; poly(ctx, mw); ctx.stroke();
       }
+      const mb = bounds(c1MirrorWall);
+      const mg = ctx.createLinearGradient(mb[0], mb[1], mb[0] + mb[2], mb[1] + mb[3]);
+      mg.addColorStop(0, '#dde9f0');
+      mg.addColorStop(0.5, '#eaf2f6');
+      mg.addColorStop(1, '#cfdce4');
+      poly(ctx, c1MirrorWall, mg);
+      for (const vx of [-0.32, 0.32]) seg(ctx, P(vx, -0.72, 7.48), P(vx, 0.92, 7.48), 'rgba(170, 184, 196, 0.65)', 1.5);
+      seg(ctx, [mb[0] + mb[2] * 0.14, mb[1] + mb[3] * 0.85], [mb[0] + mb[2] * 0.36, mb[1] + mb[3] * 0.12], 'rgba(255,255,255,0.45)', 5);
+      ctx.strokeStyle = '#aebdc9'; ctx.lineWidth = 3.5; poly(ctx, c1MirrorWall); ctx.stroke();
       if (s.inv.includes('dragon_scale')) {
-        glow(ctx, 560, 260, 62, '#69b8ff', 0.45);
+        glow(ctx, 560, 260, 68, '#69b8ff', 0.45);
         poly(ctx, faceQuad(0.24, -0.55, 0.72, 0.85, 7.46), 'rgba(90, 170, 245, 0.35)');
       }
       // Faint silhouette reflected inside the back mirror wall
@@ -326,11 +470,11 @@ export const C1_SCENES = {
     const cavePal = pal('#2a2826', '#1a1918', '#23201d', '#090908', '#8c8070');
     const gardenPal = pal('#98a49c', '#b4c2b8', '#687666', '#8a998d', '#edf5ee');
 
-    const plainRoom = room(plainPal, { hw: 2.2, depth: 9, fogEnd: 16, baseboard: false, lights: [] });
-    const cityRoom = room(cityPal, { hw: 1.8, depth: 8.5, fogEnd: 14, lights: [2.0, 5.2] });
-    const acmaRoom = room(acmaPal, { hw: 1.6, depth: 8, fogEnd: 13, tiles: true, lights: [1.8, 4.4, 6.8] });
+    const plainRoom = room(plainPal, { hw: 2.2, depth: 9, fogEnd: 16, open: true, floorTex: 'carpet', baseboard: false, lights: [] });
+    const cityRoom = room(cityPal, { hw: 1.8, depth: 8.5, fogEnd: 14, wallTex: 'concrete', floorTex: 'concrete', lights: [2.0, 5.2] });
+    const acmaRoom = room(acmaPal, { hw: 1.6, depth: 8, fogEnd: 13, tiles: true, floorTex: 'concrete', lights: [1.8, 4.4, 6.8] });
     const caveRoom = room(cavePal, { hw: 1.5, depth: 7, fogEnd: 7, wallTex: 'concrete', baseboard: false, lights: [] });
-    const gardenRoom = room(gardenPal, { hw: 1.8, depth: 8, fogEnd: 15, lights: [2.2, 5.4] });
+    const gardenRoom = room(gardenPal, { hw: 1.8, depth: 8, fogEnd: 15, tiles: true, floorTex: 'concrete', lights: [2.2, 5.4] });
 
     let caveStillT = 0;
 
@@ -392,26 +536,39 @@ export const C1_SCENES = {
           if (first) g.say('一望無際的淺灰草原鋪開在眼前。遠處立著灰白色的東舟市外牆，空氣裡帶著潮濕的泥土與草腥味。');
         },
         draw(ctx, t, s, R) {
-          // Far skyline of East Boat City
-          poly(ctx, [P(-2.2, 0.2, 9), P(2.2, 0.2, 9), P(2.2, 1, 9), P(-2.2, 1, 9)], '#66756a');
-          for (const [bx, bw, bh] of [[-0.6, 0.32, 0.58], [-0.2, 0.4, 0.78], [0.25, 0.35, 0.64], [0.58, 0.28, 0.5]]) {
-            const p1 = P(bx, 0.2 - bh, 8.95), p2 = P(bx + bw, 0.2, 8.95);
-            ctx.fillStyle = '#535c62'; ctx.fillRect(p1[0], p1[1], p2[0] - p1[0], p2[1] - p1[1]);
+          const hy = P(0, 1, R.depth)[1];
+          drawHills(ctx, hy, [['#6e7e7a', 42, 0.4], ['#59685d', 24, 2.1]]);
+          // Far skyline & perimeter wall of East Boat City
+          poly(ctx, [P(-2.4, 0.25, 9), P(2.4, 0.25, 9), P(2.4, 1, 9), P(-2.4, 1, 9)], '#4c5458');
+          for (const [bx, bw, bh, lit] of [[-1.1, 0.36, 0.62, 0], [-0.62, 0.32, 0.72, 1], [-0.22, 0.42, 0.94, 1], [0.26, 0.35, 0.68, 0], [0.68, 0.4, 0.56, 1], [1.14, 0.3, 0.48, 0]]) {
+            const p1 = P(bx, 0.25 - bh, 8.95), p2 = P(bx + bw, 0.25, 8.95);
+            ctx.fillStyle = lit ? '#495259' : '#535c62';
+            ctx.fillRect(p1[0], p1[1], p2[0] - p1[0], p2[1] - p1[1]);
+            ctx.fillStyle = 'rgba(210, 224, 232, 0.16)';
+            for (let wy = p1[1] + 5; wy < p2[1] - 4; wy += 6) ctx.fillRect(p1[0] + 3, wy, Math.max(2, (p2[0] - p1[0]) - 6), 2);
           }
-          poly(ctx, cityArchQuad, '#454d52');
-          txt(ctx, '東舟市', CX(cityArchQuad), CY(cityArchQuad), '#cbd6de', 13);
-          // Circular ground depression (vanished floating island / reverse waterfall mark)
+          drawPortalArch(ctx, cityArchQuad, '#1f252a', '#626d75', '東舟市外環');
+          // Beaten dirt path leading from foreground toward city gate
+          poly(ctx, [P(-0.22, 1, 9), P(0.22, 1, 9), P(0.5, 1, 1.4), P(-0.5, 1, 1.4)], 'rgba(92, 86, 74, 0.38)');
+          // Sunken grassy crater depression (vanished floating island / reverse waterfall mark)
           const hp = P(-0.95, 1, 2.65);
-          ctx.save(); ctx.strokeStyle = 'rgba(42, 52, 46, 0.55)'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 55, 18, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-          // Locked wooden cabin (C-100 mention only)
-          poly(ctx, cabinQuad, '#69513c'); ctx.strokeStyle = '#3d2c1e'; ctx.lineWidth = 2; poly(ctx, cabinQuad); ctx.stroke();
-          // Cave trail on right
-          poly(ctx, cavePathQuad, '#2b2d2a');
-          txt(ctx, '洞穴', CX(cavePathQuad), CY(cavePathQuad), '#9da6a0', 11);
-          // SE 7.9 km post
-          poly(ctx, trekSignQuad, '#596368');
-          txt(ctx, '東南 7.9 km', CX(trekSignQuad), CY(trekSignQuad), '#dce4e8', 11);
+          ctx.save();
+          ctx.fillStyle = 'rgba(34, 42, 32, 0.48)';
+          ctx.beginPath(); ctx.ellipse(hp[0], hp[1] + 2, 58, 18, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(130, 146, 125, 0.45)'; ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 56, 16, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+          // Locked freestanding wooden cabin (C-100 mention only)
+          drawTimberCabin(ctx, cabinQuad);
+          // Craggy right rocky hillock with dark cave mouth
+          const cr = bounds(cavePathQuad);
+          poly(ctx, [[cr[0] - 48, cr[1] + cr[3] + 18], [cr[0] - 12, cr[1] - 24], [W + 10, cr[1] - 42], [W + 10, cr[1] + cr[3] + 24]], '#40443f');
+          poly(ctx, [[cr[0] - 28, cr[1] + cr[3] + 16], [cr[0] + 4, cr[1] - 8], [cr[0] + cr[2] + 35, cr[1] - 16], [W, cr[1] + cr[3] + 18]], '#2f332e');
+          poly(ctx, [[cr[0] + 6, cr[1] + cr[3]], [cr[0] + 10, cr[1] + 12], [cr[0] + cr[2] * 0.5, cr[1] + 2], [cr[0] + cr[2] - 8, cr[1] + 14], [cr[0] + cr[2] - 4, cr[1] + cr[3]]], '#0d0f0d');
+          poly(ctx, [P(1.4, 1, 4.6), P(1.85, 1, 4.4), P(1.25, 1, 2.1), P(0.75, 1, 2.2)], 'rgba(95, 92, 84, 0.42)');
+          // Planted SE trail signpost
+          drawSignPost(ctx, trekSignQuad, '東南 7.9 km ▶', 'OCEANUS', '#48545c', '#8ca0ac');
+          drawGrassField(ctx, hy, 44, 2, 'rgba(62, 82, 54, 0.62)', 22);
         },
         hotspots: [
           back('c1_hall', '翻回偏路的窗戶', '你抓住漂浮在草坡邊的窗框翻了回去，身後重新合上冷白一塵不染的長廊。'),
@@ -431,17 +588,23 @@ export const C1_SCENES = {
         },
         draw(ctx, t, s, R) {
           for (const z of [2.0, 4.2, 6.2]) {
-            poly(ctx, wallQuad(-1.8, -0.85, 0.9, z, z + 1.1), shade(R, '#767a7e', z));
-            poly(ctx, [P(-1.8, 0.9, z), P(-1.55, 0.9, z), P(-1.55, 1, z + 1.1), P(-1.8, 1, z + 1.1)], '#5c4b3b');
+            const pCol = wallQuad(-1.8, -0.85, 0.9, z, z + 1.1);
+            poly(ctx, pCol, shade(R, '#6e7378', z));
+            const top = [P(-1.8, -0.85, z), P(-1.8, -0.85, z + 1.1)];
+            for (let r = 0.2; r <= 0.8; r += 0.3) seg(ctx, [top[0][0] + (top[1][0] - top[0][0]) * r, top[0][1]], [top[0][0] + (top[1][0] - top[0][0]) * r, top[0][1] - 18], '#464a4f', 2);
+            poly(ctx, [P(-1.8, 0.9, z), P(-1.45, 0.9, z), P(-1.4, 1, z + 1.1), P(-1.8, 1, z + 1.1)], '#524234');
           }
           paper(ctx, R, gateNoticeQuad, 2.7, '#eef0ec');
+          const nb = bounds(gateNoticeQuad);
+          ctx.fillStyle = '#365872'; ctx.fillRect(nb[0] + 2, nb[1] + 2, nb[2] - 4, 5);
           box(ctx, R, gateDeskBox);
+          glow(ctx, 735, 310, 42, '#ffdba0', 0.25);
           if (!s.flags.c1e_got_recorder && !s.flags.c1e_013_done) {
             const pt = P(1.05, 0.34, 2.45);
-            ctx.fillStyle = '#2a2d34'; ctx.fillRect(pt[0] - 8, pt[1] - 5, 16, 10);
-            ctx.fillStyle = '#d64545'; ctx.beginPath(); ctx.arc(pt[0] + 3, pt[1], 2, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#24272e'; ctx.fillRect(pt[0] - 9, pt[1] - 5, 18, 10);
+            ctx.fillStyle = '#d64545'; ctx.beginPath(); ctx.arc(pt[0] + 4, pt[1], 2.2, 0, Math.PI * 2); ctx.fill();
           }
-          poly(ctx, gateAhead, '#42474c');
+          drawPortalArch(ctx, gateAhead, '#23282e', '#636c74', '市中心大道');
         },
         hotspots: [
           back('c1e_outskirts', '回到平原邊緣'),
@@ -463,14 +626,16 @@ export const C1_SCENES = {
           c1eEnterCity(g, first ? '寬敞得過分的灰白大道向各區岔開：左面是三合研究院，前方通往 03 區 ACMA 與新紀花園，西側遠處則是撒加利工廠。' : null);
         },
         draw(ctx, t, s, R) {
-          poly(ctx, roadLabDoor, shade(R, '#66747e', 2.7));
-          txt(ctx, '三合研究院', CX(roadLabDoor), CY(roadLabDoor), '#e4edf2', 11);
-          poly(ctx, roadAcmaDoor, shade(R, '#5c6670', 8.5));
-          txt(ctx, '03區 ACMA', CX(roadAcmaDoor), CY(roadAcmaDoor), '#e4edf2', 12);
-          poly(ctx, roadGardenDoor, shade(R, '#5c7260', 8.5));
-          txt(ctx, '新紀花園', CX(roadGardenDoor), CY(roadGardenDoor), '#e4f2e8', 12);
-          poly(ctx, roadFactorySign, '#53575b');
-          txt(ctx, '工廠／實驗室', CX(roadFactorySign), CY(roadFactorySign), '#d6dce0', 10);
+          // Wide concrete boulevard lane markings
+          for (const z of [1.6, 3.1, 4.8, 6.6]) {
+            poly(ctx, [P(-0.04, 1, z), P(0.04, 1, z), P(0.04, 1, z + 0.8), P(-0.04, 1, z + 0.8)], 'rgba(218, 224, 228, 0.45)');
+          }
+          seg(ctx, P(-1.85, 1, 1.2), P(-1.85, 1, 8.8), '#8a9196', 3);
+          seg(ctx, P(1.85, 1, 1.2), P(1.85, 1, 8.8), '#8a9196', 3);
+          drawPortalArch(ctx, roadLabDoor, '#242e36', shade(R, '#66747e', 2.7), '三合研究院');
+          drawPortalArch(ctx, roadAcmaDoor, '#182028', shade(R, '#5c6670', 8.5), '03區 ACMA');
+          drawPortalArch(ctx, roadGardenDoor, '#2a4230', shade(R, '#5c7260', 8.5), '新紀花園');
+          drawSignPost(ctx, roadFactorySign, '西:撒加利工廠', '北:珀爾修斯 / 東:紅星', '#394148', '#8996a0');
         },
         hotspots: [
           back('c1e_gate', '退回外環哨站'),
@@ -488,12 +653,25 @@ export const C1_SCENES = {
           c1eEnterCity(g, first ? '大廳裡整齊擺著研究紀錄櫃。一面牆上貼著各基地的聯防公告，桌上壓著時駒留下的研究手稿。' : null);
         },
         draw(ctx, t, s, R) {
-          poly(ctx, labBoardQuad, '#4c565e');
-          txt(ctx, 'C-Lambda #11', CX(labBoardQuad), CY(labBoardQuad) - 10, '#cfdbe2', 11);
+          poly(ctx, labBoardQuad, '#394148');
+          ctx.strokeStyle = '#7b8792'; ctx.lineWidth = 2.5; poly(ctx, labBoardQuad); ctx.stroke();
+          const lb = bounds(labBoardQuad);
+          ctx.fillStyle = '#243a4c'; ctx.fillRect(lb[0] + 6, lb[1] + 6, lb[2] - 12, 18);
+          txt(ctx, 'C-Lambda #11', CX(labBoardQuad), lb[1] + 19, '#dce9f2', 10);
+          ctx.fillStyle = '#d9d4c4'; ctx.fillRect(lb[0] + 12, lb[1] + 32, 30, 36);
+          ctx.fillStyle = '#cbd4dc'; ctx.fillRect(lb[0] + 50, lb[1] + 36, 36, 28);
           box(ctx, R, { x1: -1.0, x2: 1.05, y1: 0.45, y2: 1, z1: 4.3, z2: 4.9, color: '#6b7075', top: '#7f868c', edge: true });
+          // CRT waveform monitor on lab counter
+          ctx.fillStyle = '#23282d'; ctx.fillRect(450, 290, 42, 30);
+          ctx.fillStyle = '#122922'; ctx.fillRect(454, 294, 34, 22);
+          seg(ctx, [456, 306], [468, 299], '#62d99a', 1.5);
+          seg(ctx, [468, 299], [484, 308], '#62d99a', 1.5);
           paper(ctx, R, labShijuQuad, 4.6, '#f4efdc');
-          poly(ctx, labSpareQuad, '#3e4850');
-          txt(ctx, '備用庫房', CX(labSpareQuad), CY(labSpareQuad), '#c7d2d9', 10);
+          const spb = bounds(labSpareQuad);
+          poly(ctx, labSpareQuad, '#323c44');
+          ctx.strokeStyle = '#6c7c88'; ctx.lineWidth = 2; poly(ctx, labSpareQuad); ctx.stroke();
+          for (let ly = spb[1] + 12; ly < spb[1] + spb[3] - 24; ly += 6) seg(ctx, [spb[0] + 10, ly], [spb[0] + spb[2] - 10, ly], '#1c242a', 1.5);
+          txt(ctx, '備用庫房', CX(labSpareQuad), spb[1] + spb[3] - 10, '#c7d2d9', 10);
         },
         hotspots: [
           back('c1e_road', '回到市中心大道'),
@@ -518,20 +696,26 @@ export const C1_SCENES = {
           c1eEnterCity(g, first ? '03 區艾亞哥斯收容管理局（ACMA）的地下長廊。厚重的隔離室門邊貼著編號牌，兩名安保人員分別守在 E-024 與 E-013 門外。' : null);
         },
         draw(ctx, t, s, R) {
-          for (const [q, lbl] of [[cell024, 'E-024'], [cell025, 'E-025'], [cell013, 'E-013']]) {
-            poly(ctx, q, '#2b3238');
-            ctx.strokeStyle = '#8b96a0'; ctx.lineWidth = 2; poly(ctx, q); ctx.stroke();
-            txt(ctx, lbl, CX(q), q[0][1] + 22, '#dce6ee', 12);
-          }
-          // Subtle figure silhouettes inside E-024 and E-013 cells
-          const p24 = [CX(cell024), CY(cell024) + 18];
-          ctx.fillStyle = '#4e5248';
-          ctx.beginPath(); ctx.ellipse(p24[0], p24[1], 18, 12, 0, 0, Math.PI * 2); ctx.fill();
-          const p13 = [CX(cell013), CY(cell013) + 4];
-          ctx.fillStyle = '#8a3228';
-          ctx.beginPath(); ctx.arc(p13[0], p13[1] - 18, 8, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#d8d8dc';
-          ctx.fillRect(p13[0] - 8, p13[1] - 8, 16, 28);
+          drawContainCell(ctx, cell024, 'E-024', (gx, gy, gw, gh) => {
+            ctx.fillStyle = '#4e5246';
+            ctx.beginPath(); ctx.ellipse(gx + gw * 0.52, gy + gh * 0.72, 16, 11, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#3b3e36';
+            ctx.beginPath(); ctx.arc(gx + gw * 0.42, gy + gh * 0.64, 6, 0, Math.PI * 2); ctx.fill();
+          });
+          drawContainCell(ctx, cell025, 'E-025', (gx, gy, gw, gh) => {
+            ctx.fillStyle = 'rgba(200, 215, 225, 0.14)';
+            ctx.fillRect(gx + gw * 0.25, gy + 4, gw * 0.5, 4);
+            seg(ctx, [gx + gw * 0.5, gy + 8], [gx + gw * 0.5, gy + gh * 0.72], 'rgba(130, 145, 155, 0.4)', 1.5);
+          });
+          drawContainCell(ctx, cell013, 'E-013', (gx, gy, gw, gh) => {
+            glow(ctx, gx + gw * 0.5, gy + gh * 0.68, 22, '#e66432', 0.35);
+            ctx.fillStyle = '#181414';
+            ctx.fillRect(gx + 2, gy + gh * 0.55, gw - 4, gh * 0.45);
+            ctx.fillStyle = '#8a3228';
+            ctx.beginPath(); ctx.arc(gx + gw * 0.5, gy + gh * 0.48, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#d8d8dc';
+            ctx.fillRect(gx + gw * 0.5 - 7, gy + gh * 0.56, 14, 24);
+          });
         },
         hotspots: [
           back('c1e_road', '回到市中心大道'),
@@ -594,13 +778,27 @@ export const C1_SCENES = {
           }
         },
         draw(ctx, t, s, R) {
+          // Layered jagged cavern rock strata framing ceiling and side walls
+          poly(ctx, [[0, 0], [320, 0], [275, 115], [160, 225], [130, 415], [0, H]], '#1c1a18');
+          poly(ctx, [[W, 0], [640, 0], [690, 125], [785, 240], [820, 410], [W, H]], '#1a1816');
+          for (const [rx, ry, rw, rh] of [[240, 80, 18, 52], [350, 74, 14, 40], [585, 76, 16, 46], [705, 86, 20, 56]]) {
+            poly(ctx, [[rx, ry], [rx + rw, ry], [rx + rw * 0.45, ry + rh]], '#2b2724');
+          }
           if (s.flags.c1e_cave_gone) {
             box(ctx, R, caveRubbleBox);
+            poly(ctx, [[305, 360], [390, 295], [470, 325], [565, 290], [655, 365]], '#58544f');
+            seg(ctx, [380, 295], [405, 245], '#3d332c', 3);
+            seg(ctx, [525, 300], [505, 242], '#3d332c', 3);
             return;
           }
-          // Glow only (E-002's form is never seen)
+          // Glow & floating resonance motes only (E-002's form is never seen)
           if (s.flags.c1e_002_heard || caveStillT >= 5) {
-            glow(ctx, 480, 215, 110 + Math.sin(t * 2) * 8, '#d4af7a', 0.25);
+            glow(ctx, 480, 215, 118 + Math.sin(t * 2) * 8, '#d4af7a', 0.28);
+            ctx.fillStyle = 'rgba(240, 212, 162, 0.5)';
+            for (let i = 0; i < 12; i++) {
+              const mx = 420 + ((i * 37) % 120), my = 175 + ((i * 29 + Math.round(t * 14)) % 85);
+              ctx.fillRect(mx, my, 2, 2);
+            }
           }
         },
         hotspots: [
@@ -640,14 +838,21 @@ export const C1_SCENES = {
           c1eEnterCity(g, first ? '南面的生活區「新紀花園」，水泥牆間安靜地擺著一排綠植盆栽、飲水台與補給箱。' : null);
         },
         draw(ctx, t, s, R) {
-          box(ctx, R, gardenBench);
-          box(ctx, R, gardenFountain);
-          box(ctx, R, gardenCrate);
-          for (const px of [-1.2, -0.8, 0.9, 1.3]) {
-            const pt = P(px, 0.55, 5.2);
-            ctx.fillStyle = '#3f6344';
-            ctx.beginPath(); ctx.arc(pt[0], pt[1], 18, 0, Math.PI * 2); ctx.fill();
+          // Sunlit atrium skylight wash + wooden slatted park bench + stone drinking fountain + planters
+          glow(ctx, 480, 140, 210, '#dceee0', 0.16);
+          for (const px of [-1.25, -0.78, 0.85, 1.32]) {
+            const p = P(px, 0.62, 5.2);
+            ctx.fillStyle = '#475249'; ctx.fillRect(p[0] - 24, p[1] + 6, 48, 22);
+            for (let li = -2; li <= 2; li++) {
+              ctx.fillStyle = li % 2 ? '#3b6441' : '#4a7a51';
+              ctx.beginPath(); ctx.ellipse(p[0] + li * 7, p[1] - Math.abs(li) * 3, 12, 16, li * 0.2, 0, Math.PI * 2); ctx.fill();
+            }
           }
+          box(ctx, R, gardenBench);
+          seg(ctx, P(-1.42, 0.42, 2.35), P(-0.78, 0.42, 3.05), '#534638', 4);
+          box(ctx, R, gardenFountain);
+          glow(ctx, P(1.12, 0.35, 2.4)[0], P(1.12, 0.35, 2.4)[1], 24, '#a6dbe8', 0.32);
+          box(ctx, R, gardenCrate);
         },
         hotspots: [
           back('c1e_road', '回到市中心大道'),
@@ -683,26 +888,18 @@ export const C1_SCENES = {
     const basePal = pal('#5e666e', '#6f7c86', '#4c5448', '#7d8a94', '#dce6ee');
     const eyePal = pal('#222830', '#161a20', '#1a2026', '#0c1014', '#72b8e8');
 
-    const meadowRoom = room(skyPal, { hw: 2.2, depth: 9.5, fogEnd: 18, baseboard: false, lights: [] });
-    const baseRoom = room(basePal, { hw: 2.0, depth: 9, fogEnd: 16, lights: [2.4, 5.8] });
-    const eyeRoom = room(eyePal, { hw: 1.6, depth: 7.5, fogEnd: 11, lights: [2.2, 5.2] });
+    const meadowRoom = room(skyPal, { hw: 2.2, depth: 9.5, fogEnd: 18, open: true, floorTex: 'carpet', baseboard: false, lights: [] });
+    const baseRoom = room(basePal, { hw: 2.0, depth: 9, fogEnd: 16, open: true, floorTex: 'concrete', baseboard: false, lights: [] });
+    const eyeRoom = room(eyePal, { hw: 1.6, depth: 7.5, fogEnd: 11, floorTex: 'concrete', lights: [2.2, 5.2] });
 
     let clankWait = 6;
     let wingAnimT = 0;
 
-    function drawGrass(ctx, seedShift = 0) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(72, 98, 48, 0.65)';
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 34; i++) {
-        const x = 40 + ((i * 73 + seedShift * 31) % 880);
-        const y = 335 + ((i * 37) % 130);
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.quadraticCurveTo(x - 6, y - 22, x - 3 + (i % 5) * 2, y - 38);
-        ctx.stroke();
-      }
-      ctx.restore();
+    function drawGrass(ctx, R, seedShift = 0) {
+      const hy = P(0, 1, R.depth)[1];
+      drawHills(ctx, hy, [['#72887e', 38, seedShift * 0.4], ['#596d54', 22, seedShift * 0.7 + 1.4]]);
+      drawGrassField(ctx, hy, 54, seedShift, 'rgba(64, 92, 42, 0.72)', 34);
+      drawGrassField(ctx, hy, 28, seedShift + 5, 'rgba(130, 152, 92, 0.45)', 24);
     }
 
     const riftQuad = faceQuad(-0.22, -0.78, 0.22, 0.72, 2.2);
@@ -772,13 +969,18 @@ export const C1_SCENES = {
           if (first) g.say('純淨得近乎灼眼的垂直藍光裂隙懸在半空，四周是齊尾高的蒼翠野草。據說尊父就是在此為這片草原賜名「驤亭」。');
         },
         draw(ctx, t, s, R) {
-          drawGrass(ctx, 1);
-          glow(ctx, 480, 250, 95 + Math.sin(t * 3) * 8, '#5ab6ff', 0.55);
-          poly(ctx, riftQuad, '#b2e4ff');
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; poly(ctx, riftQuad); ctx.stroke();
+          drawGrass(ctx, R, 1);
+          // Jagged vertical blue spatial tear
+          const rb = bounds(riftQuad);
+          const rx = rb[0] + rb[2] * 0.5;
+          glow(ctx, rx, rb[1] + rb[3] * 0.5, 115 + Math.sin(t * 3) * 10, '#5ab6ff', 0.58);
+          poly(ctx, [[rx - 4, rb[1]], [rx + 18, rb[1] + 55], [rx - 8, rb[1] + 135], [rx + 14, rb[1] + 225], [rx - 2, rb[1] + rb[3]], [rx - 22, rb[1] + 205], [rx + 6, rb[1] + 115], [rx - 18, rb[1] + 45]], '#d4f2ff');
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
           box(ctx, R, riftStone);
-          poly(ctx, riftAhead, '#687e52');
-          txt(ctx, '草原深處 →', CX(riftAhead), CY(riftAhead), '#ecf4df', 12);
+          txt(ctx, '碑', P(-1.02, 0.62, 2.4)[0], P(-1.02, 0.62, 2.4)[1], '#cfdbe2', 11);
+          // Worn grass trail curving right into the deep plain
+          poly(ctx, [P(0.25, 1, 1.8), P(0.95, 1, 1.8), P(1.15, 1, 9), P(0.55, 1, 9)], 'rgba(92, 98, 68, 0.45)');
+          drawSignPost(ctx, riftAhead, '草原深處 ▶', '驤亭方向', '#4b5e42', '#9ab486');
         },
         hotspots: [
           hit('back', [330, 470, 300, 70], '穿過裂隙回鏡廳', (g) => {
@@ -799,13 +1001,20 @@ export const C1_SCENES = {
           if (first) g.say('望出去約七成以上都是沒過腿肚的長草，遠處伏著低矮山丘和稀疏林地。安靜、空氣微乾，卻連一隻蟲或流浪者都沒遇上。');
         },
         draw(ctx, t, s, R) {
-          drawGrass(ctx, 3);
-          poly(ctx, plainOutskirtsPath, '#5f7348');
-          txt(ctx, '← 郊外高草', CX(plainOutskirtsPath), CY(plainOutskirtsPath), '#e6efda', 11);
-          poly(ctx, plainBasePath, '#4d575e');
-          txt(ctx, '驤亭基地', CX(plainBasePath), CY(plainBasePath), '#dce5ec', 12);
-          poly(ctx, plainRiverPath, '#466a80');
-          txt(ctx, '江流 →', CX(plainRiverPath), CY(plainRiverPath), '#d8eef8', 11);
+          drawGrass(ctx, R, 3);
+          // Far Dragon-blood compound eaves & cranes at center horizon
+          const cb = bounds(plainBasePath);
+          poly(ctx, [[cb[0] - 28, cb[1] + cb[3]], [cb[0] - 10, cb[1] + 14], [cb[0] + cb[2] + 10, cb[1] + 14], [cb[0] + cb[2] + 28, cb[1] + cb[3]]], '#3b444c');
+          poly(ctx, [[cb[0] - 22, cb[1] + 18], [cb[0] + cb[2] * 0.5, cb[1] - 4], [cb[0] + cb[2] + 22, cb[1] + 18]], '#262d34');
+          seg(ctx, [cb[0] + cb[2] + 12, cb[1] + cb[3]], [cb[0] + cb[2] + 12, cb[1] - 24], '#4b5660', 2);
+          seg(ctx, [cb[0] + cb[2] - 8, cb[1] - 18], [cb[0] + cb[2] + 34, cb[1] - 28], '#4b5660', 2);
+          drawPortalArch(ctx, plainBasePath, '#1c2228', '#5c6974', '驤亭基地');
+          // Left trail post -> outskirts grass hills
+          poly(ctx, [P(-1.1, 1, 2.0), P(-0.6, 1, 2.0), P(-2.2, 1, 5.2), P(-2.2, 1, 3.6)], 'rgba(96, 102, 66, 0.42)');
+          drawSignPost(ctx, plainOutskirtsPath, '◀ 郊外草坡', null, '#4d5d3f', '#92a87e');
+          // Right winding river glimpse + wooden river sign
+          poly(ctx, [P(0.9, 1, 2.2), P(1.5, 1, 2.2), P(2.2, 1, 5.5), P(2.2, 1, 3.8)], '#46738c');
+          drawSignPost(ctx, plainRiverPath, '交織江流 ▶', null, '#38586c', '#7faac4');
         },
         hotspots: [
           back('c1x_rift', '返回藍色裂隙'),
@@ -823,12 +1032,20 @@ export const C1_SCENES = {
           if (first) g.say('複雜交錯的河道切開草原，水聲比想像中還要平緩清澈——在這個資源匱乏的地方，這大概是少數能補水的地方。');
         },
         draw(ctx, t, s, R) {
-          poly(ctx, [P(-2.2, 0.42, 1.5), P(2.2, 0.42, 1.5), P(2.2, 0.95, 7.2), P(-2.2, 0.95, 7.2)], '#426b82');
-          for (let i = 0; i < 4; i++) {
-            const y = 315 + i * 28;
-            seg(ctx, [210 + i * 20, y], [740 - i * 25, y], 'rgba(205, 232, 248, 0.42)', 2);
+          drawGrass(ctx, R, 7);
+          const gr = ctx.createLinearGradient(0, 310, 0, 465);
+          gr.addColorStop(0, '#5a87a0');
+          gr.addColorStop(0.5, '#3b6882');
+          gr.addColorStop(1, '#294c62');
+          poly(ctx, [P(-1.7, 0.42, 1.5), P(1.7, 0.42, 1.5), P(2.3, 0.95, 7.6), P(-2.3, 0.95, 7.6)], gr);
+          ctx.save();
+          for (let i = 0; i < 9; i++) {
+            const y = 308 + i * 16;
+            const sway = Math.sin(t * 1.4 + i) * 14;
+            seg(ctx, [230 + i * 14 + sway, y], [730 - i * 16 + sway, y], 'rgba(218, 240, 252, 0.38)', 1.6);
           }
-          drawGrass(ctx, 7);
+          ctx.restore();
+          drawGrassField(ctx, 390, 20, 11, 'rgba(54, 82, 38, 0.85)', 36);
         },
         hotspots: [
           back('c1x_plain', '回到草原'),
@@ -862,21 +1079,33 @@ export const C1_SCENES = {
           }
         },
         draw(ctx, t, s, R) {
-          // Scaffolding & crane silhouettes
+          const hy = P(0, 1, R.depth)[1];
+          drawHills(ctx, hy, [['#5d696d', 34, 1.2]]);
+          // Dragon-blood compound timber eaves & steel construction scaffolding
+          poly(ctx, [[310, hy], [335, 165], [625, 165], [650, hy]], '#353e46');
+          poly(ctx, [[292, 168], [480, 118], [668, 168], [628, 178], [332, 178]], '#232a30');
           seg(ctx, P(-1.8, -0.9, 6.2), P(1.2, -0.9, 6.2), '#3c434a', 4);
           seg(ctx, P(-1.5, -0.9, 6.2), P(-1.5, 1, 6.2), '#3c434a', 5);
           seg(ctx, P(1.6, -0.9, 5.2), P(1.6, 1, 5.2), '#3c434a', 4);
-          // Faceless guard with bone mask + 瞳石 crystal
-          poly(ctx, baseGuardQuad, '#2b3036');
-          const gp = P(-0.9, -0.05, 4.2);
-          ctx.fillStyle = '#ddd8cc'; ctx.beginPath(); ctx.ellipse(gp[0], gp[1], 10, 13, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#8b5cf6'; ctx.fillRect(gp[0] - 5, gp[1] - 3, 3, 3); ctx.fillRect(gp[0] + 2, gp[1] - 3, 3, 3);
-          // Dragon-scale steed silhouette (龍鱗駒)
-          poly(ctx, baseSteedQuad, '#343c44');
-          txt(ctx, '龍鱗駒', CX(baseSteedQuad), baseSteedQuad[0][1] - 8, '#cbd5de', 10);
+          seg(ctx, [320, 120], [560, 80], '#4e5963', 2.5);
+          // Faceless guard (Entity-9) in long coat with bone mask + glowing purple 瞳石 eyes
+          const gb = bounds(baseGuardQuad);
+          const gx = gb[0] + gb[2] * 0.5, gy = gb[1];
+          poly(ctx, [[gx - 22, gb[1] + gb[3]], [gx - 15, gy + 36], [gx + 15, gy + 36], [gx + 24, gb[1] + gb[3]]], '#24292e');
+          seg(ctx, [gx + 22, gy + 10], [gx + 22, gb[1] + gb[3]], '#5e666e', 2.5);
+          ctx.fillStyle = '#ddd8cc'; ctx.beginPath(); ctx.ellipse(gx, gy + 20, 11, 14, 0, 0, Math.PI * 2); ctx.fill();
+          glow(ctx, gx, gy + 19, 14, '#a87dff', 0.45);
+          ctx.fillStyle = '#8b5cf6'; ctx.fillRect(gx - 5, gy + 17, 3.5, 3.5); ctx.fillRect(gx + 1.5, gy + 17, 3.5, 3.5);
+          // Scaled steed (龍鱗駒) tethered beside hitching post
+          const sb = bounds(baseSteedQuad);
+          const sx = sb[0] + sb[2] * 0.45, sy = sb[1] + sb[3] * 0.5;
+          poly(ctx, [[sx - 28, sy - 6], [sx + 18, sy - 8], [sx + 26, sy + 14], [sx - 22, sy + 16]], '#2b343c');
+          poly(ctx, [[sx - 26, sy - 4], [sx - 40, sy - 26], [sx - 48, sy - 20], [sx - 34, sy + 4]], '#343e48');
+          for (const lx of [-20, -10, 12, 20]) seg(ctx, [sx + lx, sy + 12], [sx + lx - 2, sb[1] + sb[3]], '#262d34', 4);
+          seg(ctx, [sx + 24, sy - 2], [sx + 34, sy + 18], '#1e242a', 3);
+          txt(ctx, '龍鱗駒', sx, sb[1] - 6, '#cbd5de', 10);
           // Entrance to Alpha's Eye dark room
-          poly(ctx, baseEyeDoor, '#191e24');
-          txt(ctx, '暗室（K014）', CX(baseEyeDoor), CY(baseEyeDoor), '#86c5f4', 11);
+          drawPortalArch(ctx, baseEyeDoor, '#0f1318', '#566470', '暗室・K014');
         },
         hotspots: [
           back('c1x_plain', '回到草原'),
@@ -899,8 +1128,16 @@ export const C1_SCENES = {
           if (first) g.say('暗室中央安放著編號 K014「阿爾法之眼」：主艙體、中轉器與資料處理系統正低鳴運轉。角落架著一座奇異的骨架展示台。');
         },
         draw(ctx, t, s, R) {
+          // Floor neural relay fiber conduits toward K014 pod
+          for (const fx of [-0.65, -0.25, 0.25, 0.65]) seg(ctx, P(fx, 1, 1.4), P(fx * 0.35, 1, 4.1), 'rgba(84, 178, 245, 0.32)', 2);
           box(ctx, R, podBox);
-          glow(ctx, 480, 250, 75 + Math.sin(t * 2.5) * 6, '#58b4ff', s.flags.c1x_in_pod ? 0.55 : 0.25);
+          // Illuminated pod visor strip
+          const pb = boxRect(podBox);
+          ctx.fillStyle = 'rgba(104, 198, 255, 0.22)';
+          ctx.fillRect(pb[0] + 18, pb[1] + 28, pb[2] - 36, pb[3] * 0.45);
+          ctx.strokeStyle = '#62b2ec'; ctx.lineWidth = 1.5;
+          ctx.strokeRect(pb[0] + 18, pb[1] + 28, pb[2] - 36, pb[3] * 0.45);
+          glow(ctx, 480, 250, 82 + Math.sin(t * 2.5) * 6, '#58b4ff', s.flags.c1x_in_pod ? 0.55 : 0.28);
           // Run counter plaque: 23 -> 24 once all 3 dreams finished
           const countNum = dreamsCompleted(s) ? '24' : '23';
           ctx.fillStyle = '#0e141a'; ctx.fillRect(452, 204, 56, 28);
@@ -909,12 +1146,18 @@ export const C1_SCENES = {
           // Relay manual & Alpha/Ashou log papers
           paper(ctx, R, relayManualQuad, 2.8, '#dce8f2');
           paper(ctx, R, alphaLogQuad, 2.8, '#e8e2d2');
-          // Headless reptile skeleton display
-          poly(ctx, skeletonQuad, '#2b323a');
-          const sp = [CX(skeletonQuad), CY(skeletonQuad)];
-          ctx.strokeStyle = '#cfc9b8'; ctx.lineWidth = 2;
-          seg(ctx, [sp[0] - 18, sp[1] + 12], [sp[0] + 16, sp[1] - 4], '#cfc9b8', 3);
-          for (let r = -10; r <= 10; r += 5) seg(ctx, [sp[0] + r, sp[1] - 2], [sp[0] + r + 2, sp[1] + 14], '#cfc9b8', 1.5);
+          // Articulated headless serpentine reptile skeleton inside glass vitrine
+          const kb = bounds(skeletonQuad);
+          poly(ctx, skeletonQuad, '#1d242c');
+          ctx.strokeStyle = '#6c8aa3'; ctx.lineWidth = 1.8; poly(ctx, skeletonQuad); ctx.stroke();
+          const sp = [kb[0] + kb[2] * 0.5, kb[1] + kb[3] * 0.55];
+          ctx.strokeStyle = '#d4cebd'; ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(sp[0] - 20, sp[1] + 18);
+          ctx.bezierCurveTo(sp[0] - 8, sp[1] + 2, sp[0] + 4, sp[1] - 10, sp[0] + 12, sp[1] - 20);
+          ctx.stroke();
+          for (let r = -10; r <= 8; r += 4) seg(ctx, [sp[0] + r - 4, sp[1] - r * 0.7 - 4], [sp[0] + r + 8, sp[1] - r * 0.7 + 4], '#d4cebd', 1.5);
+          seg(ctx, [sp[0] + 12, sp[1] - 20], [sp[0] + 12, sp[1] - 28], 'rgba(220, 110, 110, 0.55)', 1.5);
           // Active dream overlay inside pod canvas
           if (s.flags.c1x_in_pod) {
             ctx.fillStyle = 'rgba(8, 16, 26, 0.68)';
@@ -997,29 +1240,36 @@ export const C1_SCENES = {
           if (wingAnimT > 0) wingAnimT = Math.max(0, wingAnimT - dt);
         },
         draw(ctx, t, s, R) {
-          drawGrass(ctx, 9);
-          // Ashou (wearing skull) stays faintly on grass edge; Progenitor spreads wide membrane wings and flies off
-          const ap = [420, 255];
-          ctx.fillStyle = '#363b3e'; ctx.fillRect(ap[0] - 8, ap[1] - 18, 16, 42);
-          ctx.fillStyle = '#ddd6c4'; ctx.beginPath(); ctx.ellipse(ap[0], ap[1] - 26, 9, 10, 0, 0, Math.PI * 2); ctx.fill();
+          drawGrass(ctx, R, 9);
+          // Ashou (cloaked silhouette with bleached beast skull on left shoulder)
+          const ap = [416, 258];
+          poly(ctx, [[ap[0] - 15, ap[1] + 34], [ap[0] - 10, ap[1] - 16], [ap[0] + 10, ap[1] - 16], [ap[0] + 17, ap[1] + 34]], '#2d3336');
+          ctx.fillStyle = '#383f44'; ctx.beginPath(); ctx.arc(ap[0], ap[1] - 24, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#e0d8c6'; ctx.beginPath(); ctx.ellipse(ap[0] - 8, ap[1] - 14, 9, 6, -0.3, 0, Math.PI * 2); ctx.fill();
+          // Progenitor spreads wide veined membrane wings and flies off when observed
           if (!s.flags.c1x_progenitor_seen || wingAnimT > 0) {
-            const lift = wingAnimT > 0 ? (2.6 - wingAnimT) * 55 : 0;
-            const span = wingAnimT > 0 ? 185 : 52;
-            const px = 525, py = 242 - lift;
+            const lift = wingAnimT > 0 ? (2.6 - wingAnimT) * 58 : 0;
+            const span = wingAnimT > 0 ? 190 : 54;
+            const px = 528, py = 242 - lift;
             ctx.save();
-            ctx.fillStyle = 'rgba(28, 32, 38, 0.88)';
+            ctx.fillStyle = 'rgba(24, 28, 34, 0.92)';
             ctx.beginPath();
             ctx.moveTo(px, py - 14);
-            ctx.lineTo(px - span, py - 68);
-            ctx.lineTo(px - span * 0.55, py + 12);
+            ctx.lineTo(px - span, py - 70);
+            ctx.lineTo(px - span * 0.55, py + 14);
             ctx.lineTo(px, py - 4);
-            ctx.lineTo(px + span * 0.55, py + 12);
-            ctx.lineTo(px + span, py - 68);
+            ctx.lineTo(px + span * 0.55, py + 14);
+            ctx.lineTo(px + span, py - 70);
             ctx.closePath();
             ctx.fill();
-            ctx.fillRect(px - 10, py - 24, 20, 54);
+            ctx.strokeStyle = 'rgba(92, 108, 126, 0.55)'; ctx.lineWidth = 1.5;
+            seg(ctx, [px, py - 10], [px - span * 0.9, py - 62], ctx.strokeStyle, 1.5);
+            seg(ctx, [px, py - 10], [px + span * 0.9, py - 62], ctx.strokeStyle, 1.5);
+            poly(ctx, [[px - 11, py + 36], [px - 8, py - 24], [px + 8, py - 24], [px + 12, py + 36]], '#1a1e24');
+            ctx.beginPath(); ctx.arc(px, py - 32, 9, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
           }
+          drawGrassField(ctx, 355, 22, 15, 'rgba(66, 94, 42, 0.85)', 42);
         },
         hotspots: [
           back('c1x_plain', '退回草原'),
@@ -1048,15 +1298,15 @@ export const C1_SCENES = {
     const hPal = pal('#282e36', '#181c22', '#20262c', '#0d1014', '#9ec2df');
     const hidePal = pal('#302b27', '#1c1816', '#24201c', '#0f0c0a', '#d8c4a6');
 
-    const trekRoom = room(trekPal, { hw: 2.2, depth: 9.5, fogEnd: 16, baseboard: false, lights: [] });
-    const hullRoom = room(hullPal, { hw: 2.0, depth: 8.5, fogEnd: 15, baseboard: false, lights: [] });
-    const shipRoom = room(shipPal, { hw: 1.5, depth: 8.5, fogEnd: 12, lights: [1.8, 4.4, 7.0], flickerLights: [1] });
-    const fogRoom = room(fogPal, { hw: 1.8, depth: 7.5, fogEnd: 5.5, lights: [] });
-    const townRoom = room(townPal, { hw: 1.7, depth: 8, fogEnd: 11, lights: [2.4] });
-    const metroRoom = room(metroPal, { hw: 1.5, depth: 8, fogEnd: 9.5, lights: [] });
-    const seaRoom = room(seaPal, { hw: 1.8, depth: 8, fogEnd: 11, lights: [2.6, 5.8] });
-    const hRoom = room(hPal, { hw: 1.7, depth: 7.5, fogEnd: 11, lights: [2.2, 5.2] });
-    const hideRoom = room(hidePal, { hw: 1.4, depth: 6.5, fogEnd: 8.5, lights: [2.5] });
+    const trekRoom = room(trekPal, { hw: 2.2, depth: 9.5, fogEnd: 16, open: true, floorTex: 'carpet', baseboard: false, lights: [] });
+    const hullRoom = room(hullPal, { hw: 2.0, depth: 8.5, fogEnd: 15, open: true, floorTex: 'concrete', baseboard: false, lights: [] });
+    const shipRoom = room(shipPal, { hw: 1.5, depth: 8.5, fogEnd: 12, wallTex: 'concrete', lights: [1.8, 4.4, 7.0], flickerLights: [1] });
+    const fogRoom = room(fogPal, { hw: 1.8, depth: 7.5, fogEnd: 5.5, floorTex: 'carpet', lights: [] });
+    const townRoom = room(townPal, { hw: 1.7, depth: 8, fogEnd: 11, floorTex: 'concrete', lights: [2.4] });
+    const metroRoom = room(metroPal, { hw: 1.5, depth: 8, fogEnd: 9.5, wallTex: 'concrete', lights: [] });
+    const seaRoom = room(seaPal, { hw: 1.8, depth: 8, fogEnd: 11, wallTex: 'concrete', lights: [2.6, 5.8] });
+    const hRoom = room(hPal, { hw: 1.7, depth: 7.5, fogEnd: 11, wallTex: 'concrete', lights: [2.2, 5.2] });
+    const hideRoom = room(hidePal, { hw: 1.4, depth: 6.5, fogEnd: 8.5, wallTex: 'concrete', lights: [2.5] });
 
     let seaDripT = 1.8;
 
@@ -1133,9 +1383,14 @@ export const C1_SCENES = {
             : '再次徒步穿過這七點九公里的荒原，體力與精神又被抽走一截。');
         },
         draw(ctx, t, s, R) {
-          poly(ctx, [P(-2.2, -0.35, 9.2), P(2.2, -0.35, 9.2), P(2.2, 1, 9.2), P(-2.2, 1, 9.2)], '#3f4850');
-          poly(ctx, trekAhead, '#29323b');
-          txt(ctx, '俄刻阿諾斯號（7.9 km）', CX(trekAhead), CY(trekAhead), '#cddae4', 12);
+          const hy = P(0, 1, R.depth)[1];
+          drawHills(ctx, hy, [['#525d64', 55, 0.9], ['#3e484e', 34, 2.5]]);
+          drawGrassField(ctx, hy, 40, 19, 'rgba(65, 76, 62, 0.65)', 24);
+          // Colossal tilted metal ark prow jutting out of mountainside ridge
+          poly(ctx, [P(-2.4, -0.45, 9.2), P(1.65, -0.82, 9.2), P(2.2, 1, 9.2), P(-2.4, 1, 9.2)], '#39424b');
+          poly(ctx, [[305, 195], [645, 165], [705, hy], [275, hy]], '#2e3740');
+          for (const py of [215, 240, 265]) seg(ctx, [300, py], [665, py - 14], 'rgba(130, 150, 168, 0.28)', 1.5);
+          drawPortalArch(ctx, trekAhead, '#0e141a', '#5c6f7e', '俄刻阿諾斯號');
         },
         hotspots: [
           back('c1e_outskirts', '折返東舟市平原'),
@@ -1151,10 +1406,22 @@ export const C1_SCENES = {
           c1sEnter(g, first ? '橫度約六百七十九公尺的巨型金屬艦殼硬生生突出在山體之中。破開的檢修口正對著山腰。' : null);
         },
         draw(ctx, t, s, R) {
-          poly(ctx, [P(-1.8, -0.85, 8.2), P(1.8, -0.85, 8.2), P(1.8, 1, 8.2), P(-1.8, 1, 8.2)], '#3a444e');
+          const hy = P(0, 1, R.depth)[1];
+          drawHills(ctx, hy, [['#414a52', 64, 2.1]]);
+          // Monumental 679m rusted steel hull wall embedded into mountain cliffside
+          poly(ctx, [P(-2.2, -0.92, 8.2), P(2.0, -0.92, 8.2), P(2.0, 1, 8.2), P(-2.2, 1, 8.2)], '#35404a');
+          for (const px of [-1.4, -0.6, 0.2, 1.0]) seg(ctx, P(px, -0.92, 8.2), P(px, 1, 8.2), 'rgba(20, 26, 32, 0.55)', 2);
+          for (const py of [-0.45, 0.05, 0.52]) seg(ctx, P(-2.2, py, 8.2), P(2.0, py, 8.2), 'rgba(20, 26, 32, 0.45)', 2);
+          // Craggy scree rocks flanking base of ship wall
+          poly(ctx, [[0, hy], [0, 320], [185, 345], [275, hy + 18]], '#2e3032');
+          poly(ctx, [[W, hy + 10], [725, 315], [840, 285], [W, 250]], '#292c2e');
           paper(ctx, R, hullNote, 2.6, '#e6e8ea');
-          poly(ctx, hullDoor, '#12161c');
-          txt(ctx, 'OCEANUS', CX(hullDoor), hullDoor[0][1] - 14, '#8db4d4', 12);
+          // Plasma-torn jagged access hatchway
+          const hb = bounds(hullDoor);
+          glow(ctx, hb[0] + hb[2] * 0.5, hb[1] + hb[3] * 0.55, 62, '#62b4e8', 0.22);
+          poly(ctx, hullDoor, '#0f1419');
+          ctx.strokeStyle = '#6c7c8c'; ctx.lineWidth = 2.5; poly(ctx, hullDoor); ctx.stroke();
+          txt(ctx, 'OCEANUS', CX(hullDoor), hullDoor[0][1] - 12, '#9ec3e2', 12);
         },
         hotspots: [
           back('c1e_trek', '離開方舟回東舟市方向'),
@@ -1176,9 +1443,20 @@ export const C1_SCENES = {
           if (first) g.say('長廊兩側嵌著溫熱卻砸不破的深藍舷窗。能源庫離線之後，外部空間已經開始無縫「插進」這段廊道。');
         },
         draw(ctx, t, s, R) {
+          // Ship bulkhead structural wall ribs
+          for (const z of [1.8, 3.3, 5.2, 6.9]) {
+            poly(ctx, [P(-1.5, -1, z), P(-1.42, -1, z), P(-1.42, 1, z), P(-1.5, 1, z)], '#1b222a');
+            poly(ctx, [P(1.42, -1, z), P(1.5, -1, z), P(1.5, 1, z), P(1.42, 1, z)], '#1b222a');
+          }
+          // Warm unbreakable deep-blue armored portholes
           for (const wq of [hallWinL, hallWinR]) {
-            poly(ctx, wq, '#123d73');
-            ctx.strokeStyle = '#5c7c9e'; ctx.lineWidth = 2; poly(ctx, wq); ctx.stroke();
+            const wb = bounds(wq);
+            const gr = ctx.createLinearGradient(0, wb[1], 0, wb[1] + wb[3]);
+            gr.addColorStop(0, '#0f396b');
+            gr.addColorStop(1, '#1a5a96');
+            poly(ctx, wq, gr);
+            ctx.strokeStyle = '#6c849c'; ctx.lineWidth = 3; poly(ctx, wq); ctx.stroke();
+            seg(ctx, [wb[0] + 6, wb[1] + wb[3] * 0.78], [wb[0] + wb[2] - 8, wb[1] + 8], 'rgba(180,225,255,0.22)', 2.5);
           }
           const rem = remainingSubspaces(s);
           const off = !!s.flags.c1s_rescued;
@@ -1187,14 +1465,11 @@ export const C1_SCENES = {
           ];
           for (const [dq, idx] of doorSpecs) {
             const active = !off && idx < rem.length;
-            poly(ctx, dq, active ? '#323c46' : '#060709');
-            ctx.strokeStyle = active ? '#738596' : '#181c22';
-            ctx.lineWidth = 2;
-            poly(ctx, dq); ctx.stroke();
+            drawPortalArch(ctx, dq, active ? '#1e2832' : '#060709', active ? '#6a7d8e' : '#1b2026', active ? '異質門框' : null);
           }
           if (allSubspacesSeen(s)) {
-            poly(ctx, hallDoorSea, '#1a364d');
-            txt(ctx, '海水區・H區 →', CX(hallDoorSea), CY(hallDoorSea), '#a6d6f5', 10);
+            glow(ctx, CX(hallDoorSea), CY(hallDoorSea), 45, '#54a8e8', 0.28);
+            drawPortalArch(ctx, hallDoorSea, '#12293c', '#5fa6d6', '海水區・H區');
           }
         },
         hotspots: [
@@ -1228,8 +1503,23 @@ export const C1_SCENES = {
           c1sEnter(g, first ? '推開門後竟然是一片林子——可抬起頭，樹梢上方依然扣著俄刻阿諾斯號冷硬的艦內天花板。' : null);
         },
         draw(ctx, t, s, R) {
-          for (const tx of [-1.2, -0.5, 0.2, 0.9, 1.3]) {
-            poly(ctx, [P(tx - 0.12, -0.85, 4.8), P(tx + 0.12, -0.85, 4.8), P(tx + 0.16, 1, 4.8), P(tx - 0.16, 1, 4.8)], '#1f2822');
+          // Metallic Oceanus ceiling girders clashing directly above forest trees + rolling fog
+          for (const z of [2.0, 3.8, 5.6]) {
+            poly(ctx, [P(-1.8, -1, z), P(1.8, -1, z), P(1.8, -0.82, z + 0.15), P(-1.8, -0.82, z + 0.15)], '#1f2629');
+          }
+          for (const [tx, z, w] of [[-1.35, 3.6, 0.13], [-0.55, 5.1, 0.11], [0.18, 4.4, 0.14], [0.95, 5.4, 0.11], [1.4, 3.4, 0.13]]) {
+            const bot = P(tx, 1, z), top = P(tx, -0.84, z);
+            const hw = (w * 480) / z;
+            ctx.fillStyle = shade(R, '#1b241f', z);
+            ctx.fillRect(bot[0] - hw, top[1], hw * 2, bot[1] - top[1]);
+            seg(ctx, [bot[0], top[1] + 28], [bot[0] - hw * 2.6, top[1] + 4], '#171f1a', 3);
+            seg(ctx, [bot[0], top[1] + 44], [bot[0] + hw * 2.6, top[1] + 12], '#171f1a', 3);
+          }
+          for (let i = 0; i < 4; i++) {
+            const fy = 285 + i * 32;
+            const drift = Math.sin(t * 0.6 + i) * 18;
+            ctx.fillStyle = `rgba(170, 192, 180, ${0.12 - i * 0.018})`;
+            ctx.fillRect(80 + drift, fy, 800, 18);
           }
         },
         hotspots: [
@@ -1247,11 +1537,21 @@ export const C1_SCENES = {
           c1sEnter(g, first ? '一條昏暗寂靜的小鎮街道平白接在船艙後面。每一扇窗後全都暗著，只有街邊立著一座舊電話亭。' : null);
         },
         draw(ctx, t, s, R) {
-          for (const z of [2.5, 5.0]) {
-            poly(ctx, wallQuad(1.7, -0.5, 0.2, z, z + 1.0), '#151413');
+          // Silent shuttered town houses + sagging overhead wires + lit glass telephone booth
+          for (const z of [2.4, 4.8]) {
+            poly(ctx, wallQuad(1.7, -0.55, 0.35, z, z + 1.1), '#141312');
+            poly(ctx, wallQuad(1.68, -0.2, 0.18, z + 0.25, z + 0.8), '#090909');
           }
+          ctx.strokeStyle = 'rgba(20, 20, 22, 0.75)'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(210, 115); ctx.quadraticCurveTo(480, 148, 760, 110); ctx.stroke();
           box(ctx, R, townBooth);
-          glow(ctx, 290, 265, 58, '#e8a254', 0.28);
+          const tb = boxRect(townBooth);
+          ctx.fillStyle = '#2d1c14';
+          ctx.fillRect(tb[0] + tb[2] * 0.2, tb[1] + tb[3] * 0.18, tb[2] * 0.6, tb[3] * 0.56);
+          ctx.fillStyle = 'rgba(246, 188, 102, 0.45)';
+          ctx.fillRect(tb[0] + tb[2] * 0.24, tb[1] + tb[3] * 0.22, tb[2] * 0.52, tb[3] * 0.48);
+          seg(ctx, [tb[0] + tb[2] * 0.5, tb[1] + tb[3] * 0.32], [tb[0] + tb[2] * 0.58, tb[1] + tb[3] * 0.54], '#1a120e', 2.5);
+          glow(ctx, 290, 265, 68, '#e8a254', 0.32);
         },
         hotspots: [
           back('c1s_hall', '退回艦內長廊'),
@@ -1273,14 +1573,30 @@ export const C1_SCENES = {
           c1sEnter(g, first ? '生鏽的地鐵軌道沿著潮濕土洞一路延伸，車廂在遠處停住。角落的陰暗腐堆旁好像有東西正在窸窣作響。' : null);
         },
         draw(ctx, t, s, R) {
-          seg(ctx, P(-0.45, 1, 1.4), P(-0.32, 1, 7.6), '#5a4e44', 3);
-          seg(ctx, P(0.15, 1, 1.4), P(0.18, 1, 7.6), '#5a4e44', 3);
-          poly(ctx, metroRails, '#25211e');
+          // Timber tunnel shoring ribs, railroad sleepers, rusted rails & dark subway train silhouette
+          for (const z of [1.9, 3.2, 4.7, 6.4]) {
+            const pL = P(-1.5, -0.9, z), pR = P(1.5, -0.9, z);
+            seg(ctx, [pL[0], P(-1.5, 1, z)[1]], pL, '#261e17', 5);
+            seg(ctx, [pR[0], P(1.5, 1, z)[1]], pR, '#261e17', 5);
+            seg(ctx, pL, pR, '#261e17', 4);
+            seg(ctx, P(-0.55, 1, z), P(0.28, 1, z), '#3a2f26', 3.5);
+          }
+          seg(ctx, P(-0.45, 1, 1.4), P(-0.32, 1, 7.6), '#6b5b4e', 3.5);
+          seg(ctx, P(0.15, 1, 1.4), P(0.18, 1, 7.6), '#6b5b4e', 3.5);
+          poly(ctx, metroRails, '#1d1a18');
+          const mb = bounds(metroRails);
+          ctx.fillStyle = '#111214'; ctx.fillRect(mb[0] + mb[2] * 0.14, mb[1] + 6, mb[2] * 0.72, mb[3] * 0.56);
+          ctx.fillStyle = '#2d3238';
+          ctx.fillRect(mb[0] + mb[2] * 0.2, mb[1] + 10, mb[2] * 0.24, mb[3] * 0.24);
+          ctx.fillRect(mb[0] + mb[2] * 0.54, mb[1] + 10, mb[2] * 0.24, mb[3] * 0.24);
           box(ctx, R, metroRats);
           const rp = [CX([P(0.45, 0.65, 2.5), P(1.25, 0.95, 2.9)]), CY([P(0.45, 0.65, 2.5), P(1.25, 0.95, 2.9)])];
-          ctx.fillStyle = '#1b1715';
           for (let i = 0; i < 6; i++) {
-            ctx.beginPath(); ctx.ellipse(rp[0] + (i - 2.5) * 11, rp[1] + (i % 2) * 5, 7, 4, 0.2, 0, Math.PI * 2); ctx.fill();
+            const rx = rp[0] + (i - 2.5) * 11, ry = rp[1] + (i % 2) * 5;
+            ctx.fillStyle = '#1b1715';
+            ctx.beginPath(); ctx.ellipse(rx, ry, 7, 4, 0.2, 0, Math.PI * 2); ctx.fill();
+            seg(ctx, [rx - 6, ry], [rx - 14, ry + 3], '#3d312c', 1);
+            ctx.fillStyle = '#b8a898'; ctx.fillRect(rx + 3, ry - 1, 1.5, 1.5);
           }
         },
         hotspots: [
@@ -1311,9 +1627,16 @@ export const C1_SCENES = {
           }
         },
         draw(ctx, t, s, R) {
-          poly(ctx, [P(-1.8, 0.45, 1.2), P(1.8, 0.45, 1.2), P(1.8, 0.98, 7.9), P(-1.8, 0.98, 7.9)], 'rgba(20, 62, 92, 0.72)');
-          poly(ctx, seaAhead, '#1b242c');
-          txt(ctx, 'H 區', CX(seaAhead), CY(seaAhead), '#b4d6ef', 13);
+          const wg = ctx.createLinearGradient(0, 315, 0, H);
+          wg.addColorStop(0, 'rgba(18, 52, 78, 0.85)');
+          wg.addColorStop(1, 'rgba(12, 38, 60, 0.92)');
+          poly(ctx, [P(-1.8, 0.45, 1.2), P(1.8, 0.45, 1.2), P(1.8, 0.98, 7.9), P(-1.8, 0.98, 7.9)], wg);
+          for (let i = 0; i < 7; i++) {
+            const y = 325 + i * 24, sw = Math.sin(t * 1.6 + i) * 18;
+            seg(ctx, [230 + sw, y], [730 - sw, y], 'rgba(128, 198, 240, 0.24)', 1.5);
+          }
+          glow(ctx, CX(seaAhead), CY(seaAhead), 52, '#5cb4eb', 0.22);
+          drawPortalArch(ctx, seaAhead, '#101820', '#54738c', 'H 區');
         },
         hotspots: [
           back('c1s_hall', '涉水返回艦內長廊'),
@@ -1330,21 +1653,30 @@ export const C1_SCENES = {
           c1sEnter(g, first ? '地上散落著撞毀的無人機殘骸。牆邊站著一具人形機械「管家 1399（ACMA-E-442）」，胸口一顆微弱燈號忽明忽滅。' : null);
         },
         draw(ctx, t, s, R) {
-          // Drone debris on left floor
-          box(ctx, R, { x1: -1.35, x2: -0.75, y1: 0.78, y2: 1, z1: 2.8, z2: 3.4, color: '#394149', edge: true });
-          // Static NPC Butler 1399 (center)
-          ctx.fillStyle = '#48525c'; ctx.fillRect(454, 210, 52, 130);
-          ctx.fillStyle = '#626e7a'; ctx.beginPath(); ctx.arc(480, 190, 20, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#e5a93c'; ctx.fillRect(470, 186, 6, 4); ctx.fillRect(484, 186, 6, 4);
+          // Crashed drone wreckage with broken rotor arms & cracked lens on left floor
+          const dp = P(-1.05, 0.88, 3.1);
+          seg(ctx, [dp[0] - 32, dp[1] - 12], [dp[0] + 28, dp[1] + 10], '#3e4750', 3.5);
+          seg(ctx, [dp[0] - 24, dp[1] + 12], [dp[0] + 26, dp[1] - 14], '#3e4750', 3.5);
+          ctx.fillStyle = '#2d343b'; ctx.beginPath(); ctx.ellipse(dp[0], dp[1], 22, 10, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#a83838'; ctx.beginPath(); ctx.arc(dp[0] + 5, dp[1] + 1, 3.5, 0, Math.PI * 2); ctx.fill();
+          // Articulated Butler 1399 humanoid chassis with weld seams & glowing chest LED
+          ctx.fillStyle = '#3b444e';
+          ctx.fillRect(444, 212, 72, 22);
+          ctx.fillRect(454, 210, 52, 128);
+          seg(ctx, [454, 240], [506, 265], '#242a30', 2);
+          seg(ctx, [480, 212], [480, 338], '#2b323a', 1.5);
+          ctx.fillStyle = '#5a6672'; ctx.beginPath(); ctx.arc(480, 188, 20, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#262c33'; ctx.fillRect(466, 182, 28, 10);
+          ctx.fillStyle = '#e5a93c'; ctx.fillRect(470, 185, 6, 4); ctx.fillRect(484, 185, 6, 4);
           ctx.fillStyle = s.flags.c1s_butler_following ? '#52d17c' : '#5aa6e8';
           ctx.beginPath(); ctx.arc(480, 248, 5, 0, Math.PI * 2); ctx.fill();
+          glow(ctx, 480, 248, 16, s.flags.c1s_butler_following ? '#52d17c' : '#5aa6e8', 0.35);
           // Hideout doorway (left wall)
-          poly(ctx, hHideoutDoor, '#191614');
-          txt(ctx, '隱蔽處', CX(hHideoutDoor), CY(hHideoutDoor), '#d6c4ae', 10);
-          // Follow toggle button panel on right
+          drawPortalArch(ctx, hHideoutDoor, '#0f0d0c', '#63594f', '隱蔽處');
+          // Follow toggle bulkhead console on right
           if (!s.flags.c1s_rescued) {
-            ctx.fillStyle = '#242c34'; ctx.fillRect(585, 210, 190, 95);
-            ctx.strokeStyle = s.flags.c1s_butler_following ? '#62c47e' : '#587896'; ctx.strokeRect(585, 210, 190, 95);
+            ctx.fillStyle = '#1f2730'; ctx.fillRect(585, 210, 190, 95);
+            ctx.strokeStyle = s.flags.c1s_butler_following ? '#62c47e' : '#587896'; ctx.lineWidth = 2; ctx.strokeRect(585, 210, 190, 95);
             txt(ctx, s.flags.c1s_butler_following ? '管家：跟隨中（點此留下他）' : '管家：留在原地（點此同行）', 680, 260, '#dce6ee', 11);
           }
         },
@@ -1381,16 +1713,22 @@ export const C1_SCENES = {
             : (first ? '你獨自穿過漆黑狹縫。設備箱後面縮著一位高燒未退、死死抓著布毯的女子——「落君」。' : null));
         },
         draw(ctx, t, s, R) {
+          // Cramped maintenance hideout conduits + cot & field lantern + wrapped-blanket Junjun
+          seg(ctx, P(-1.4, -0.4, 1.5), P(-1.4, -0.4, 6.2), '#48403a', 4);
+          glow(ctx, 370, 290, 88, '#e8a85c', 0.2);
           if (s.flags.c1s_butler_near) {
-            ctx.fillStyle = '#3c4650'; ctx.fillRect(150, 210, 44, 118);
+            ctx.fillStyle = '#343e48'; ctx.fillRect(150, 210, 44, 118);
+            ctx.fillStyle = '#4e5b68'; ctx.beginPath(); ctx.arc(172, 196, 15, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#e5a93c'; ctx.fillRect(164, 194, 5, 4); ctx.fillRect(175, 194, 5, 4);
           }
           if (!s.flags.c1s_rescued) {
-            ctx.fillStyle = '#4f463d'; ctx.fillRect(442, 235, 76, 112);
-            ctx.fillStyle = '#d4b49c'; ctx.beginPath(); ctx.arc(480, 212, 18, 0, Math.PI * 2); ctx.fill();
+            poly(ctx, [[415, 348], [435, 232], [525, 232], [545, 348]], '#52493e');
+            ctx.fillStyle = '#2e2520'; ctx.beginPath(); ctx.arc(480, 212, 22, Math.PI * 0.9, Math.PI * 2.1); ctx.fill();
+            ctx.fillStyle = '#d4b49c'; ctx.beginPath(); ctx.arc(480, 214, 15, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#241d19'; ctx.fillRect(466, 200, 28, 8);
             if (s.flags.c1s_junjun_met && !s.flags.c1s_butler_near) {
-              ctx.fillStyle = '#344c3c'; ctx.fillRect(615, 240, 180, 90);
-              ctx.strokeStyle = '#6ec288'; ctx.strokeRect(615, 240, 180, 90);
+              ctx.fillStyle = '#263a2e'; ctx.fillRect(615, 240, 180, 90);
+              ctx.strokeStyle = '#6ec288'; ctx.lineWidth = 2; ctx.strokeRect(615, 240, 180, 90);
               txt(ctx, '帶落君離開送醫', 705, 289, '#e4f7ea', 12);
             }
           }
