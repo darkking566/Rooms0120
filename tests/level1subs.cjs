@@ -192,6 +192,7 @@ const { chromium } = require('playwright');
     check(!(await hotIds()).includes('back'), 'there is no way back through the window');
     await hit('window'); check((await msg()).includes('畫上去的'), 'the window behind you is painted on');
     await hit('log'); await closeDoc();
+    await hit('report'); check((await state()).notes.includes('n15_meg'), 'the M.E.G. report has given up on anyone inside'); await closeDoc();
     await hit('forward'); await shot('l1s-12-halls');
     let nav = (await flags()).l15_nav;
     const labels = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.label));

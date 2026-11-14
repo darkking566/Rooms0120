@@ -270,6 +270,7 @@ function hangingChair(ctx, R, x, z) {
 const window15R = { hw: 1.2, depth: 7, fogEnd: 9, pal: inv, baseboard: false, lights: [2, 4.5], floorTex: 'concrete', stripes: true };
 const paintedWindow = wallQuad(-1.2, -0.6, 0.2, 2.0, 3.0);
 const logQ = [P(0.2, 1, 2.2), P(0.6, 1, 2.2), P(0.6, 1, 2.6), P(0.2, 1, 2.6)];
+const reportQ = wallQuad(1.2, -0.5, 0.0, 2.2, 2.8);
 const halls15R = { hw: 3.0, depth: 10, fogEnd: 6, pal: inv, baseboard: false, lights: [2.5, 5], floorTex: 'concrete' };
 const WHISPER_AT = { left: [-2.2, -0.1, 5.5], ahead: [0, -0.2, 8], right: [2.2, -0.1, 5.5] };
 const motherPal = pal('#5a1a1c', '#2a0a0c', '#3a1012', '#080102', '#ff8070');
@@ -715,6 +716,7 @@ export const LEVEL1_SUB_SCENES = {
       seg(ctx, [x + w / 2, y], [x + w / 2, y + h], shade(R, '#1a1a1e', 2.5), 3);
       seg(ctx, [x, y + h / 2], [x + w, y + h / 2], shade(R, '#1a1a1e', 2.5), 3);
       paper(ctx, R, logQ, 2.4, '#d8d4c8');
+      paper(ctx, R, reportQ, 2.5, '#e8e4d8');
       for (const z of R.lights) { const c = P(0, -1, z + 0.2); ctx.fillStyle = 'rgba(255,248,230,0.25)'; ctx.beginPath(); ctx.moveTo(c[0] - 30, c[1]); ctx.lineTo(c[0] + 30, c[1]); ctx.lineTo(c[0] + 80, c[1] + 140 / z * 2); ctx.lineTo(c[0] - 80, c[1] + 140 / z * 2); ctx.fill(); }
     },
     drawOver(ctx) { invert(ctx); },
@@ -724,6 +726,7 @@ export const LEVEL1_SUB_SCENES = {
         if (once(g, 'l15_painted')) g.sanity(-5);
       }),
       hit('log', bounds(logQ, 10), '地上的紙', (g) => g.read('n15_log')),
+      hit('report', bounds(reportQ, 8), '釘在牆上的 M.E.G. 報告', (g) => g.read('n15_meg', () => { if (once(g, 'l15_report')) g.sanity(-6); })),
       { ...FORWARD('l15_halls', '往低語聲的方向走'), click: (g) => { g.flag('l15_nav', null); g.go('l15_halls'); } },
     ],
   },
