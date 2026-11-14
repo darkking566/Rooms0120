@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { SCENES, LEVELS } from '../src/scenes.js';
 import { ITEMS } from '../src/items.js';
 import { NOTES } from '../src/notes.js';
-import { ENDINGS } from '../src/endings.js';
+import { ENDINGS, COMPLETIONS } from '../src/endings.js';
+import { SCARES } from '../src/scares.js';
+import { GHOST_LOOT } from '../src/flavor.js';
 import { migrate, SCENE_ALIASES, FALLBACK_SCENE, SAVE_VERSION, MIGRATIONS } from '../src/save.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -37,6 +39,9 @@ refs('items given, taken or checked', /\b(?:give|take|has)\('([\w.]+)'/g, ITEMS)
 refs('notes read', /\bread\('([\w.]+)'/g, NOTES);
 refs('endings', /\bend\('(\w+)'/g, ENDINGS);
 refs('trap endings', /\bend: '(\w+)'/g, ENDINGS);
+refs('scare kinds', /\bscare\([^;]*?,\s*\d+,\s*'(\w+)'\)/g, SCARES);
+check([...COMPLETIONS].every((k) => ENDINGS[k]), 'every ending that finishes the game exists');
+check(GHOST_LOOT.every((id) => ITEMS[id]), 'supply crates only hold real items');
 
 console.log('Scenes');
 {

@@ -1,13 +1,14 @@
 // Game loop, state, input and UI glue.
-import { W, H, P, drawRoom, postFX, drawDark, drawSmiler, drawViewfinder, drawFigure, box, boxRect, clamp } from './render.js';
+import { W, H, P, drawRoom, postFX, drawDark, drawViewfinder, drawFigure, box, boxRect, clamp } from './render.js';
 import { SCENES, LEVELS, smilerRect, drawSmilers } from './scenes.js';
 import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
 import { Sound } from './audio.js';
-import { drawDrowned, drawGrowler } from './sublevels.js';
+import { drawScare } from './scares.js';
+import { WHISPERS, GHOST_LOOT } from './flavor.js';
 import { rand, pick, seedRandom, setRandom } from './rng.js';
 import { migrate, SAVE_VERSION } from './save.js';
-import { ENDINGS } from './endings.js';
+import { ENDINGS, COMPLETIONS } from './endings.js';
 
 const SAVE_KEY = 'rooms0120.save.v1';
 const CP_KEY = 'rooms0120.checkpoint.v1';
@@ -178,7 +179,7 @@ const g = {
     ended = true;
     closeModal();
     sound.setHum(null);
-    if (kind === 'escape') { store.del(SAVE_KEY); store.del(CP_KEY); }
+    if (COMPLETIONS.has(kind)) { store.del(SAVE_KEY); store.del(CP_KEY); }
     showEnding(kind);
   },
 };
@@ -196,20 +197,7 @@ function needs(L) {
   else if (h0 >= 25 && S.hunger < 25) g.say('肚子餓得咕咕叫。你已經想不起上一次吃東西是什麼時候。');
 }
 
-const WHISPERS = [
-  '你聽見有人在叫你的名字。不，是燈管的聲音。',
-  '牆壁好像在呼吸。',
-  '你的手在發抖。也許該喝點什麼。',
-  '你忘了自己為什麼要往前走。',
-  '你試著回想外面的天空是什麼顏色。想不起來。',
-  '有人在你耳邊數數。數到你的時候停了。',
-  '你的影子比你慢了半步。',
-  '你突然很確定，這不是你第一次走到這裡。',
-  '你想不起上一次聽見別人的聲音，是什麼時候。',
-];
-
 // Level 1: something keeps pace with you in the halls. Corridors and safe rooms shake it off.
-const GHOST_LOOT = ['almond', 'bar', 'can', 'almond'];
 function follower(sc, id, free) {
   if (S.ghost && S.ghost.scene !== id) S.ghost = null;
   if (sc.safe) { if (S.dread >= 3) g.say('你靠在門後，聽著外面的腳步聲慢慢走遠。'); S.dread = 0; return; }
@@ -541,7 +529,7 @@ function showEnding(kind) {
   });
   const found = S.notes.length, total = Object.keys(NOTES).length;
   $('#endStats').textContent = `走了 ${S.moves} 步・找到 ${found} / ${total} 張紙條`;
-  $('#btnRetry').hidden = kind === 'escape' || !valid(load(CP_KEY));
+  $('#btnRetry').hidden = COMPLETIONS.has(kind) || !valid(load(CP_KEY));
   el.hidden = false;
   playing = false;
   $('#hud').hidden = true;
@@ -575,8 +563,7 @@ function frame(now) {
       f.t -= dt;
       if (f.t <= 0) {
         S.flicker = null;
-        g.scare(S.scene, '有什麼東西在黑暗中撲了上來——你拚命掙脫。燈終於亮回來了，門上留著四道爪痕。');
-        scareKind = 'claws';
+        g.scare(S.scene, '有什麼東西在黑暗中撲了上來——你拚命掙脫。燈終於亮回來了，門上留著四道爪痕。', 25, 'claws');
       }
     }
   }
@@ -665,23 +652,7 @@ function frame(now) {
     ctx.fillRect(0, 0, W, H);
     const shake = 14 * k;
     const sx = W / 2 + (Math.random() - 0.5) * shake, sy = H / 2 + (Math.random() - 0.5) * shake;
-    if (scareKind === 'claws') {
-      ctx.save();
-      ctx.strokeStyle = `rgba(200,30,30,${Math.min(1, k * 2)})`; ctx.lineCap = 'round';
-      for (let i = 0; i < 4; i++) {
-        ctx.lineWidth = 10 - i;
-        ctx.beginPath(); ctx.moveTo(sx - 160 + i * 70, sy - 180); ctx.lineTo(sx - 60 + i * 70, sy + 180); ctx.stroke();
-      }
-      ctx.restore();
-    } else if (scareKind === 'figure') {
-      drawFigure(ctx, sx, H + 40, H * (1.2 + (1.1 - k) * 0.8), Math.min(1, k * 2));
-    } else if (scareKind === 'drowned') {
-      drawDrowned(ctx, sx, H + 30, 2.6 + (1.1 - k) * 1.6, t, Math.min(1, k * 2));
-    } else if (scareKind === 'growler') {
-      drawGrowler(ctx, sx, sy - 40, 3 + (1.1 - k) * 3, Math.min(1, k * 2), t);
-    } else {
-      drawSmiler(ctx, sx, sy, 5 + (1.1 - k) * 4, Math.min(1, k * 2), t);
-    }
+    drawScare(ctx, scareKind, sx, sy, k, t);
     if (k > 0.9) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(0, 0, W, H); }
     scareT -= dt;
     if (scareT <= 0 && !ended) {

@@ -364,6 +364,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
     console.log(`  · at the exit after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
   await hit('exit');
   check(await endingIs('escape'), 'escape ending shown');
+  check(!(await page.isVisible('#btnRetry')), 'no retry after finishing the game');
   check((await page.textContent('#endTitle')).includes('結案'), 'writing your name gives the closed-case ending');
   await shot('42-ending');
 
@@ -410,9 +411,12 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await page.waitForTimeout(200);
   await slot('camcorder'); await hit('drawer0120');
   check(await endingIs('archive'), 'filing the camcorder in drawer 0120 gives the 0120 ending');
+  check(!(await page.isVisible('#btnRetry')), 'the 0120 ending finishes the game: no retry');
+  await page.reload(); await page.waitForSelector('#btnNew');
+  check(!(await page.isVisible('#btnCont')), 'the 0120 ending clears the save');
 
   console.log('Void and filed endings');
-  await page.click('#btnRetry'); await started();
+  await page.click('#btnNew'); await started();
   await page.evaluate(() => window.__rooms.g.go('l2_rail', { free: true }));
   if (await page.evaluate(() => window.__rooms.state.view)) await page.keyboard.press('v');
   await hit('void'); await hit('forward');
@@ -425,6 +429,8 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(!(await page.evaluate(() => window.__rooms.state.flags.rec)) || (await page.evaluate(() => window.__rooms.state.flags.watched_tape5)), 'your name stays out of reach without tape #5');
   await hit('rec_filed');
   check(await endingIs('filed'), 'filing record 0120 gives the filed ending');
+  check(!(await page.isVisible('#btnRetry')), 'the filed ending finishes the game: no retry');
+  check(await page.evaluate(() => !localStorage.getItem('rooms0120.save.v1') && !localStorage.getItem('rooms0120.checkpoint.v1')), 'the filed ending clears the save and checkpoint');
 
   console.log('Phone layout');
   const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });

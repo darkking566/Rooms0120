@@ -1,4 +1,9 @@
 // Ending texts. showEnding() in main.js adds variations to some of them depending on flags.
+
+// Endings that finish the game: they clear the save and checkpoint and offer no retry.
+// Every other ending lets you retry from the last checkpoint.
+export const COMPLETIONS = new Set(['escape', 'archive', 'filed']);
+
 export const ENDINGS = {
   escape: {
     title: '— 逃脫結局 —',
