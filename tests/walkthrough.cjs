@@ -1,8 +1,9 @@
 // End-to-end playthrough in headless Chromium: plays the whole game with real mouse clicks.
-// Run: npm test            (set SHOTS=<dir> to also save a screenshot of every scene)
+// Run: npm test            (set SHOTS=<dir> to also save a screenshot of every scene; SEED=<n> picks the random seed)
 const path = require('node:path');
 const fs = require('node:fs');
 const { chromium } = require('playwright');
+const { SEED, seedPage } = require('./seed.cjs');
 
 const SHOTS = process.env.SHOTS;
 let failures = 0;
@@ -15,7 +16,8 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   const url = `http://127.0.0.1:${server.address().port}/`;
 
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-  const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+  console.log(`Seed ${SEED}`);
+  const page = await seedPage(await browser.newPage({ viewport: { width: 1200, height: 900 } }));
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -210,6 +212,19 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   { const st = await page.evaluate(() => window.__rooms.state);
     console.log(`  · entering Level 1 after ${st.moves} steps: 清醒度 ${st.sanity.toFixed(0)}, 水分 ${st.thirst.toFixed(0)}, 飽足 ${st.hunger.toFixed(0)}`); }
   console.log('Level 1 — Habitable Zone');
+  const covered = await page.evaluate(async () => {
+    const { SCENES } = await import('/src/scenes.js');
+    const g = window.__rooms.ghostRect, out = [];
+    for (const [id, sc] of Object.entries(SCENES)) {
+      if (sc.level !== 1 || !sc.hall) continue;
+      for (const h of sc.hotspots) {
+        const r = h.rect;
+        if (r && r[0] < g[0] + g[2] && g[0] < r[0] + r[2] && r[1] < g[1] + g[3] && g[1] < r[1] + r[3]) out.push(`${id}/${h.id}`);
+      }
+    }
+    return out;
+  });
+  check(covered.length === 0, `the random supply crate covers no Level 1 hall hotspot${covered.length ? ` (${covered.join(', ')})` : ''}`);
   await hit('crate'); check(await has('torch_empty'), 'found empty flashlight');
   await hit('forward'); check(await scene() === 'l1_crates', 'warehouse'); await shot('25-l1_crates');
   await hit('note'); await closeDoc();
@@ -430,7 +445,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await page.isVisible('#ending') && (await page.getAttribute('#ending', 'data-kind')) === 'filed', 'filing record 0120 gives the filed ending');
 
   console.log('Phone layout');
-  const phone = await browser.newPage({ viewport: { width: 375, height: 740 } });
+  const phone = await seedPage(await browser.newPage({ viewport: { width: 375, height: 740 } }));
   await phone.goto(url);
   const sw = await phone.evaluate(() => document.documentElement.scrollWidth);
   check(sw <= 375, `no horizontal scroll at phone width (${sw}px)`);

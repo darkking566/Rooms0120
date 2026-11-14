@@ -221,7 +221,8 @@ function follower(sc, id, free) {
   else if (S.dread >= 5) g.say('霧裡有個人影，一直和你保持著同樣的距離。你停下來，它也停下來。');
   else if (S.dread === 3) g.say('你身後的腳步聲，和你的步伐對不上。');
 }
-const GHOST_CRATE = { x1: -0.35, x2: 0.35, y1: 0.55, y2: 1, z1: 1.6, z2: 2.0, color: '#7a5e3c', edge: true };
+// low in the right foreground, clear of every Level 1 hall hotspot (tests/walkthrough.cjs checks this)
+const GHOST_CRATE = { x1: 0.5, x2: 0.95, y1: 0.86, y2: 1, z1: 1.05, z2: 1.3, color: '#7a5e3c', edge: true };
 
 // ---------- hotspots & input ----------
 const roomOf = (sc) => (typeof sc.room === 'function' ? sc.room(S) : sc.room);
@@ -790,4 +791,5 @@ window.__rooms = {
   get modal() { return modal; },
   get ended() { return ended; },
   hotspots: () => visible().map((h) => ({ id: h.id, rect: h.rect, label: h.label })),
+  ghostRect: boxRect(GHOST_CRATE, 6),
 };

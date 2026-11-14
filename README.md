@@ -31,6 +31,14 @@ npm test
 
 Plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
 
+The game's random events (the supply crate behind you in Level 1, hum surges, whispers and so on) come from `Math.random`, which both suites replace with a seeded generator so every run is the same. The seed defaults to 1 and is printed at the start of each suite. To try a different one, set `SEED` to an integer:
+
+```bash
+SEED=7 npm test
+```
+
+If a run fails, rerun with the same `SEED` to reproduce it.
+
 The second suite walks all four sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`.
 
 ## How it's built

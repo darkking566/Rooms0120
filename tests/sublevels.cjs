@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
 const { chromium } = require('playwright');
+const { SEED, seedPage } = require('./seed.cjs');
 
 (async () => {
   const { createServer } = await import('../server.mjs');
@@ -11,7 +12,8 @@ const { chromium } = require('playwright');
   let browser;
   try {
     browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
-    let page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+    console.log(`Seed ${SEED}`);
+    let page = await seedPage(await browser.newPage({ viewport: { width: 1200, height: 900 } }));
     const errors = [];
     const watch = (p) => {
       p.on('pageerror', (e) => errors.push(e.message));
@@ -306,7 +308,7 @@ const { chromium } = require('playwright');
 
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
-    page = await mobile.newPage(); watch(page);
+    page = await seedPage(await mobile.newPage()); watch(page);
     await start(); await hit('side'); await hit('annex'); await shot('sub-13-phone-annex');
     // Reach each branch, tapping the final entrance with the same canvas coordinate conversion.
     const tap = async (id) => {
