@@ -20,6 +20,33 @@ export function glow(ctx, x, y, r, color, a = 1) {
   ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); ctx.restore();
 }
 export function outline(ctx, pts, color, w = 2) { ctx.strokeStyle = color; ctx.lineWidth = w; poly(ctx, pts); ctx.stroke(); }
+export const qpt = ([a, b, c, d], u, v) => {
+  const iu = 1 - u, iv = 1 - v;
+  return [
+    iu * iv * a[0] + u * iv * b[0] + u * v * c[0] + iu * v * d[0],
+    iu * iv * a[1] + u * iv * b[1] + u * v * c[1] + iu * v * d[1],
+  ];
+};
+export const qsub = (pts, u1, v1, u2, v2) => [
+  qpt(pts, u1, v1), qpt(pts, u2, v1), qpt(pts, u2, v2), qpt(pts, u1, v2),
+];
+export function qtxt(ctx, str, pts, u1, v1, u2, v2, color = '#e2ebf2', size = 10) {
+  let L0 = qpt(pts, u1, v1), R0 = qpt(pts, u2, v1);
+  let L1 = qpt(pts, u1, v2), R1 = qpt(pts, u2, v2);
+  if (L0[0] > R0[0]) { [L0, R0, L1, R1] = [R0, L0, R1, L1]; }
+  const ml = [(L0[0] + L1[0]) * 0.5, (L0[1] + L1[1]) * 0.5];
+  const mr = [(R0[0] + R1[0]) * 0.5, (R0[1] + R1[1]) * 0.5];
+  const dx = mr[0] - ml[0], dy = mr[1] - ml[1];
+  const slope = dx > 4 ? dy / dx : 0;
+  ctx.save();
+  ctx.translate((ml[0] + mr[0]) * 0.5, (ml[1] + mr[1]) * 0.5);
+  ctx.transform(1, slope, 0, 1, 0, 0);
+  ctx.fillStyle = color;
+  ctx.font = `${size}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText(str, 0, size * 0.35, Math.max(20, dx * 0.9));
+  ctx.restore();
+}
 // Darkness with soft holes where light falls: [[x, y, r], ...]
 let darkCv = null;
 export function darkness(ctx, alpha, holes) {

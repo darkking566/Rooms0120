@@ -7,7 +7,7 @@
 
 import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from './render.js';
 import { rand } from './rng.js';
-import { back, glow, hit, once, pal, room, txt } from './levels/sublevel-kit.js';
+import { back, glow, hit, once, outline, pal, qpt, qsub, qtxt, room, txt } from './levels/sublevel-kit.js';
 
 export const C1_LEVELS = {
   'C1': { name: 'LEVEL C-1', sub: '偏路', drain: 1.2, thirst: 0.8, hunger: 0.8 },
@@ -96,29 +96,17 @@ function c1DrawOver(ctx) {
 }
 
 function drawWhiteDoor(ctx, pts, plate = null) {
-  const b = bounds(pts);
-  ctx.fillStyle = 'rgba(130, 145, 160, 0.22)';
-  ctx.fillRect(b[0] - 4, b[1] - 4, b[2] + 8, b[3] + 4);
+  poly(ctx, qsub(pts, -0.04, -0.025, 1.04, 1.0), 'rgba(130, 145, 160, 0.22)');
   poly(ctx, pts, '#fafcfd');
-  ctx.strokeStyle = '#c4cfd9';
-  ctx.lineWidth = 2.5;
-  poly(ctx, pts);
-  ctx.stroke();
-  const mx = b[0] + b[2] * 0.14, mw = b[2] * 0.72;
-  ctx.strokeStyle = '#dde5ec';
-  ctx.lineWidth = 1.2;
-  ctx.strokeRect(mx, b[1] + b[3] * 0.09, mw, b[3] * 0.34);
-  ctx.strokeRect(mx, b[1] + b[3] * 0.50, mw, b[3] * 0.39);
-  ctx.fillStyle = '#9aa6b2';
-  ctx.fillRect(b[0] + b[2] * 0.76, b[1] + b[3] * 0.53, Math.max(4, b[2] * 0.11), Math.max(2, b[3] * 0.025));
+  outline(ctx, pts, '#c4cfd9', 2.5);
+  outline(ctx, qsub(pts, 0.14, 0.09, 0.86, 0.43), '#dde5ec', 1.2);
+  outline(ctx, qsub(pts, 0.14, 0.50, 0.86, 0.89), '#dde5ec', 1.2);
+  poly(ctx, qsub(pts, 0.74, 0.52, 0.85, 0.545), '#9aa6b2');
   if (plate) {
-    const px = b[0] + b[2] * 0.24, py = b[1] + b[3] * 0.25, pw = b[2] * 0.52, ph = Math.max(13, b[3] * 0.1);
-    ctx.fillStyle = '#d8e0e6';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.strokeStyle = '#94a2ae';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(px, py, pw, ph);
-    txt(ctx, plate, px + pw * 0.5, py + ph * 0.68, '#3f4a54', Math.max(9, Math.round(b[2] * 0.14)));
+    const pp = qsub(pts, 0.24, 0.25, 0.76, 0.35);
+    poly(ctx, pp, '#d8e0e6');
+    outline(ctx, pp, '#94a2ae', 1);
+    qtxt(ctx, plate, pts, 0.24, 0.25, 0.76, 0.35, '#3f4a54', Math.max(9, Math.round(bounds(pts)[2] * 0.14)));
   }
 }
 
@@ -207,19 +195,17 @@ function drawSignPost(ctx, pts, label, sub, bg = '#4c565c', edge = '#8fa0aa') {
 }
 
 function drawPortalArch(ctx, pts, inner, trim, label) {
-  const b = bounds(pts);
   poly(ctx, pts, trim);
-  const inset = 5;
-  ctx.fillStyle = inner;
-  ctx.fillRect(b[0] + inset, b[1] + inset, Math.max(4, b[2] - inset * 2), Math.max(4, b[3] - inset));
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(b[0] + 1, b[1] + 1, b[2] - 2, b[3] - 2);
+  poly(ctx, qsub(pts, 0.08, 0.04, 0.92, 1.0), inner);
+  if (Math.abs(pts[0][1] - pts[1][1]) > 3) {
+    poly(ctx, qsub(pts, 0.82, 0.04, 0.92, 1.0), 'rgba(0,0,0,0.3)');
+  }
+  outline(ctx, qsub(pts, 0.015, 0.01, 0.985, 0.99), 'rgba(255,255,255,0.18)', 1.5);
   if (label) {
-    ctx.fillStyle = '#1e242a';
-    ctx.fillRect(b[0] + 4, b[1] - 18, b[2] - 8, 16);
-    ctx.strokeStyle = trim; ctx.lineWidth = 1;
-    ctx.strokeRect(b[0] + 4, b[1] - 18, b[2] - 8, 16);
-    txt(ctx, label, b[0] + b[2] * 0.5, b[1] - 6, '#e2ebf2', 10);
+    const lp = qsub(pts, 0.04, -0.14, 0.96, -0.02);
+    poly(ctx, lp, '#1e242a');
+    outline(ctx, lp, trim, 1);
+    qtxt(ctx, label, pts, 0.04, -0.14, 0.96, -0.02, '#e2ebf2', 10);
   }
 }
 
@@ -244,25 +230,22 @@ function drawTimberCabin(ctx, pts) {
 }
 
 function drawContainCell(ctx, pts, code, drawInside) {
-  const b = bounds(pts);
-  const [x, y, w, h] = b;
   poly(ctx, pts, '#424950');
-  ctx.strokeStyle = '#7c8892'; ctx.lineWidth = 2.5; poly(ctx, pts); ctx.stroke();
-  const gx = x + w * 0.16, gy = y + h * 0.22, gw = w * 0.68, gh = h * 0.42;
+  outline(ctx, pts, '#7c8892', 2.5);
+  const win = qsub(pts, 0.16, 0.22, 0.84, 0.64);
+  const wb = bounds(win);
   ctx.save();
-  ctx.fillStyle = '#181e24';
-  ctx.fillRect(gx, gy, gw, gh);
-  ctx.beginPath(); ctx.rect(gx, gy, gw, gh); ctx.clip();
-  if (drawInside) drawInside(gx, gy, gw, gh);
-  seg(ctx, [gx + gw * 0.15, gy + gh * 0.85], [gx + gw * 0.65, gy + gh * 0.12], 'rgba(200,225,240,0.16)', 3);
+  poly(ctx, win, '#181e24');
+  ctx.clip();
+  if (drawInside) drawInside(wb[0], wb[1], wb[2], wb[3]);
+  seg(ctx, qpt(win, 0.15, 0.85), qpt(win, 0.65, 0.12), 'rgba(200,225,240,0.16)', 3);
   ctx.restore();
-  ctx.strokeStyle = '#8fa0ac'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(gx, gy, gw, gh);
-  ctx.fillStyle = '#20262c';
-  ctx.fillRect(x + w * 0.2, y + 6, w * 0.6, 18);
-  txt(ctx, code, x + w * 0.5, y + 19, '#e0eaf2', 11);
+  outline(ctx, win, '#8fa0ac', 1.5);
+  poly(ctx, qsub(pts, 0.18, 0.04, 0.82, 0.15), '#20262c');
+  qtxt(ctx, code, pts, 0.18, 0.04, 0.82, 0.15, '#e0eaf2', 11);
+  const led = qpt(pts, 0.86, 0.095);
   ctx.fillStyle = '#e5a93c';
-  ctx.beginPath(); ctx.arc(x + w * 0.82, y + 15, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(led[0], led[1], 2.5, 0, Math.PI * 2); ctx.fill();
 }
 
 const c1EntryBox = { x1: 0.72, x2: 1.42, y1: 0.58, y2: 1, z1: 1.65, z2: 2.35, color: '#9c7d54', top: '#b8986b', edge: true };
@@ -596,8 +579,7 @@ export const C1_SCENES = {
             poly(ctx, [P(-1.8, 0.9, z), P(-1.45, 0.9, z), P(-1.4, 1, z + 1.1), P(-1.8, 1, z + 1.1)], '#524234');
           }
           paper(ctx, R, gateNoticeQuad, 2.7, '#eef0ec');
-          const nb = bounds(gateNoticeQuad);
-          ctx.fillStyle = '#365872'; ctx.fillRect(nb[0] + 2, nb[1] + 2, nb[2] - 4, 5);
+          poly(ctx, qsub(gateNoticeQuad, 0.03, 0.03, 0.97, 0.14), '#365872');
           box(ctx, R, gateDeskBox);
           glow(ctx, 735, 310, 42, '#ffdba0', 0.25);
           if (!s.flags.c1e_got_recorder && !s.flags.c1e_013_done) {
@@ -1463,7 +1445,7 @@ export const C1_SCENES = {
             gr.addColorStop(1, '#1a5a96');
             poly(ctx, wq, gr);
             ctx.strokeStyle = '#6c849c'; ctx.lineWidth = 3; poly(ctx, wq); ctx.stroke();
-            seg(ctx, [wb[0] + 6, wb[1] + wb[3] * 0.78], [wb[0] + wb[2] - 8, wb[1] + 8], 'rgba(180,225,255,0.22)', 2.5);
+            seg(ctx, qpt(wq, 0.14, 0.82), qpt(wq, 0.84, 0.14), 'rgba(180,225,255,0.22)', 2.5);
           }
           const rem = remainingSubspaces(s);
           const off = !!s.flags.c1s_rescued;

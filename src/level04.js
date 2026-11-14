@@ -3,7 +3,7 @@
 // Layer-fission timing compression, puzzles, scene text and J.H. notes are original.
 
 import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, wallQuad } from './render.js';
-import { back, glow, hit, once, pal, room, txt } from './levels/sublevel-kit.js';
+import { back, glow, hit, once, outline, pal, qpt, qsub, qtxt, room, txt } from './levels/sublevel-kit.js';
 
 export const L04_LEVELS = {
   '0.4': { name: 'LEVEL 0.4', sub: '碾城', drain: 1.5, thirst: 1.5, hunger: 1.2 },
@@ -122,16 +122,16 @@ function drawTowerBlock(ctx, hy, x, w, h, shadeCol) {
 }
 
 function drawArchSign(ctx, pts, inner, trim, label) {
-  const b = bounds(pts);
   poly(ctx, pts, trim);
-  ctx.fillStyle = inner;
-  ctx.fillRect(b[0] + 4, b[1] + 4, Math.max(4, b[2] - 8), Math.max(4, b[3] - 4));
+  poly(ctx, qsub(pts, 0.07, 0.04, 0.93, 1.0), inner);
+  if (Math.abs(pts[0][1] - pts[1][1]) > 3) {
+    poly(ctx, qsub(pts, 0.83, 0.04, 0.93, 1.0), 'rgba(0,0,0,0.3)');
+  }
   if (label) {
-    ctx.fillStyle = '#1b1f24';
-    ctx.fillRect(b[0] + 2, b[1] - 18, b[2] - 4, 16);
-    ctx.strokeStyle = trim; ctx.lineWidth = 1;
-    ctx.strokeRect(b[0] + 2, b[1] - 18, b[2] - 4, 16);
-    txt(ctx, label, b[0] + b[2] * 0.5, b[1] - 6, '#e2e8ee', 10);
+    const lp = qsub(pts, 0.04, -0.14, 0.96, -0.02);
+    poly(ctx, lp, '#1b1f24');
+    outline(ctx, lp, trim, 1);
+    qtxt(ctx, label, pts, 0.04, -0.14, 0.96, -0.02, '#e2e8ee', 10);
   }
 }
 
@@ -253,12 +253,12 @@ export const L04_SCENES = {
       drawStreetRoad(ctx, hy, [[-1.65, 2.3], [1.65, 2.3], [-1.65, 5.1], [1.65, 5.1], [-1.65, 7.6], [1.65, 7.6]], t);
       // Crimson-walled Red Hall (Hunters Guild HQ) wing grounded to sidewalk
       poly(ctx, wallQuad(-2.02, -0.88, 1, 2.1, 4.4), '#441a1d');
-      const hb = bounds(weiHunterDoor);
       poly(ctx, weiHunterDoor, '#5c2427');
-      ctx.fillStyle = '#381618'; ctx.fillRect(hb[0] + hb[2] * 0.25, hb[1] + hb[3] * 0.24, hb[2] * 0.5, hb[3] * 0.76);
-      ctx.strokeStyle = '#9e4e52'; ctx.lineWidth = 2; poly(ctx, weiHunterDoor); ctx.stroke();
-      glow(ctx, hb[0] + hb[2] * 0.5, hb[1] + hb[3] * 0.3, 46, '#ff9966', 0.28);
-      txt(ctx, '紅殿・獵手公會', CX(weiHunterDoor), hb[1] - 10, '#f2d8d8', 11);
+      poly(ctx, qsub(weiHunterDoor, 0.25, 0.24, 0.75, 1.0), '#381618');
+      outline(ctx, weiHunterDoor, '#9e4e52', 2);
+      const hp = qpt(weiHunterDoor, 0.5, 0.3);
+      glow(ctx, hp[0], hp[1], 46, '#ff9966', 0.28);
+      qtxt(ctx, '紅殿・獵手公會', weiHunterDoor, 0.04, -0.14, 0.96, -0.02, '#f2d8d8', 11);
       box(ctx, R, weiCrate);
       poly(ctx, wallQuad(2.02, -0.62, 1, 1.9, 3.6), '#30343a');
       drawArchSign(ctx, weiToInner, '#2d465a', '#6e94ad', '內環・鐵穹區');
@@ -305,11 +305,10 @@ export const L04_SCENES = {
       ctx.strokeStyle = '#9bdcff'; ctx.lineWidth = 2; poly(ctx, innerDomeBarrier); ctx.stroke();
       // Grounded Pioneer watch booth seated squarely onto sidewalk (y = 1)
       poly(ctx, wallQuad(-1.82, -0.45, 1, 2.35, 3.65), '#3c4954');
-      const pb = bounds(innerPioneerQuad);
       poly(ctx, innerPioneerQuad, '#4c5b68');
-      ctx.fillStyle = '#a4dbf8'; ctx.fillRect(pb[0] + 12, pb[1] + 16, pb[2] - 24, pb[3] * 0.46);
-      ctx.strokeStyle = '#9bb4c8'; ctx.lineWidth = 2; poly(ctx, innerPioneerQuad); ctx.stroke();
-      txt(ctx, '先驅值班亭', CX(innerPioneerQuad), pb[1] - 10, '#e6f5ff', 11);
+      poly(ctx, qsub(innerPioneerQuad, 0.14, 0.18, 0.86, 0.64), '#a4dbf8');
+      outline(ctx, innerPioneerQuad, '#9bb4c8', 2);
+      qtxt(ctx, '先驅值班亭', innerPioneerQuad, 0.04, -0.14, 0.96, -0.02, '#e6f5ff', 11);
       // Solid concrete bench / resting plinth in foreground
       const sb = bounds(innerStayQuad);
       ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(sb[0] + 8, sb[1] + sb[3] - 4, sb[2] - 16, 10);
