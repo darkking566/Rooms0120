@@ -1333,7 +1333,7 @@ export const C1_SCENES = {
     const fogTrees = faceQuad(-0.9, -0.55, 0.9, 0.9, 5.5);
     const townBooth = { x1: -1.3, x2: -0.75, y1: -0.35, y2: 1, z1: 2.6, z2: 3.3, color: '#992828', top: '#b83838', edge: true };
     const metroRails = faceQuad(-0.7, 0.45, 0.3, 0.98, 5.2);
-    const metroRats = { x1: 0.45, x2: 1.25, y1: 0.58, y2: 1, z1: 2.3, z2: 3.1, color: '#3b332e', top: '#4a403a', edge: true };
+    const metroRats = { x1: 0.45, x2: 1.25, y1: 0.68, y2: 1, z1: 2.3, z2: 3.1, color: '#3b332e', top: '#4a403a', edge: true };
     const seaAhead = faceQuad(-0.45, -0.5, 0.45, 1, 7.999);
     const seaWaterLook = [170, 320, 620, 130];
 
@@ -1578,14 +1578,53 @@ export const C1_SCENES = {
           ctx.fillStyle = '#2d3238';
           ctx.fillRect(mb[0] + mb[2] * 0.2, mb[1] + 10, mb[2] * 0.24, mb[3] * 0.24);
           ctx.fillRect(mb[0] + mb[2] * 0.54, mb[1] + 10, mb[2] * 0.24, mb[3] * 0.24);
-          box(ctx, R, metroRats);
-          const rp = [CX([P(0.45, 0.65, 2.5), P(1.25, 0.95, 2.9)]), CY([P(0.45, 0.65, 2.5), P(1.25, 0.95, 2.9)])];
-          for (let i = 0; i < 6; i++) {
-            const rx = rp[0] + (i - 2.5) * 11, ry = rp[1] + (i % 2) * 5;
-            ctx.fillStyle = '#1b1715';
-            ctx.beginPath(); ctx.ellipse(rx, ry, 7, 4, 0.2, 0, Math.PI * 2); ctx.fill();
-            seg(ctx, [rx - 6, ry], [rx - 14, ry + 3], '#3d312c', 1);
-            ctx.fillStyle = '#b8a898'; ctx.fillRect(rx + 3, ry - 1, 1.5, 1.5);
+          // Organic rat-corpse mound grounded on the damp tunnel floor (no crate around it)
+          const [bx, by, bw, bh] = boxRect(metroRats);
+          const mx = bx + bw * 0.5, my = by + bh * 0.88;
+          ctx.fillStyle = 'rgba(10, 8, 7, 0.72)';
+          ctx.beginPath(); ctx.ellipse(mx, my + 2, bw * 0.56, bh * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+          poly(ctx, [
+            [bx - 4, my + 4], [bx + bw * 0.14, by + bh * 0.48], [bx + bw * 0.34, by + bh * 0.18],
+            [bx + bw * 0.55, by + bh * 0.12], [bx + bw * 0.78, by + bh * 0.3], [bx + bw + 4, my + 3],
+            [bx + bw * 0.84, my + 10], [bx + bw * 0.45, my + 12], [bx + bw * 0.12, my + 9],
+          ], '#1d1715');
+          poly(ctx, [
+            [bx + bw * 0.12, my - 2], [bx + bw * 0.32, by + bh * 0.28], [bx + bw * 0.56, by + bh * 0.2],
+            [bx + bw * 0.76, by + bh * 0.44], [bx + bw * 0.86, my - 1],
+          ], '#27201d');
+          const ratSpecs = [
+            [-0.36, 0.08, 12, 5.5, 0.28, -1], [-0.18, -0.1, 13, 6, -0.15, 1],
+            [0.02, -0.22, 13, 6, 0.1, 1], [0.22, -0.12, 12, 5.5, -0.32, -1],
+            [0.37, 0.06, 11, 5, 0.22, -1], [-0.26, 0.18, 14, 6.2, -0.08, 1],
+            [-0.04, 0.06, 14, 6.5, 0.24, -1], [0.18, 0.16, 13, 5.8, -0.2, 1],
+            [0.08, 0.28, 12, 5, 0.05, 1], [-0.14, 0.26, 11, 5, -0.18, -1],
+          ];
+          for (let i = 0; i < ratSpecs.length; i++) {
+            const [ox, oy, rw, rh, ang, dir] = ratSpecs[i];
+            const tw = (i % 3 === 0) ? Math.sin(t * 5.2 + i * 1.9) * 1.6 : 0;
+            const rx = mx + ox * bw + tw, ry = by + bh * 0.62 + oy * bh;
+            ctx.strokeStyle = '#533b35'; ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(rx - dir * (rw - 2), ry + 1);
+            ctx.quadraticCurveTo(rx - dir * (rw + 10), ry + 6 + (i % 2 ? -3 : 3), rx - dir * (rw + 20), ry + 4);
+            ctx.stroke();
+            ctx.save();
+            ctx.translate(rx, ry);
+            ctx.rotate(ang);
+            ctx.fillStyle = i % 2 ? '#171311' : '#251e1b';
+            ctx.beginPath(); ctx.ellipse(0, 0, rw, rh, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(dir * (rw * 0.72), -1, rw * 0.45, rh * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#3d302c';
+            ctx.beginPath(); ctx.arc(dir * (rw * 0.5), -rh * 0.65, 2.2, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#a8998c';
+            ctx.fillRect(dir * (rw * 0.85), -2, 1.5, 1.5);
+            ctx.restore();
+          }
+          ctx.fillStyle = 'rgba(22, 18, 16, 0.85)';
+          for (let f = 0; f < 3; f++) {
+            const fx = mx + Math.sin(t * 2.4 + f * 2.1) * 32;
+            const fy = by + Math.cos(t * 3.1 + f * 1.7) * 10;
+            ctx.fillRect(fx, fy, 2, 2);
           }
         },
         hotspots: [
