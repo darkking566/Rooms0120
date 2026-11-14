@@ -358,6 +358,61 @@ function mazeStep(g, dir) {
 
 // ---------- LEVEL 1 ----------
 const l1Base = { floorTex: 'concrete', wallTex: 'concrete', baseboard: false, flick: flickery };
+// ---------- arriving in Level 1 ----------
+// Every way into Level 1 leaves something behind at the warehouse entrance.
+const ARRIVALS = {
+  zenith: '你回頭看——身後只有一面水泥牆。一塊結霜的金屬板躺在你腳邊，是天頂站的外殼碎片，跟著你一起切了出來。左邊的出口外面，是一片白茫茫的霧。',
+  flood: '你身上還在滴水，每走一步就在水泥地上留下一個濕腳印。牆邊擺著一條摺好的毯子，上面別著一張紙條。左邊的出口外面，是一片白茫茫的霧。',
+  memory: '馬廄和乾草都不見了，柱子變回了現在的樣子。只有腳邊一塊馬蹄鐵，證明你剛才不是在做夢。左邊的出口外面，是一片白茫茫的霧。',
+};
+const hullPlate = [P(0.05, 1, 2.35), P(0.6, 1, 2.3), P(0.55, 1, 2.8), P(0.1, 1, 2.85)];
+const blanket = { x1: -2.2, x2: -1.7, y1: 0.86, y2: 1, z1: 2.3, z2: 2.75, color: '#5a6a4a', edge: true };
+const shoeAt = [-0.2, 1, 3.6];
+function drawArrivalTraces(ctx, t, s, R) {
+  const f = s.flags;
+  if (f.l1_via_flood) {
+    ctx.fillStyle = 'rgba(150,170,195,0.3)';
+    for (let i = 0; i < 6; i++) { const p = P(-0.1 - i * 0.3 + (i % 2) * 0.12, 1, 1.9 + i * 0.12); ctx.beginPath(); ctx.ellipse(p[0], p[1], 9, 4, 0, 0, Math.PI * 2); ctx.fill(); }
+    if (!f.l1_blanket) {
+      box(ctx, R, blanket);
+      const tg = P(-1.95, 0.86, 2.4); ctx.fillStyle = shade(R, '#efe7cf', 2.4); ctx.fillRect(tg[0] - 8, tg[1] - 3, 16, 6);
+    }
+  }
+  if (f.l1_via_zenith) {
+    poly(ctx, hullPlate, shade(R, '#9aa4ac', 1.8));
+    ctx.fillStyle = 'rgba(230,245,255,0.45)';
+    for (let i = 0; i < 9; i++) { const p = P(0.13 + (i % 3) * 0.17, 1, 2.42 + Math.floor(i / 3) * 0.14); ctx.fillRect(p[0] - 1, p[1] - 1, 3, 3); }
+  }
+  if (f.l1_via_memory) {
+    const p = P(...shoeAt);
+    ctx.strokeStyle = shade(R, '#d8c8b0', 1.8); ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.ellipse(p[0], p[1], 15, 6, 0, Math.PI * 0.15, Math.PI * 1.85, false); ctx.stroke();
+  }
+}
+const ARRIVAL_SPOTS = [
+  {
+    id: 'hull', when: (s) => s.flags.l1_via_zenith, rect: bounds(hullPlate, 10), label: '結霜的金屬板', cursor: 'look',
+    click: (g) => {
+      g.say('天頂站的外殼碎片。摸起來冰得像外太空，霜一直融不掉。背面刻著一行小字：「R.V. —— 我們有看到星星」。');
+      if (!g.s.flags.l1_hull) { g.flag('l1_hull'); g.sanity(4); }
+    },
+  },
+  {
+    id: 'blanket', when: (s) => s.flags.l1_via_flood && !s.flags.l1_blanket, rect: boxRect(blanket, 10), label: '摺好的毯子', cursor: 'take',
+    click: (g) => {
+      g.flag('l1_blanket'); g.sanity(10);
+      g.say('紙條上寫著：「給從療舍上來的人：先把衣服擰乾，別在濕的時候睡覺。往裡走有手電筒。—— M.E.G.」\n你用毯子把自己裹起來，抖了很久，終於不冷了。');
+    },
+  },
+  {
+    id: 'shoe', when: (s) => s.flags.l1_via_memory, rect: [P(...shoeAt)[0] - 24, P(...shoeAt)[1] - 14, 48, 26], label: '馬蹄鐵', cursor: 'look',
+    click: (g) => {
+      g.say('一塊磨得發亮的馬蹄鐵，還帶著乾草的味道。你看著它，它就一點一點地生鏽——好像這個年代正在把它收回去。');
+      if (!g.s.flags.l1_shoe) { g.flag('l1_shoe'); g.sanity(3); }
+    },
+  },
+];
+
 const l1Arrive = {
   ...l1Base, hw: 2.4, depth: 10, fogEnd: 7.5, pal: PAL.l1, lights: [2, 4.5, 7], flickerLights: [1],
   openings: [{ side: -1, z1: 3.4, z2: 4.6, top: -0.6 }],
@@ -1619,10 +1674,13 @@ export const SCENES = {
   l1_arrive: {
     level: 1, title: '倉庫入口', room: l1Arrive, flickerable: true, hall: true,
     enter(g, { first }) {
+      const from = g.s.flags.l1_fresh;
+      if (from) { g.flag('l1_fresh', false); return g.say(ARRIVALS[from]); }
       if (first) g.say('水泥地，潮濕的空氣，頭頂管線偶爾傳來悶響。太安靜了。安靜到你聽得見遠處有什麼在呼吸——也可能只是管線。左邊的出口外面，是一片白茫茫的霧。');
     },
     draw(ctx, t, s, R) {
       for (const b of pillars1.slice().sort((a, b) => b.z1 - a.z1)) box(ctx, R, b);
+      drawArrivalTraces(ctx, t, s, R);
       const pd = P(-0.6, 1, 2.6);
       ctx.fillStyle = 'rgba(160,175,190,0.12)';
       ctx.beginPath(); ctx.ellipse(pd[0], pd[1], 110, 14, 0, 0, Math.PI * 2); ctx.fill();
@@ -1639,6 +1697,7 @@ export const SCENES = {
           g.say('你跪下來，用手捧起積水喝了幾口。一股鐵鏽和機油的味道……至少喉嚨沒那麼乾了。');
         },
       },
+      ...ARRIVAL_SPOTS,
       {
         id: 'crate', rect: boxRect(crate1, 6), label: '木箱', cursor: 'look',
         click: (g) => {

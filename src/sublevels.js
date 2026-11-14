@@ -948,8 +948,58 @@ const L02_SCENES = {
   },
 };
 
+// ================= Level 1, long ago =================
+// Where Level 0.7's typist came out: the archived Level 1, a concrete garage where someone kept horses.
+const oldR = room(pal('#6a645a', '#2e2a24', '#4a4236', '#0a0806', '#ffd9a0'), { hw: 2, depth: 9, fogEnd: 8, floorTex: 'concrete', wallTex: 'concrete', baseboard: false, lights: [2.2, 5.5], flickerLights: [1], flick: (t) => 0.9 + 0.1 * Math.sin(t * 3) });
+const oldCrate = { x1: 0.8, x2: 1.4, y1: 0.5, y2: 1, z1: 2.3, z2: 2.8, color: '#7a5a34', edge: true };
+const typewriter = { x1: 0.9, x2: 1.3, y1: 0.36, y2: 0.5, z1: 2.4, z2: 2.68, color: '#2a2a28', edge: true };
+const hayB = { x1: -1.9, x2: -1.2, y1: 0.6, y2: 1, z1: 2.4, z2: 3.0, color: '#c8a85a' };
+const L1_OLD = {
+  l1_old: {
+    level: 1, title: '很久以前的倉庫', room: oldR, quiet: 0.6,
+    viewMsg: '觀景窗裡，馬廄的隔板上，有人用粉筆寫著年份：1993。',
+    enter(g, { first }) {
+      if (first) g.say('一片看不到盡頭的水泥停車場，水泥柱之間拴著馬的韁繩，兩邊是一格一格的木頭馬廄。沒有馬。地上有乾草、油漬，還有一台打字機擺在木箱上。這是很久以前的 Level 1。');
+    },
+    draw(ctx, t, s, R) {
+      for (const sd of [-1, 1]) for (let z = 7; z >= 2; z -= 1.25) {
+        const x1 = sd < 0 ? -2 : 1.4, x2 = sd < 0 ? -1.4 : 2;
+        poly(ctx, faceQuad(x1, 0.15, x2, 1, z), shade(R, '#7a5a34', z));
+        for (let y = 0.3; y < 1; y += 0.2) seg(ctx, P(x1, y, z), P(x2, y, z), shade(R, '#4a3418', z), 1);
+        seg(ctx, P(sd * 1.4, 0.15, z), P(sd * 1.4, 1, z), shade(R, '#5a4020', z), Math.max(2, 7 / z));
+      }
+      for (const [x, z] of [[-0.8, 4.2], [0.8, 6.4]]) {
+        poly(ctx, faceQuad(x - 0.15, -1, x + 0.15, 1, z), shade(R, '#5e5a52', z));
+        const a = P(x - 0.15, 0.1, z), b = P(x - 0.7, 0.35, z);
+        ctx.strokeStyle = shade(R, '#8a6a3a', z); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo((a[0] + b[0]) / 2, b[1] + 20, b[0], b[1]); ctx.stroke();
+      }
+      box(ctx, R, hayB);
+      ctx.strokeStyle = shade(R, '#e0c070', 2.6); ctx.lineWidth = 1;
+      for (let i = 0; i < 14; i++) { const p = P(-1.9 + (i % 7) * 0.1, 0.62, 2.45 + (i % 3) * 0.2); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0] + 8 - (i % 4) * 4, p[1] - 6); ctx.stroke(); }
+      box(ctx, R, oldCrate); box(ctx, R, typewriter);
+      poly(ctx, faceQuad(0.98, 0.18, 1.22, 0.38, 2.5), shade(R, '#efe7cf', 2.5));
+    },
+    hotspots: [
+      hit('typewriter', boxRect({ ...typewriter, y1: 0.18 }, 10), '木箱上的打字機', (g) => g.read('n1_old')),
+      hit('stall', [180, 268, 100, 56], '空的馬廄', (g) => {
+        g.say('馬廄裡鋪著乾草，飲水槽裡還有半槽水。地上的蹄印是新的，邊緣還是濕的。可是這裡一匹馬都沒有。');
+        if (once(g, 'l1_old_stall')) g.sanity(-2);
+      }),
+      { ...hit('hay', boxRect(hayB, 8), '乾草堆', (g) => {
+        if (!once(g, 'l1_old_can')) return g.say('只是乾草。');
+        g.give('can', '你在乾草堆裡摸到一個冰冷的東西——一個沒開過的鐵皮罐頭，標籤上的日期早就過了，但看起來沒壞。');
+      }, 'take') },
+      hit('forward', [400, 220, 160, 120], '沿著柱子往前走', (g) => {
+        g.flag('l1_via_memory'); g.flag('l1_fresh', 'memory');
+        g.go('l1_arrive', { msg: '你沿著柱子往前走。馬廄一格一格變少，乾草變成了紙屑，韁繩變成了電線。腳下的時代一步一步追上了現在。' });
+      }, 'go'),
+    ],
+  },
+};
+
 export const SUBLEVEL_SCENES = {
   ...L02_SCENES,
+  ...L1_OLD,
   l0_annex: {
     level: 0, title: '柱子間的長路', room: room(yellow, { hw: 2, depth: 8, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.6, 3.6, 5.8] }),
     enter(g, { first }) {
@@ -1243,6 +1293,7 @@ export const SUBLEVEL_SCENES = {
       hit('console', boxRect(lastConsole, 6), '一直在閃的廣播台', (g) => g.read('n01_last')),
       hit('noclip', bounds(breach, 4), '從閃爍的裂口切出去', (g) => {
         if (Math.random() < 0.25) return g.go('l0_pillar', { msg: '你穿過裂口，眼前一黑——腳下又是濕地毯。切出把你丟回了 Level 0，一根柱子旁邊。' });
+        g.flag('l1_via_zenith'); g.flag('l1_fresh', 'zenith');
         g.go('l1_arrive', { msg: '你穿過閃爍的裂口。玻璃、甲板、球殼一起被抽走，腳下變成了冰冷潮濕的水泥。' });
       }, 'go'),
     ],
@@ -1659,7 +1710,7 @@ export const SUBLEVEL_SCENES = {
     hotspots: [
       back('l05_corridor', '回到醫院走廊'),
       hit('pool', [620, 345, 150, 65], '樓梯旁一窪清澈的水', (g) => g.say('格柵底下有一窪很清的水，溫溫的，有一股游泳池的氯味。水底看不見盡頭。你盯著它看了很久，最後還是沒有下去。')),
-      hit('forward', [380, 290, 200, 120], '下樓', (g) => g.go('l1_arrive', { msg: '你走下格柵樓梯，雙膝一軟跪在冰冷的水泥地上。很安靜，很冷，很乾。你在那裡跪了很久，才想起來要呼吸。' }), 'go'),
+      hit('forward', [380, 290, 200, 120], '下樓', (g) => { g.flag('l1_via_flood'); g.flag('l1_fresh', 'flood'); g.go('l1_arrive', { msg: '你走下格柵樓梯，雙膝一軟跪在冰冷的水泥地上。很安靜，很冷，很乾。你在那裡跪了很久，才想起來要呼吸。' }); }, 'go'),
     ],
   },
 
@@ -1714,8 +1765,8 @@ export const SUBLEVEL_SCENES = {
         if (once(g, 'l07_pack')) { g.drink(25); g.sfx('drink'); }
         g.read('n07_ntg', () => { if (g.s.flags.l07_pack === true && !g.s.flags.l07_pack_said) { g.flag('l07_pack_said'); g.say('背包側袋裡有一個水壺，還剩一點水。你喝光了。'); } });
       }) },
-      { ...hit('rift', bounds(riftQ, 4), '閃爍的牆', (g) => g.go('l1_arrive', {
-        msg: '你縱身跳進那面牆。眼前一黑——然後是一片沒有盡頭的停車場，水泥柱之間拴著馬的韁繩，地上有乾草和油漬。那是很久以前的 Level 1。你往前走，腳下的時代一步一步追上了現在。',
+      { ...hit('rift', bounds(riftQ, 4), '閃爍的牆', (g) => g.go('l1_old', {
+        msg: '你縱身跳進那面牆。眼前一黑——然後是一股乾草和馬糞的味道。',
       }), 'go'), when: (s) => s.flags.l07_rift },
     ],
   },
