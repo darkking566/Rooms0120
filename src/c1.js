@@ -179,13 +179,14 @@ function drawGrassField(ctx, hy, count, shift, color, tall = 26) {
   ctx.restore();
 }
 
-function drawSignPost(ctx, pts, label, sub, bg = '#4c565c', edge = '#8fa0aa') {
+function drawSignPost(ctx, pts, label, sub, bg = '#4c565c', edge = '#8fa0aa', groundY = null) {
   const b = bounds(pts);
-  const px = b[0] + b[2] * 0.5, bottom = b[1] + b[3];
+  const px = b[0] + b[2] * 0.5;
+  const bottom = groundY == null ? b[1] + b[3] : Math.max(b[1] + b[3], groundY);
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.ellipse(px, bottom + 6, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(px, bottom + 4, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#3c4146';
-  ctx.fillRect(px - 4, b[1] + 8, 8, bottom - b[1] + 2);
+  ctx.fillRect(px - 4, b[1] + 8, 8, bottom - b[1] - 4);
   ctx.fillStyle = bg;
   ctx.fillRect(b[0], b[1], b[2], b[3] * 0.56);
   ctx.strokeStyle = edge; ctx.lineWidth = 1.5;
@@ -454,6 +455,7 @@ export const C1_SCENES = {
     const gardenPal = pal('#98a49c', '#b4c2b8', '#687666', '#8a998d', '#edf5ee');
 
     const plainRoom = room(plainPal, { hw: 2.2, depth: 9, fogEnd: 16, open: true, floorTex: 'carpet', baseboard: false, lights: [] });
+    const cityStreetRoom = room(cityPal, { hw: 1.9, depth: 8.5, fogEnd: 15, open: true, floorTex: 'concrete', baseboard: false, lights: [] });
     const cityRoom = room(cityPal, { hw: 1.8, depth: 8.5, fogEnd: 14, wallTex: 'concrete', floorTex: 'concrete', lights: [2.0, 5.2] });
     const acmaRoom = room(acmaPal, { hw: 1.6, depth: 8, fogEnd: 13, tiles: true, floorTex: 'concrete', lights: [1.8, 4.4, 6.8] });
     const caveRoom = room(cavePal, { hw: 1.5, depth: 7, fogEnd: 7, wallTex: 'concrete', baseboard: false, lights: [] });
@@ -501,6 +503,35 @@ export const C1_SCENES = {
     const gardenBench = { x1: -1.45, x2: -0.75, y1: 0.48, y2: 1, z1: 2.3, z2: 3.1, color: '#6b786c', top: '#7e8c7f', edge: true };
     const gardenFountain = { x1: 0.8, x2: 1.45, y1: 0.35, y2: 1, z1: 2.1, z2: 2.7, color: '#7a8789', top: '#94a4a6', edge: true };
     const gardenCrate = { x1: -0.4, x2: 0.4, y1: 0.55, y2: 1, z1: 4.0, z2: 4.6, color: '#53624d', top: '#687960', edge: true };
+
+    function drawCityBlock(ctx, R, x, topY, z1, z2, baseHex = '#686e73', rebars = true, windows = true) {
+      const outerX = x < 0 ? x - 0.85 : x + 0.85;
+      poly(ctx, [P(x, topY, z1), P(outerX, topY, z1), P(outerX, 1, z1), P(x, 1, z1)], shade(R, '#4c5258', z1));
+      const wq = wallQuad(x, topY, 1, z1, z2);
+      poly(ctx, wq, shade(R, baseHex, (z1 + z2) * 0.5));
+      outline(ctx, wq, '#3a3f44', 1.5);
+      if (windows) {
+        poly(ctx, qsub(wq, 0.2, 0.2, 0.46, 0.42), '#25292e');
+        poly(ctx, qsub(wq, 0.56, 0.2, 0.82, 0.42), '#25292e');
+      }
+      const inward = x < 0 ? x + 0.26 : x - 0.26;
+      poly(ctx, [P(x, 0.9, z1), P(inward, 0.96, z1), P(inward, 1, z2), P(x, 1, z2)], '#524234');
+      if (rebars) {
+        for (const u of [0.22, 0.5, 0.78]) {
+          const zr = z1 + (z2 - z1) * u;
+          seg(ctx, P(x, topY, zr), P(x, topY - 0.16, zr), '#363a3f', 2.4);
+        }
+      }
+    }
+
+    function drawCitySkyline(ctx, R, z, towers) {
+      for (const [x1, topY, x2, col] of towers) {
+        poly(ctx, faceQuad(x1, topY, x2, 1, z), col);
+        for (let wy = topY + 0.18; wy < 0.78; wy += 0.24) {
+          poly(ctx, faceQuad(x1 + 0.08, wy, x2 - 0.08, wy + 0.08, z - 0.01), '#282d32');
+        }
+      }
+    }
 
     return {
       c1e_outskirts: {
@@ -565,19 +596,26 @@ export const C1_SCENES = {
       },
 
       c1e_gate: {
-        level: 'C1.2', title: '東舟市外環', room: cityRoom, quiet: 0.45,
+        level: 'C1.2', title: '東舟市外環', room: cityStreetRoom, quiet: 0.45,
         viewMsg: '觀景窗裡，剛長出來的毛坯樓牆角正掉下細碎的泥土。',
         enter(g, { first }) {
           c1eEnterCity(g, first ? '外環一排排灰色毛坯水泥建築靜靜立在眼前，牆腳還沾著像剛從地底拱出來似的泥土。哨站標著三方聯合的徽記。' : null);
         },
         draw(ctx, t, s, R) {
-          for (const z of [2.0, 4.2, 6.2]) {
-            const pCol = wallQuad(-1.8, -0.85, 0.9, z, z + 1.1);
-            poly(ctx, pCol, shade(R, '#6e7378', z));
-            const top = [P(-1.8, -0.85, z), P(-1.8, -0.85, z + 1.1)];
-            for (let r = 0.2; r <= 0.8; r += 0.3) seg(ctx, [top[0][0] + (top[1][0] - top[0][0]) * r, top[0][1]], [top[0][0] + (top[1][0] - top[0][0]) * r, top[0][1] - 18], '#464a4f', 2);
-            poly(ctx, [P(-1.8, 0.9, z), P(-1.45, 0.9, z), P(-1.4, 1, z + 1.1), P(-1.8, 1, z + 1.1)], '#524234');
+          drawCitySkyline(ctx, R, 8.65, [
+            [-2.2, -1.35, -1.15, '#596067'], [-1.1, -1.55, -0.15, '#4f555c'],
+            [0.25, -1.4, 1.2, '#545b62'], [1.25, -1.15, 2.2, '#60676e'],
+          ]);
+          drawCityBlock(ctx, R, -1.8, -0.95, 1.9, 3.6, '#6d7378', true, false);
+          drawCityBlock(ctx, R, -1.8, -1.15, 4.2, 5.7, '#646a70', true);
+          drawCityBlock(ctx, R, -1.8, -0.9, 6.2, 7.6, '#5c6268', true);
+          drawCityBlock(ctx, R, 1.8, -1.05, 3.0, 4.6, '#666c72', true);
+          drawCityBlock(ctx, R, 1.8, -1.25, 5.3, 7.0, '#5c6267', true);
+          // Paved checkpoint road leading through the outer gatehouse arch
+          for (const z of [1.8, 3.6, 5.6]) {
+            poly(ctx, [P(-0.04, 1, z), P(0.04, 1, z), P(0.04, 1, z + 0.8), P(-0.04, 1, z + 0.8)], 'rgba(218, 224, 228, 0.35)');
           }
+          poly(ctx, faceQuad(-0.92, -0.82, 0.92, 1, 8.53), '#555b61');
           paper(ctx, R, gateNoticeQuad, 2.7, '#eef0ec');
           poly(ctx, qsub(gateNoticeQuad, 0.03, 0.03, 0.97, 0.14), '#365872');
           box(ctx, R, gateDeskBox);
@@ -603,22 +641,42 @@ export const C1_SCENES = {
       },
 
       c1e_road: {
-        level: 'C1.2', title: '市中心大道', room: { ...cityRoom, hw: 2.0, depth: 9 }, quiet: 0.4,
+        level: 'C1.2', title: '市中心大道', room: { ...cityStreetRoom, hw: 2.0, depth: 9 }, quiet: 0.4,
         viewMsg: '觀景窗裡能看見遠處各區的路牌都在微弱地反光。',
         enter(g, { first }) {
           c1eEnterCity(g, first ? '寬敞得過分的灰白大道向各區岔開：左面是三合研究院，前方通往 03 區 ACMA 與新紀花園，西側遠處則是撒加利工廠。' : null);
         },
         draw(ctx, t, s, R) {
+          drawCitySkyline(ctx, R, 8.92, [
+            [-2.4, -1.65, -1.3, '#545b61'], [-1.15, -1.5, 0.05, '#4c5258'],
+            [0.12, -1.35, 1.35, '#545f57'], [1.45, -1.55, 2.5, '#52585e'],
+          ]);
+          // Three-Union Research Institute building facade on the left + right blocks along the boulevard
+          drawCityBlock(ctx, R, -1.8, -1.08, 1.75, 3.85, '#646e76', false);
+          drawCityBlock(ctx, R, -1.85, -1.2, 4.6, 6.8, '#585e64', true);
+          drawCityBlock(ctx, R, 1.85, -1.1, 4.3, 6.6, '#5c6268', true);
+          // Streetlamps flanking the open boulevard
+          for (const z of [2.1, 5.2]) {
+            for (const sx of [-1.72, 1.72]) {
+              const sb = P(sx, 1, z), st = P(sx, -0.75, z);
+              seg(ctx, sb, st, '#40454a', 2.4);
+              seg(ctx, st, P(sx * 0.86, -0.75, z), '#40454a', 2);
+              glow(ctx, P(sx * 0.86, -0.72, z)[0], P(sx * 0.86, -0.72, z)[1], 24, '#e6eef4', 0.22);
+            }
+          }
           // Wide concrete boulevard lane markings
           for (const z of [1.6, 3.1, 4.8, 6.6]) {
             poly(ctx, [P(-0.04, 1, z), P(0.04, 1, z), P(0.04, 1, z + 0.8), P(-0.04, 1, z + 0.8)], 'rgba(218, 224, 228, 0.45)');
           }
           seg(ctx, P(-1.85, 1, 1.2), P(-1.85, 1, 8.8), '#8a9196', 3);
           seg(ctx, P(1.85, 1, 1.2), P(1.85, 1, 8.8), '#8a9196', 3);
+          // Grounded far buildings behind ACMA and New Age Garden portals
+          poly(ctx, faceQuad(-1.35, -1.15, 0.05, 1, 8.54), '#4c5258');
+          poly(ctx, faceQuad(0.08, -1.0, 1.38, 1, 8.54), '#4e5d52');
           drawPortalArch(ctx, roadLabDoor, '#242e36', shade(R, '#66747e', 2.7), '三合研究院');
           drawPortalArch(ctx, roadAcmaDoor, '#182028', shade(R, '#5c6670', 8.5), '03區 ACMA');
           drawPortalArch(ctx, roadGardenDoor, '#2a4230', shade(R, '#5c7260', 8.5), '新紀花園');
-          drawSignPost(ctx, roadFactorySign, '西:撒加利工廠', '北:珀爾修斯 / 東:紅星', '#394148', '#8996a0');
+          drawSignPost(ctx, roadFactorySign, '西:撒加利工廠', '北:珀爾修斯 / 東:紅星', '#394148', '#8996a0', P(1.8, 1, 2.85)[1]);
         },
         hotspots: [
           back('c1e_gate', '退回外環哨站'),
@@ -637,12 +695,11 @@ export const C1_SCENES = {
         },
         draw(ctx, t, s, R) {
           poly(ctx, labBoardQuad, '#394148');
-          ctx.strokeStyle = '#7b8792'; ctx.lineWidth = 2.5; poly(ctx, labBoardQuad); ctx.stroke();
-          const lb = bounds(labBoardQuad);
-          ctx.fillStyle = '#243a4c'; ctx.fillRect(lb[0] + 6, lb[1] + 6, lb[2] - 12, 18);
-          txt(ctx, 'C-Lambda #11', CX(labBoardQuad), lb[1] + 19, '#dce9f2', 10);
-          ctx.fillStyle = '#d9d4c4'; ctx.fillRect(lb[0] + 12, lb[1] + 32, 30, 36);
-          ctx.fillStyle = '#cbd4dc'; ctx.fillRect(lb[0] + 50, lb[1] + 36, 36, 28);
+          outline(ctx, labBoardQuad, '#7b8792', 2.5);
+          poly(ctx, qsub(labBoardQuad, 0.04, 0.05, 0.96, 0.23), '#243a4c');
+          qtxt(ctx, 'C-Lambda #11', labBoardQuad, 0.04, 0.05, 0.96, 0.23, '#dce9f2', 10);
+          poly(ctx, qsub(labBoardQuad, 0.1, 0.32, 0.42, 0.72), '#d9d4c4');
+          poly(ctx, qsub(labBoardQuad, 0.5, 0.36, 0.88, 0.68), '#cbd4dc');
           box(ctx, R, { x1: -1.0, x2: 1.05, y1: 0.45, y2: 1, z1: 4.3, z2: 4.9, color: '#6b7075', top: '#7f868c', edge: true });
           // CRT waveform monitor on lab counter
           ctx.fillStyle = '#23282d'; ctx.fillRect(450, 290, 42, 30);
@@ -1285,7 +1342,7 @@ export const C1_SCENES = {
     const hullRoom = room(hullPal, { hw: 2.0, depth: 8.5, fogEnd: 15, open: true, floorTex: 'concrete', baseboard: false, lights: [] });
     const shipRoom = room(shipPal, { hw: 1.5, depth: 8.5, fogEnd: 12, wallTex: 'concrete', lights: [1.8, 4.4, 7.0], flickerLights: [1] });
     const fogRoom = room(fogPal, { hw: 1.8, depth: 7.5, fogEnd: 5.5, floorTex: 'carpet', lights: [] });
-    const townRoom = room(townPal, { hw: 1.7, depth: 8, fogEnd: 11, floorTex: 'concrete', lights: [2.4] });
+    const townRoom = room(townPal, { hw: 1.7, depth: 8, fogEnd: 11, open: true, floorTex: 'concrete', baseboard: false, lights: [] });
     const metroRoom = room(metroPal, { hw: 1.5, depth: 8, fogEnd: 9.5, wallTex: 'concrete', lights: [] });
     const seaRoom = room(seaPal, { hw: 1.8, depth: 8, fogEnd: 11, wallTex: 'concrete', lights: [2.6, 5.8] });
     const hRoom = room(hPal, { hw: 1.7, depth: 7.5, fogEnd: 11, wallTex: 'concrete', lights: [2.2, 5.2] });
@@ -1526,13 +1583,23 @@ export const C1_SCENES = {
           c1sEnter(g, first ? '一條昏暗寂靜的小鎮街道平白接在船艙後面。每一扇窗後全都暗著，只有街邊立著一座舊電話亭。' : null);
         },
         draw(ctx, t, s, R) {
-          // Silent shuttered town houses + sagging overhead wires + lit glass telephone booth
-          for (const z of [2.4, 4.8]) {
-            poly(ctx, wallQuad(1.7, -0.55, 0.35, z, z + 1.1), '#141312');
-            poly(ctx, wallQuad(1.68, -0.2, 0.18, z + 0.25, z + 0.8), '#090909');
+          // Silent shuttered night-street town houses grounded to pavement + overhead wires + phone booth
+          for (const [x1, topY, x2] of [[-2.0, -0.78, -0.65], [-0.5, -0.58, 0.45], [0.62, -0.86, 2.0]]) {
+            poly(ctx, faceQuad(x1, topY, x2, 1, 7.92), '#121111');
           }
-          ctx.strokeStyle = 'rgba(20, 20, 22, 0.75)'; ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.moveTo(210, 115); ctx.quadraticCurveTo(480, 148, 760, 110); ctx.stroke();
+          for (const [hx, z1, z2] of [[-1.7, 1.85, 3.8], [-1.7, 4.3, 6.4], [1.7, 2.2, 4.0], [1.7, 4.5, 6.7]]) {
+            const hxOut = hx < 0 ? hx - 0.7 : hx + 0.7;
+            poly(ctx, [P(hx, -0.82, z1), P(hxOut, -0.82, z1), P(hxOut, 1, z1), P(hx, 1, z1)], shade(R, '#161414', z1));
+            const hq = wallQuad(hx, -0.82, 1, z1, z2);
+            poly(ctx, hq, shade(R, '#1f1d1c', (z1 + z2) * 0.5));
+            poly(ctx, [P(hx, -0.82, z1), P(hx * 1.06, -1.04, (z1 + z2) * 0.5), P(hx, -0.82, z2)], '#141312');
+            poly(ctx, qsub(hq, 0.22, 0.22, 0.46, 0.44), '#09090a');
+            poly(ctx, qsub(hq, 0.58, 0.22, 0.82, 0.44), '#09090a');
+            poly(ctx, qsub(hq, 0.36, 0.62, 0.66, 1.0), '#0d0c0c');
+          }
+          const wl = P(-1.7, -0.78, 2.8), wr = P(1.7, -0.78, 2.8);
+          ctx.strokeStyle = 'rgba(18, 18, 20, 0.85)'; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(wl[0], wl[1]); ctx.quadraticCurveTo(480, wl[1] + 36, wr[0], wr[1]); ctx.stroke();
           box(ctx, R, townBooth);
           const tb = boxRect(townBooth);
           ctx.fillStyle = '#2d1c14';
