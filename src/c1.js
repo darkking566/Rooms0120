@@ -1413,8 +1413,14 @@ export const C1_SCENES = {
           poly(ctx, [P(-2.2, -0.92, 8.2), P(2.0, -0.92, 8.2), P(2.0, 1, 8.2), P(-2.2, 1, 8.2)], '#35404a');
           for (const px of [-1.4, -0.6, 0.2, 1.0]) seg(ctx, P(px, -0.92, 8.2), P(px, 1, 8.2), 'rgba(20, 26, 32, 0.55)', 2);
           for (const py of [-0.45, 0.05, 0.52]) seg(ctx, P(-2.2, py, 8.2), P(2.0, py, 8.2), 'rgba(20, 26, 32, 0.45)', 2);
-          // Craggy scree rocks flanking base of ship wall
-          poly(ctx, [[0, hy], [0, 320], [185, 345], [275, hy + 18]], '#2e3032');
+          // Craggy scree rocks flanking base of ship wall + foreground riveted hull buttress holding Reed Squad note
+          const lw = wallQuad(-2.02, -0.78, 1, 1.85, 3.55);
+          poly(ctx, lw, '#2b343d');
+          seg(ctx, P(-2.02, -0.3, 1.85), P(-2.02, -0.3, 3.55), '#1a2128', 2);
+          seg(ctx, P(-2.02, 0.35, 1.85), P(-2.02, 0.35, 3.55), '#1a2128', 2);
+          seg(ctx, P(-2.02, -0.78, 2.65), P(-2.02, 1, 2.65), '#1a2128', 2);
+          ctx.strokeStyle = '#4e5d6b'; ctx.lineWidth = 2; poly(ctx, lw); ctx.stroke();
+          poly(ctx, [[0, H], [0, 340], [185, 365], [275, hy + 18], [0, hy + 24]], '#26292b');
           poly(ctx, [[W, hy + 10], [725, 315], [840, 285], [W, 250]], '#292c2e');
           paper(ctx, R, hullNote, 2.6, '#e6e8ea');
           // Plasma-torn jagged access hatchway

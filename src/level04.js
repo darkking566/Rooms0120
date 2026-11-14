@@ -218,6 +218,7 @@ export const L04_SCENES = {
       box(ctx, R, outerBox);
       const ob = boxRect(outerBox);
       ctx.fillStyle = '#c4962e'; ctx.fillRect(ob[0] + 6, ob[1] + 18, ob[2] - 12, 5);
+      poly(ctx, wallQuad(1.82, -0.68, 1, 2.5, 5.0), '#2d3136');
       drawArchSign(ctx, outerToWei, '#1b1f24', '#555d66', '中環・尉遲大道');
       drawArchSign(ctx, outerToWolf, '#262321', '#5f5650', '城外・狼領 ▶');
     },
@@ -250,7 +251,8 @@ export const L04_SCENES = {
       }
       poly(ctx, [[470, hy - 140], [490, hy - 140], [500, hy], [460, hy]], '#4e555e');
       drawStreetRoad(ctx, hy, [[-1.65, 2.3], [1.65, 2.3], [-1.65, 5.1], [1.65, 5.1], [-1.65, 7.6], [1.65, 7.6]], t);
-      // Crimson-walled Red Hall (Hunters Guild HQ) with columns & sconce glow
+      // Crimson-walled Red Hall (Hunters Guild HQ) wing grounded to sidewalk
+      poly(ctx, wallQuad(-2.02, -0.88, 1, 2.1, 4.4), '#441a1d');
       const hb = bounds(weiHunterDoor);
       poly(ctx, weiHunterDoor, '#5c2427');
       ctx.fillStyle = '#381618'; ctx.fillRect(hb[0] + hb[2] * 0.25, hb[1] + hb[3] * 0.24, hb[2] * 0.5, hb[3] * 0.76);
@@ -258,6 +260,7 @@ export const L04_SCENES = {
       glow(ctx, hb[0] + hb[2] * 0.5, hb[1] + hb[3] * 0.3, 46, '#ff9966', 0.28);
       txt(ctx, '紅殿・獵手公會', CX(weiHunterDoor), hb[1] - 10, '#f2d8d8', 11);
       box(ctx, R, weiCrate);
+      poly(ctx, wallQuad(2.02, -0.62, 1, 1.9, 3.6), '#30343a');
       drawArchSign(ctx, weiToInner, '#2d465a', '#6e94ad', '內環・鐵穹區');
       drawArchSign(ctx, weiToOuter, '#24272c', '#585e64', '◀ 回外環街道');
     },
@@ -300,7 +303,8 @@ export const L04_SCENES = {
       seg(ctx, [db[0], scanY], [db[0] + db[2], scanY], 'rgba(200, 245, 255, 0.65)', 2);
       ctx.restore();
       ctx.strokeStyle = '#9bdcff'; ctx.lineWidth = 2; poly(ctx, innerDomeBarrier); ctx.stroke();
-      // Lit Pioneer watch booth on left
+      // Grounded Pioneer watch booth seated squarely onto sidewalk (y = 1)
+      poly(ctx, wallQuad(-1.82, -0.45, 1, 2.35, 3.65), '#3c4954');
       const pb = bounds(innerPioneerQuad);
       poly(ctx, innerPioneerQuad, '#4c5b68');
       ctx.fillStyle = '#a4dbf8'; ctx.fillRect(pb[0] + 12, pb[1] + 16, pb[2] - 24, pb[3] * 0.46);
@@ -312,6 +316,7 @@ export const L04_SCENES = {
       poly(ctx, innerStayQuad, '#38414a');
       ctx.strokeStyle = '#8fa4b8'; ctx.lineWidth = 1.5; poly(ctx, innerStayQuad); ctx.stroke();
       txt(ctx, '在這裡待下去', 480, CY(innerStayQuad) + 4, '#d4e2ee', 12);
+      poly(ctx, wallQuad(1.82, -0.6, 1, 1.9, 3.6), '#30363c');
       drawArchSign(ctx, innerToWei, '#2a2e33', '#606870', '回尉遲大道 ▶');
     },
     hotspots: [
@@ -335,9 +340,12 @@ export const L04_SCENES = {
     draw(ctx, t, s, R) {
       const hy = P(0, 1, R.depth)[1];
       drawCrimsonSky(ctx, s, hy);
-      // Craggy barren wasteland ridge & crumbling broken brick wall holding Ronin's note
+      // Craggy barren wasteland ridge & ruined brick perimeter wall holding Ronin's note
       poly(ctx, [[0, hy + 4], [190, hy - 32], [380, hy - 14], [610, hy - 38], [820, hy - 18], [W, hy + 2]], s.flags.l04_red_sky ? '#3b1e20' : '#35312f');
-      poly(ctx, [P(-2.3, -0.35, 2.0), P(-2.15, -0.25, 3.3), P(-2.15, 1, 3.3), P(-2.3, 1, 2.0)], '#46403c');
+      const rw = wallQuad(-2.22, -0.48, 1, 1.85, 3.45);
+      poly(ctx, rw, '#463f3a');
+      for (const my of [-0.15, 0.25, 0.62]) seg(ctx, P(-2.22, my, 1.85), P(-2.22, my, 3.45), 'rgba(26, 22, 20, 0.55)', 1.5);
+      ctx.strokeStyle = '#5c534c'; ctx.lineWidth = 2; poly(ctx, rw); ctx.stroke();
       paper(ctx, R, wolfRoninNote, 2.6, '#dedad2');
       const v = l04WolfVariant(s);
       if (v === 0) {
@@ -350,6 +358,7 @@ export const L04_SCENES = {
         ctx.beginPath(); ctx.arc(480, 208, 16, 0, Math.PI * 2); ctx.fill();
         glow(ctx, 480, 260, 85, '#c94048', 0.16);
       }
+      poly(ctx, wallQuad(2.22, -0.65, 1, 2.0, 4.0), '#2d3034');
       drawArchSign(ctx, wolfToOuter, '#242629', '#5a5f66', '回外環街道 ▶');
     },
     hotspots: [
