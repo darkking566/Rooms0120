@@ -14,7 +14,7 @@ import { migrate, SCENE_ALIASES, FALLBACK_SCENE, SAVE_VERSION, MIGRATIONS } from
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 // game code that names scenes, items, notes and flags: main.js, items.js and every level file
-const files = ['main', 'items', ...fs.readdirSync(path.join(root, 'src', 'levels')).filter((f) => f.endsWith('.js')).map((f) => `levels/${f.slice(0, -3)}`)]
+const files = ['main', 'items', 'c1', 'level04', ...fs.readdirSync(path.join(root, 'src', 'levels')).filter((f) => f.endsWith('.js')).map((f) => `levels/${f.slice(0, -3)}`)]
   .map((f) => [f, fs.readFileSync(path.join(root, 'src', `${f}.js`), 'utf8')]);
 
 let failures = 0;

@@ -2,6 +2,7 @@
 // Run: npm test            (set SHOTS=<dir> to also save a screenshot of every scene)
 const path = require('node:path');
 const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 const { chromium } = require('playwright');
 
 const SHOTS = process.env.SHOTS;
@@ -9,7 +10,7 @@ let failures = 0;
 const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${msg}`); } else console.log(`  ✓ ${msg}`); };
 
 (async () => {
-  const { createServer } = await import(path.join(__dirname, '..', 'server.mjs'));
+  const { createServer } = await import(pathToFileURL(path.join(__dirname, '..', 'server.mjs')).href);
   const server = createServer();
   await new Promise((r) => server.listen(0, r));
   const url = `http://127.0.0.1:${server.address().port}/`;

@@ -3,6 +3,8 @@
 // Setting details follow the Backrooms Wiki (CC BY-SA 3.0): Level 0 "Threshold", Level 1 "The Habitable Zone",
 // Level 2 "Abandoned Utility Halls", Smilers (Entity 3). Story, notes and puzzles are original.
 import { SUBLEVELS, SUBLEVEL_SCENES } from './sublevels.js';
+import { C1_LEVELS, C1_SCENES } from './c1.js';
+import { L04_LEVELS, L04_SCENES } from './level04.js';
 import { LEVEL0_SCENES } from './levels/level0.js';
 import { LEVEL1_SCENES } from './levels/level1.js';
 import { LEVEL2_SCENES } from './levels/level2.js';
@@ -16,10 +18,14 @@ export const LEVELS = {
   2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 2, thirst: 2.5, hunger: 1.5 },
   0.2: { name: 'LEVEL 0.2', sub: '重新裝修的爛攤子', drain: 1, thirst: 1.5, hunger: 1 },
   ...SUBLEVELS,
+  ...C1_LEVELS,
+  ...L04_LEVELS,
 };
 
 export const SCENES = {
   ...SUBLEVEL_SCENES,
+  ...C1_SCENES,
+  ...L04_SCENES,
   ...LEVEL0_SCENES,
   ...LEVEL1_SCENES,
   ...LEVEL2_SCENES,

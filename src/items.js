@@ -100,6 +100,9 @@ export const ITEMS = {
   },
   photo: { name: '拍立得照片', desc: '一間黃色的房間，牆角坐著一個人，臉被拍糊了。背面寫著：「第一次」。翻回正面時，牆角是空的。' },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
+  recorder: { name: '錄音筆', desc: '三方聯合哨站發給訪客的小型錄音筆。在 ACMA 收容室或現場或許用得上。' },
+  recorder2: { name: '備用錄音筆', desc: '從三合研究院領出的第二支錄音筆，外殼還貼著檢修標籤。' },
+  dragon_scale: { name: '龍鱗', desc: '深黑泛紅的堅硬鱗片，握在手心像剛熄滅的煤炭一樣隱隱發燙。' },
 };
 
 export function drawIcon(ctx, id, s = 56) {
@@ -266,6 +269,27 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-3, -14, 6, 34);
       ctx.beginPath(); ctx.arc(0, -16, 9, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-3, -26, 6, 10);
+      break;
+    case 'recorder':
+    case 'recorder2':
+      ctx.fillStyle = id === 'recorder2' ? '#3a4654' : '#2a2d34';
+      ctx.beginPath(); ctx.roundRect(-9, -18, 18, 36, 3); ctx.fill();
+      ctx.fillStyle = '#607080'; ctx.fillRect(-6, -15, 12, 8);
+      ctx.fillStyle = id === 'recorder2' ? '#4fb3bf' : '#d64545';
+      ctx.beginPath(); ctx.arc(0, -2, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-5, 6, 10, 8);
+      break;
+    case 'dragon_scale':
+      ctx.beginPath();
+      ctx.moveTo(0, -20);
+      ctx.quadraticCurveTo(15, -4, 12, 16);
+      ctx.quadraticCurveTo(0, 22, -12, 16);
+      ctx.quadraticCurveTo(-15, -4, 0, -20);
+      ctx.closePath();
+      ctx.fillStyle = '#381216'; ctx.fill();
+      ctx.strokeStyle = '#b43b2a'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#732124';
+      ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(5, 6); ctx.lineTo(0, 12); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);
