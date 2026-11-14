@@ -54,6 +54,7 @@ const { chromium } = require('playwright');
         await hit('ahead'); await hit('down');
       },
       memory: async () => { await page.evaluate(() => window.__rooms.g.go('l0_faded')); await hit('older'); },
+      c1: async () => { await page.evaluate(() => window.__rooms.g.go('l0_dry')); await hit('c1_box'); },
     };
     async function reload() {
       await page.reload(); await page.click('#btnCont');
@@ -305,6 +306,52 @@ const { chromium } = require('playwright');
     await shot('sub-28-arrive-memory');
     check((await page.evaluate(() => window.__rooms.hotspots())).some((h) => h.id === 'shoe'), 'a horseshoe came through with you');
 
+    console.log('Level C-1 — 偏路');
+    await start();
+    await enter.c1();
+    check((await state()).scene === 'c1_entry' && await page.locator('#lvlName').textContent() === 'LEVEL C-1', 'box in l0_dry enters c1_entry');
+    await page.evaluate(() => { const g = window.__rooms.g; g.give('camcorder'); g.setView(true); });
+    check((await page.locator('#msg').textContent()).includes('觀景窗裡什麼也沒有。聲音還是來了。'), 'c1 viewfinder reveals nothing for bang source');
+    await page.evaluate(() => { const g = window.__rooms.g; g.setView(false); g.take('camcorder'); });
+    await hit('back');
+    check((await state()).scene === 'l0_dry', 'climbing back out returns to l0_dry');
+    await hit('c1_box_note'); await closeDoc();
+    check((await state()).notes.includes('n_c1_entry'), 'note beside cardboard box opens n_c1_entry');
+    await hit('c1_box');
+    const invBeforeC1 = (await state()).inv.length;
+    await hit('ahead');
+    check((await state()).scene === 'c1_hall', 'entry door opens onto c1_hall');
+    // Walk until c1_steps >= 8 and check end_door appears only at steps >= 8
+    while ((await state()).flags.c1_steps < 8 || (await state()).scene !== 'c1_hall') {
+      const st = await state();
+      if (st.scene === 'c1_hall') {
+        const hs = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+        if ((st.flags.c1_steps || 0) < 8) check(!hs.includes('end_door'), `end_door hidden at ${st.flags.c1_steps || 0} steps`);
+        await hit('door_left');
+      } else if (st.scene === 'c1_bench') {
+        await hit('rest');
+        if (!st.notes.includes('n_c1_clean')) { await hit('note_clean'); await closeDoc(); }
+        await hit('ahead');
+      } else if (st.scene === 'c1_mirror') {
+        await hit('mirror');
+        await hit('back');
+        if ((await state()).scene === 'c1_hall') await hit('door_right');
+      }
+    }
+    const hallIds = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check(hallIds.includes('end_door'), 'end_door appears once steps >= 8');
+    check(!hallIds.includes('bang') && !hallIds.includes('bang_source'), 'distant bang has no clickable source');
+    check((await state()).inv.length === invBeforeC1, 'no items picked up anywhere in 偏路');
+    await hit('end_door');
+    check((await state()).scene === 'c1_door', 'end_door reaches c1_door');
+    await reload();
+    check((await state()).scene === 'c1_door' && (await state()).flags.c1_steps >= 8, 'reloading mid-C1 preserves scene and steps');
+    await hit('open_door');
+    await page.waitForSelector('#ending:not([hidden])');
+    check(true, 'c1_door triggers c2_door ending');
+    await page.click('#btnRetry');
+    check((await state()).scene.startsWith('c1_') && await page.locator('#lvlName').textContent() === 'LEVEL C-1', 'retrying c2_door keeps checkpoint in C1');
+
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });
     page = await mobile.newPage(); watch(page);
@@ -318,6 +365,7 @@ const { chromium } = require('playwright');
     for (const [portal, scene, from, last] of [
       ['zenith', 'l01_airlock', 'l0_pillar', null], ['ice', 'l03_entry', 'l0_start', 'frost'],
       ['flood', 'l05_flood', 'l0_start', 'down'], ['memory', 'l07_modern', 'l0_start', 'older'],
+      ['c1', 'c1_entry', 'l0_dry', 'c1_box'],
     ]) {
       await page.evaluate((to) => window.__rooms.g.go(to), from);
       if (portal === 'zenith') {
@@ -327,7 +375,8 @@ const { chromium } = require('playwright');
       else if (portal === 'flood') {
         await page.evaluate(() => { const g = window.__rooms.g; g.s.bo = { step: 0, dir: 'ahead' }; g.go('l0_blackout'); });
         await hit('ahead'); await tap(last);
-      } else { await page.evaluate(() => window.__rooms.g.go('l0_faded')); await tap(last); }
+      } else if (portal === 'memory') { await page.evaluate(() => window.__rooms.g.go('l0_faded')); await tap(last); }
+      else { await tap(last); }
       check((await state()).scene === scene, `phone tap enters ${scene}`);
       await shot(`sub-14-phone-${portal}`); await hit('back');
     }

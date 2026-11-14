@@ -363,6 +363,8 @@ const buckets = [
 ];
 const dryDoor = faceQuad(-0.32, -0.5, 0.32, 1, 8.999);
 const wetDryDoor = wallQuad(-1.6, -0.6, 1, 3.0, 3.8);
+const c1Box = { x1: -1.02, x2: -0.48, y1: 0.54, y2: 1, z1: 2.35, z2: 2.95, color: '#9c7d54', top: '#b09166', edge: true };
+const c1BoxNote = wallQuad(-1.19, 0.2, 0.48, 2.4, 2.7);
 
 // a tape lying just inside the Red Rooms: worth the seconds it costs?
 const tape4Box = { x1: -0.6, x2: -0.35, y1: 0.93, y2: 1, z1: 1.8, z2: 2.0, color: '#1e1e20', edge: true };
@@ -1352,7 +1354,7 @@ export const LEVEL0_SCENES = {
 
   l0_dry: {
     level: 0, title: '乾燥的走廊', room: l0Dry, quiet: 0.35,
-    viewMsg: '觀景窗裡，走廊盡頭那扇門的門縫透出光——比外面任何一盞燈都白。',
+    viewMsg: '觀景窗裡，走廊盡頭那扇門的門縫透出光——左邊那只看似空著的紙箱底部，卻映出一片一塵不染的白瓷磚。',
     enter(g, { first }) {
       if (first) g.say('越往裡走，腳下的地毯越乾。嗡嗡聲小了很多，空氣裡有新油漆的味道。牆邊掛著塑膠布，地上擺著油漆桶。');
     },
@@ -1360,6 +1362,8 @@ export const LEVEL0_SCENES = {
       poly(ctx, sheeting, 'rgba(235,240,245,0.28)');
       ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
       for (let i = 1; i < 6; i++) seg(ctx, P(-1.2, -1, 1.4 + i * 0.3), P(-1.2, 0.9, 1.5 + i * 0.3), ctx.strokeStyle, 1);
+      box(ctx, R, c1Box);
+      paper(ctx, R, c1BoxNote, 2.55, '#f2eed8');
       for (const b of buckets.slice().reverse()) box(ctx, R, b);
       if (!s.flags.ladder) {
         const c = shade(R, '#b8bcc0', 3.6);
@@ -1369,6 +1373,12 @@ export const LEVEL0_SCENES = {
       poly(ctx, dryDoor, shade(R, '#a68a5c', 9));
       drawCaution(ctx, faceQuad(-0.32, -0.62, 0.32, -0.54, 8.999));
     },
+    drawView(ctx, t, s) {
+      const opening = [P(-0.97, 0.54, 2.4), P(-0.53, 0.54, 2.4), P(-0.53, 0.54, 2.9), P(-0.97, 0.54, 2.9)];
+      poly(ctx, opening, '#e9f0f4');
+      seg(ctx, P(-0.75, 0.54, 2.4), P(-0.75, 0.54, 2.9), 'rgba(130,150,165,0.5)', 1);
+      seg(ctx, P(-0.97, 0.54, 2.65), P(-0.53, 0.54, 2.65), 'rgba(130,150,165,0.5)', 1);
+    },
     hotspots: [
       BACK('l0_wet'),
       {
@@ -1377,6 +1387,11 @@ export const LEVEL0_SCENES = {
       },
       { id: 'buckets', rect: bounds(buckets.flatMap((b) => [P(b.x1, b.y1, b.z1), P(b.x2, 1, b.z1)]), 8), label: '油漆桶', cursor: 'look', click: (g) => g.say('油漆還是濕的。標籤上印著一行小字：「後室重新裝修公司」。……在這種地方，誰會來裝修？') },
       { id: 'door', rect: bounds(dryDoor, 12), label: '施工中的門', cursor: 'go', click: (g) => g.go('l02_room', { msg: '你推開那扇門。門後的光白得發亮，空氣裡全是新油漆的味道。' }) },
+      { id: 'c1_box_note', rect: bounds(c1BoxNote, 10), label: '紙箱旁的字條', cursor: 'look', click: (g) => g.read('n_c1_entry') },
+      {
+        id: 'c1_box', rect: boxRect(c1Box, 8), label: '角落的大紙箱', cursor: 'go',
+        click: (g) => g.go('c1_entry', { msg: '你低頭鑽進那個大紙箱。硬紙板擦過肩膀的下一秒，腳下踩到的不再是粗地毯，而是冰涼潔淨的木地板。' }),
+      },
     ],
   },
 
