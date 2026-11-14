@@ -636,33 +636,11 @@ const buckets = [
 const dryDoor = faceQuad(-0.32, -0.5, 0.32, 1, 8.999);
 const wetDryDoor = wallQuad(-1.6, -0.6, 1, 3.0, 3.8);
 
-const l02Fresh = {
-  hw: 1.6, depth: 5, fogEnd: 14, tiles: true, floorTex: 'carpet', lights: [1.8, 3.6],
-  pal: { wall: '#ece0a6', ceil: '#f4eed6', floor: '#b0a066', fog: '#2e2914', light: '#fffbe8' },
-};
-const l02House = {
-  hw: 1.6, depth: 5, fogEnd: 9, floorTex: 'concrete', baseboard: false, lights: [1.8], flickerLights: [0], flick: flickery,
-  pal: { wall: '#8a7050', ceil: '#3e3122', floor: '#76603f', fog: '#0c0905', light: '#ffe2b0' },
-};
-const toolbox = { x1: 0.3, x2: 0.85, y1: 0.78, y2: 1, z1: 2.2, z2: 2.55, color: '#b8352a', edge: true };
-const lamp = { x: -1.1, z: 3.2 };
-const freshOutlet = wallQuad(1.6, 0.5, 0.66, 3.0, 3.18);
-const houseDoor = faceQuad(-0.35, -0.55, 0.35, 1, 4.999);
-const tape2Box = { x1: -0.85, x2: -0.6, y1: 0.93, y2: 1, z1: 2.3, z2: 2.5, color: '#1e1e20', edge: true };
-const voidHoles = [wallQuad(-1.6, -0.6, 0.3, 2.0, 2.6), wallQuad(1.6, -0.9, 0.1, 3.0, 3.8), faceQuad(0.6, -0.8, 1.2, -0.2, 4.999)];
-
 // a tape lying just inside the Red Rooms: worth the seconds it costs?
 const tape4Box = { x1: -0.6, x2: -0.35, y1: 0.93, y2: 1, z1: 1.8, z2: 2.0, color: '#1e1e20', edge: true };
 export const EXTRA_TAPES = ['tape2', 'tape3', 'tape4'];
 export const allTapesWatched = (s) => EXTRA_TAPES.every((id) => s.flags[`watched_${id}`]);
 
-function drawStuds(ctx, R) {
-  for (const s of [-1, 1]) {
-    for (let z = 1.2; z < R.depth; z += 0.45) seg(ctx, P(s * R.hw, -1, z), P(s * R.hw, 1, z), shade(R, '#b89a6a', z), Math.max(2, 9 / z));
-    seg(ctx, P(s * R.hw, 0, 1), P(s * R.hw, 0, R.depth), shade(R, '#b89a6a', 2.5), 3);
-  }
-  for (let x = -R.hw; x <= R.hw; x += 0.4) seg(ctx, P(x, -1, 1), P(x, -1, R.depth), shade(R, '#6b5434', 2.5), 3);
-}
 function drawCaution(ctx, quad) {
   const b = bounds(quad);
   ctx.save(); poly(ctx, quad); ctx.clip();
@@ -1487,64 +1465,7 @@ export const SCENES = {
         click: (g) => { g.flag('ladder'); g.give('ladder', '一把鋁製折疊梯，收起來不算重。梯腳上沾著新油漆。'); },
       },
       { id: 'buckets', rect: bounds(buckets.flatMap((b) => [P(b.x1, b.y1, b.z1), P(b.x2, 1, b.z1)]), 8), label: '油漆桶', cursor: 'look', click: (g) => g.say('油漆還是濕的。標籤上印著一行小字：「後室重新裝修公司」。……在這種地方，誰會來裝修？') },
-      { id: 'door', rect: bounds(dryDoor, 12), label: '施工中的門', cursor: 'go', click: (g) => g.go('l02_room', { msg: '你推開門。眼前是一間全新的房間——乾爽的地毯、剛刷好的牆，連插座都通著電。' }) },
-    ],
-  },
-
-  l02_room: {
-    level: 0.2, title: (s) => (s.flags.l02_collapsed ? '蓋到一半的房子' : '翻新過的房間'),
-    room: (s) => (s.flags.l02_collapsed ? l02House : l02Fresh), quiet: 0.2,
-    trap: { after: 15, when: (s) => s.flags.l02_collapsed, run: (g) => {
-      g.flag('l02_collapsed', false); g.sanity(-15); g.sfx('open');
-      g.go('l0_dry', { free: true, msg: '頭頂的橫樑斷了，整棟房子朝你壓下來——你被一股力量甩出門外，摔回了乾燥的走廊。身上全是木屑。' });
-    } },
-    viewMsg: (s) => (s.flags.l02_collapsed ? '觀景窗裡，牆上的破洞外面什麼都沒有。不是黑暗，是什麼都沒有。' : '觀景窗裡，牆壁的油漆底下，看得到一根根木頭骨架的輪廓。'),
-    enter(g, { first }) {
-      if (g.s.flags.l02_collapsed) g.say('牆壁一面接一面倒下，露出後面蓋到一半的木頭骨架。天花板吱吱作響——得趕快找到門！');
-      else if (first) g.say('太乾淨了。乾淨得不像這一層會有的地方。地上放著一個紅色的工具箱。');
-    },
-    draw(ctx, t, s, R) {
-      if (s.flags.l02_collapsed) {
-        drawStuds(ctx, R);
-        for (const q of voidHoles) poly(ctx, q, '#000');
-        poly(ctx, houseDoor, shade(R, '#a07a4a', 5));
-        const k = P(0.25, 0.25, 5); ctx.fillStyle = shade(R, '#d8c08a', 5); ctx.fillRect(k[0] - 3, k[1] - 2, 6, 4);
-        if (!s.flags.tape2) cassette(ctx, R, tape2Box);
-        // dust falling
-        ctx.fillStyle = 'rgba(220,200,160,0.5)';
-        for (let i = 0; i < 24; i++) { const x = (i * 97) % W, y = ((t * 120 + i * 53) % H); ctx.fillRect(x, y, 2, 2); }
-        return;
-      }
-      poly(ctx, freshOutlet, shade(R, '#ffffff', 3));
-      const lp = P(lamp.x, 1, lamp.z), lt = P(lamp.x, -0.1, lamp.z);
-      seg(ctx, lp, lt, shade(R, '#555', lamp.z), 3);
-      ctx.save(); ctx.shadowColor = 'rgba(255,240,200,0.9)'; ctx.shadowBlur = 30;
-      ctx.fillStyle = '#fff4d6'; ctx.beginPath(); ctx.moveTo(lt[0] - 18, lt[1] + 10); ctx.lineTo(lt[0] + 18, lt[1] + 10); ctx.lineTo(lt[0] + 10, lt[1] - 12); ctx.lineTo(lt[0] - 10, lt[1] - 12); ctx.fill();
-      ctx.restore();
-      if (!s.flags.screwdriver) box(ctx, R, toolbox);
-    },
-    hotspots: [
-      {
-        id: 'back', when: (s) => !s.flags.l02_collapsed, rect: [330, 470, 300, 70], label: '回到走廊', cursor: 'back',
-        click: (g) => g.go('l0_dry'),
-      },
-      {
-        id: 'toolbox', when: (s) => !s.flags.l02_collapsed && !s.flags.screwdriver, rect: boxRect(toolbox, 8), label: '紅色工具箱', cursor: 'take',
-        click: (g) => {
-          g.flag('screwdriver'); g.give('screwdriver');
-          g.flag('l02_collapsed'); g.sfx('open');
-          g.go('l02_room', { free: true, msg: '你從工具箱裡拿起一支螺絲起子——整個房間猛地一震。' });
-        },
-      },
-      { id: 'lamp', when: (s) => !s.flags.l02_collapsed, rect: [P(lamp.x, 0, lamp.z)[0] - 30, P(lamp.x, -0.2, lamp.z)[1], 60, 140], label: '立燈', cursor: 'look', click: (g) => g.say('一盞插著電的立燈。電線插在插座上，插座後面……接到哪裡去？') },
-      {
-        id: 'tape2', when: (s) => s.flags.l02_collapsed && !s.flags.tape2, rect: boxRect(tape2Box, 14), label: '地上的錄影帶', cursor: 'take',
-        click: (g) => { g.flag('tape2'); g.give('tape2', '木屑堆裡躺著一卷錄影帶，標籤上寫著「#2」。'); },
-      },
-      {
-        id: 'door', when: (s) => s.flags.l02_collapsed, rect: bounds(houseDoor, 10), label: '木門', cursor: 'go',
-        click: (g) => { g.flag('l02_collapsed', false); g.go('l0_dry', { msg: '你衝出木門，身後傳來一陣崩塌聲。回頭看，門後又是那間乾淨的新房間——好像什麼都沒發生過。' }); },
-      },
+      { id: 'door', rect: bounds(dryDoor, 12), label: '施工中的門', cursor: 'go', click: (g) => g.go('l02_room', { msg: '你推開那扇門。門後的光白得發亮，空氣裡全是新油漆的味道。' }) },
     ],
   },
 
