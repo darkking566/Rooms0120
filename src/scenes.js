@@ -9,8 +9,8 @@ import { SUBLEVELS, SUBLEVEL_SCENES, drawAnnexEntrance, annexDoor } from './subl
 export const LEVELS = {
   // drain: sanity per step; thirst / hunger: how fast water and food run out per step
   0: { name: 'LEVEL 0', sub: '門檻', drain: 1, thirst: 1.5, hunger: 1 },
-  1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 1.5, thirst: 2, hunger: 1.2 },
-  2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 2, thirst: 2.5, hunger: 1.5 },
+  1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 1.5, thirst: 2, hunger: 1.6 },
+  2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 2, thirst: 2.5, hunger: 2 },
   0.2: { name: 'LEVEL 0.2', sub: '重新裝修的爛攤子', drain: 1, thirst: 1.5, hunger: 1 },
   ...SUBLEVELS,
 };
@@ -1875,8 +1875,8 @@ export const SCENES = {
         click: (g) => {
           if (!g.s.flags.cage_open) return g.say('鐵絲網做的物資籠，掛著一顆黃銅鎖。籠子裡有東西的形狀。');
           if (g.s.flags.cage_taken) return g.say('籠子空了。');
-          g.flag('cage_taken'); g.give('valve'); g.give('almond'); g.give('can');
-          g.say('籠子裡有一個沉重的閥門把手、一瓶杏仁水、一個罐頭。罐頭上用麥克筆寫著日期，已經過期了四十年。');
+          g.flag('cage_taken'); g.give('valve'); g.give('almond');
+          g.say('籠子裡有一個沉重的閥門把手和一瓶杏仁水。角落裡有一圈灰塵的印子，原本擺著一個罐頭——有人比你早一步。');
         },
         use: {
           outpost_key: (g) => {
@@ -1953,8 +1953,8 @@ export const SCENES = {
         id: 'bag', when: (s) => !s.flags.garden_bag, rect: boxRect(vineBag, 10), label: '被藤蔓纏住的背包', cursor: 'look',
         click: (g) => {
           if (!g.s.flags.vines_cut) return g.say('背包被藤蔓纏得死緊。你用手去扯，藤蔓好像……縮得更緊了。');
-          g.flag('garden_bag'); g.give('almond'); g.give('almond'); g.give('photo');
-          g.say('背包裡有兩瓶杏仁水，還有一張拍立得照片。照片上的人你不認識——應該不認識。');
+          g.flag('garden_bag'); g.give('almond'); g.give('photo');
+          g.say('背包裡有一瓶杏仁水，還有一張拍立得照片。照片上的人你不認識——應該不認識。');
         },
         use: {
           shears: (g) => {
