@@ -131,19 +131,27 @@ function blackoutStep(g, dir) {
 // The Manila Room: the one place in Level 0 where people can see each other.
 const manilaFlick = (t) => (Math.sin(t * 0.37) > 0.985 ? 0.2 : 0.8 + 0.2 * Math.sin(t * 0.9));
 const l0Manila = {
-  hw: 1.3, depth: 3, fogEnd: 12, tiles: true, floorTex: 'carpet', lights: [1.7], flick: manilaFlick,
-  pal: { wall: '#d8c494', ceil: '#e0d4b0', floor: '#8a7a50', fog: '#2a2416', light: '#fff4d0' },
+  hw: 1.3, depth: 3, fogEnd: 12, tiles: true, floorTex: 'concrete', lights: [1.7], flick: manilaFlick,
+  pal: { wall: '#d8c494', ceil: '#e0d4b0', floor: '#6e5232', fog: '#2a2416', light: '#fff4d0' },
 };
 const jhTorso = faceQuad(-0.78, 0.18, -0.36, 0.78, 2.75);
 const jhLegs = faceQuad(-0.86, 0.72, -0.16, 0.97, 2.55);
 const jhHead = P(-0.57, 0.04, 2.75);
 const megQuad = wallQuad(1.3, -0.3, 0.1, 1.8, 2.3);
-// Manila Room furnishings: the wooden table, chair, and wall tapping
-const manilaTable = { x1: -0.22, x2: 0.38, y1: 0.44, y2: 0.52, z1: 1.85, z2: 2.35, color: '#7a5430', top: '#8c633a', edge: true };
-const manilaChair = { x1: 0.45, x2: 0.68, y1: 0.56, y2: 0.62, z1: 1.95, z2: 2.25, color: '#664222', top: '#784f2b', edge: true };
-const manilaChairBack = { x1: 0.65, x2: 0.68, y1: 0.28, y2: 0.56, z1: 1.95, z2: 2.25, color: '#55351a', edge: true };
-const knockWallQuad = wallQuad(-1.3, -0.3, 0.4, 1.4, 2.0);
-const tableLegs = [{ x: -0.18, z: 1.9 }, { x: 0.34, z: 1.9 }, { x: -0.18, z: 2.3 }, { x: 0.34, z: 2.3 }];
+// Manila Room furnishings, as the wiki describes them: one octagonal table, two chairs, cupboards under the table.
+const TABLE_C = { x: 0.08, z: 2.1 }, TABLE_Y = 0.46;
+const tableTop = Array.from({ length: 8 }, (_, i) => {
+  const a = Math.PI / 8 + (i * Math.PI) / 4;
+  return P(TABLE_C.x + 0.34 * Math.cos(a), TABLE_Y, TABLE_C.z + 0.26 * Math.sin(a));
+});
+const tableLegs = [[-0.12, 1.95], [0.28, 1.95], [-0.12, 2.25], [0.28, 2.25]];
+const cupboard = { x1: -0.14, x2: 0.3, y1: 0.58, y2: 0.92, z1: 1.9, z2: 2.3, color: '#6a4626', top: '#6a4626', edge: true };
+const chairR = { x1: 0.5, x2: 0.72, y1: 0.6, y2: 0.65, z1: 1.98, z2: 2.22, color: '#664222', top: '#784f2b', edge: true };
+const chairRBack = { x1: 0.69, x2: 0.72, y1: 0.3, y2: 0.6, z1: 1.98, z2: 2.22, color: '#55351a', edge: true };
+const chairL = { x1: -0.62, x2: -0.4, y1: 0.6, y2: 0.65, z1: 1.62, z2: 1.86, color: '#664222', top: '#784f2b', edge: true };
+const chairLBack = { x1: -0.62, x2: -0.59, y1: 0.3, y2: 0.6, z1: 1.62, z2: 1.86, color: '#55351a', edge: true };
+// the knife mark on the table edge; the room puts it right while nobody is looking
+const carveAt = P(0.3, TABLE_Y + 0.01, 1.9);
 const JH_LINES = [
   '那個人抬起頭。燈光下，他的臉很模糊，像一張沒對好焦的照片。「……這次比較晚。」',
   '「這是唯一一間看得見人的房間。」他頓了一下。「所以你看見的，不一定是人。」',
@@ -164,7 +172,8 @@ const redOpening = wallQuad(-1, -0.6, 1, 3.2, 4.0);
 const peel = [[-1, -0.9, -0.2, 1.1, 1.9], [-1, 0.1, 0.8, 1.3, 2.4], [-1, -0.7, 0.5, 2.7, 3.8], [1, -0.8, 0.0, 1.2, 2.2], [1, 0.2, 0.9, 1.6, 3.0], [1, -0.6, 0.6, 3.2, 4.2]];
 const shrooms = [[-0.85, 1.4], [-0.7, 1.9], [0.8, 1.6], [0.9, 2.5], [-0.9, 2.8], [0.75, 3.4]];
 
-// Red Rooms extended areas: Hallway and Core
+// Deeper into the Red Rooms. Every step further in (or back out) shortens how long you can stand anywhere
+// in them: going back and forth does not reset the clock.
 const l0RedHall = {
   hw: 1, depth: 8, fogEnd: 6.5, pal: PAL_RED, stripes: true, tiles: true, floorTex: 'carpet',
   lights: [1.8, 4.2, 6.4], flick: hum, backDoor: { x1: -0.35, x2: 0.35, top: -0.6 },
@@ -175,29 +184,31 @@ const l0RedCore = {
 };
 const redPack = { x1: -0.65, x2: -0.25, y1: 0.76, y2: 1, z1: 2.1, z2: 2.5, color: '#3d3024', top: '#4f3f30', edge: true };
 const redCystQuad = faceQuad(-0.7, -0.4, 0.7, 0.8, 4.99);
+const hallShroom = [0.82, 2.6];
+// Seconds you can stand in a Red Rooms scene before it keeps you: 9 at the entrance, two fewer for every
+// step taken further in or back out, never less than 3.
+export const redTime = (s) => Math.max(3, 9 - 2 * (s.flags.red_x || 0));
+const redTrap = { after: redTime, end: 'red' };
+const redStep = (g) => g.flag('red_x', (g.s.flags.red_x || 0) + 1);
 
-// ---------- The Torment (痛楚) ----------
-// Metaphysical grayscale anomaly bleeding into Level 0. Grayscale, dead leaves that scream,
-// concentric circle of graves, and a deteriorated statue of a hooded man beneath a lone stationary moon.
-export const tormentCorner = (s) => s.loops >= 3 && s.loops % 2 === 1;
-const l0LoopTorment = { ...l0Loop, openings: [{ side: 1, z1: 2.8, z2: 3.6, top: -0.6 }] };
-const tormentOpening = wallQuad(1, -0.6, 1, 2.8, 3.6);
-const PAL_TORMENT = { wall: '#5c5c5c', ceil: '#3a3a3a', floor: '#262626', fog: '#121212', light: '#d0d0d0' };
-const l0TormentEntry = {
-  hw: 1.2, depth: 7, fogEnd: 6.5, pal: PAL_TORMENT, baseboard: false, tiles: true, floorTex: 'carpet',
-  lights: [2.0, 4.5], backDoor: { x1: -0.35, x2: 0.35, top: -0.6 },
+// The Torment: per the wiki, a grey region that showed itself in Level 0 for a few hours and then vanished.
+// Wanderers could only reach its edge; there is no known way in and no exit. Whatever touches it greys and
+// turns to ash. Here it shows on odd loops from the fifth, for three of them, at the far end of the right wall.
+export const tormentCorner = (s) => s.loops >= 5 && s.loops % 2 === 1
+  && (s.flags.torment_from === undefined || s.loops <= s.flags.torment_from + 4);
+const TORMENT_Z = [3.6, 4.4];
+const l0LoopTorment = { ...l0Loop, openings: [{ side: 1, z1: TORMENT_Z[0], z2: TORMENT_Z[1], top: -0.6 }] };
+const tormentOpening = wallQuad(1, -0.6, 1, TORMENT_Z[0], TORMENT_Z[1]);
+// the yellow hallway, already losing its colour
+const l0Torment = {
+  hw: 1.1, depth: 8, fogEnd: 5, tiles: true, floorTex: 'carpet', lights: [], flick: hum,
+  pal: { wall: '#a69f80', ceil: '#9c9682', floor: '#5f5a48', fog: '#8a8a8a', light: '#f0eee6' },
 };
-const PAL_VOID = { wall: '#1c1c1c', ceil: '#080808', floor: '#141414', fog: '#0a0a0a', light: '#f4f4f4' };
-const l0TormentGraves = {
-  hw: 2.5, depth: 9, fogEnd: 6, pal: PAL_VOID, baseboard: false, tiles: false, lights: [],
-  backDoor: { x1: -0.4, x2: 0.4, top: -0.6 },
-};
-const l0TormentStatue = {
-  hw: 1.8, depth: 6, fogEnd: 6.5, pal: PAL_VOID, baseboard: false, tiles: false, lights: [],
-  backDoor: { x1: -0.4, x2: 0.4, top: -0.6 },
-};
-const statuePedestal = { x1: -0.4, x2: 0.4, y1: 0.5, y2: 1.0, z1: 3.0, z2: 3.8, color: '#383838', edge: true };
-const tormentLeaves = [[-0.4, 2.2], [0.3, 1.8], [-0.2, 2.6], [0.5, 2.4], [0, 2.0], [-0.5, 1.6], [0.2, 2.8]];
+const EDGE_Z = 3.2; // where the carpet stops being carpet
+const greyFloor = [P(-1.1, 1, EDGE_Z), P(1.1, 1, EDGE_Z), P(1.1, 1, 7.99), P(-1.1, 1, 7.99)];
+const tormentLeaves = [[-0.5, 2.7], [0.35, 2.9], [-0.15, 2.45], [0.6, 2.6], [0.05, 3.0], [-0.75, 2.95], [0.2, 2.25]];
+const evpBox = { x1: -0.55, x2: -0.2, y1: 0.86, y2: 1, z1: 2.95, z2: 3.25, color: '#2c2e30', top: '#3a3d40', edge: true };
+const fogRect = [300, 140, 360, 170];
 
 // Stairs: a stairwell off the pillar room. Up to the arches, down to the holes.
 const l0Stairs = {
@@ -654,7 +665,15 @@ export const LEVEL0_SCENES = {
       else if (n === 3) g.say('右邊的牆……在閃。像訊號不良的螢幕一樣，一明一滅。');
       else g.say(LOOP_MSGS[n % LOOP_MSGS.length]);
       if (redCorner(g.s)) g.say('左邊多了一個轉角。轉角後面，透出一點暗紅色的光。');
-      else if (tormentCorner(g.s)) g.say('右邊的牆上裂開一個門洞。門洞後面毫無顏色，飄散出冰冷的灰霧，還隱約傳來某種尖銳的悲鳴。');
+      else if (tormentCorner(g.s)) {
+        if (g.s.flags.torment_from === undefined) g.flag('torment_from', n);
+        g.say(n === g.s.flags.torment_from
+          ? '走廊盡頭，右邊的壁紙褪成了灰色，像一張洗過太多次的照片。那裡多了一個門洞，飄出冷冷的灰霧。'
+          : '右邊那片灰色還在，而且比上一圈更大了。');
+      } else if (g.s.flags.torment_from !== undefined && !g.s.flags.torment_gone && n % 2 === 1) {
+        g.flag('torment_gone');
+        g.say('走廊盡頭那片灰色不見了。右邊的壁紙又是黃色的——只是比旁邊的淡了一點點。');
+      }
       const m = g.s.flags.chalk_loop;
       if (m !== undefined && n > m) g.say(g.s.view ? '你畫的記號不見了。……可是觀景窗裡，牆上密密麻麻全是記號，不只你畫的那一道。' : '你畫的記號不見了。牆面乾乾淨淨，像從來沒人碰過。');
     },
@@ -671,8 +690,13 @@ export const LEVEL0_SCENES = {
         ctx.fillStyle = `rgba(150,20,10,${0.45 + 0.1 * Math.sin(t * 2)})`; ctx.fillRect(0, 0, W, H);
         ctx.restore();
       } else if (tormentCorner(s)) {
+        // the wallpaper around the opening has lost its colour, and the grey is spreading
+        const grow = Math.min(2, (s.loops - (s.flags.torment_from ?? s.loops)) / 2);
+        ctx.save(); poly(ctx, wallQuad(1, -1, 1, TORMENT_Z[0] - 0.5 - 0.3 * grow, TORMENT_Z[1] + 0.6)); ctx.clip();
+        ctx.fillStyle = 'rgba(128,128,124,0.55)'; ctx.fillRect(0, 0, W, H);
+        ctx.restore();
         ctx.save(); poly(ctx, tormentOpening); ctx.clip();
-        ctx.fillStyle = `rgba(30,30,30,${0.65 + 0.1 * Math.sin(t * 1.5)})`; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = `rgba(150,150,150,${0.8 + 0.05 * Math.sin(t * 0.7)})`; ctx.fillRect(0, 0, W, H);
         ctx.restore();
       }
     },
@@ -700,7 +724,7 @@ export const LEVEL0_SCENES = {
         },
       },
       { id: 'redroom', when: redCorner, rect: bounds(redOpening, 4), label: '泛著紅光的轉角', cursor: 'go', click: (g) => g.go('l0_red') },
-      { id: 'torment', when: tormentCorner, rect: bounds(tormentOpening, 4), label: '失去色彩的灰暗走廊', cursor: 'go', click: (g) => g.go('l0_torment_entry') },
+      { id: 'torment', when: tormentCorner, rect: bounds(tormentOpening, 4), label: '褪成灰色的門洞', cursor: 'go', click: (g) => g.go('l0_torment') },
       {
         id: 'cabinet', when: (s) => s.loops >= 2, rect: boxRect(cabinet, 6), label: '木櫃', cursor: 'look',
         click: (g) => {
@@ -893,52 +917,55 @@ export const LEVEL0_SCENES = {
   },
 
   l0_manila: {
-    level: 0, title: '馬尼拉房間', room: l0Manila,
+    level: 0, title: '馬尼拉房間', room: l0Manila, quiet: 0.35,
     viewMsg: '觀景窗裡，那個人手上也舉著一台攝影機。他的螢幕裡，是你。',
     enter(g, { first }) {
-      if (g.s.flags.freed_jh) g.say('牆角空了。地毯上只剩一個坐了很久的凹痕。');
-      else if (first) g.say('牆角坐著一個人，抱著膝蓋。在這一層，你本來不可能看見任何人。中央擺著一張木桌與木椅。');
-      else g.say('那個人還坐在牆角。木桌與木椅靜靜立在房間中央。');
+      const f = g.s.flags;
+      if (f.freed_jh) g.say('牆角空了。地板上只剩一個坐了很久的凹痕。');
+      else if (first) g.say('牆角坐著一個人，抱著膝蓋。在這一層，你本來不可能看見任何人。房間中央是一張八角形的木桌，兩把椅子。嗡嗡聲退得很遠，牆裡隱約有人在彈鋼琴。');
+      else g.say('那個人還坐在牆角。牆裡的鋼琴聲還在。');
+      // the room mends itself while nobody is looking
+      if (f.manila_carved !== undefined && !f.manila_healed) {
+        g.flag('manila_healed');
+        g.say('你在桌邊刻的那道痕不見了。木頭平平整整，像從來沒人碰過。');
+      }
     },
     draw(ctx, t, s, R) {
-      const pile0 = faceQuad(0.5, 0.86, 1.0, 1, 2.2);
-      poly(ctx, pile0, shade(R, '#efe9d6', 2.2));
+      // floorboards
+      for (let x = -1.3; x <= 1.3; x += 0.26) seg(ctx, P(x, 1, 1.05), P(x, 1, 2.99), shade(R, '#4a3520', 2, 0.6), 1);
       paper(ctx, R, megQuad, 2.0, '#f4f0e0');
-
-      // Draw wooden table and chair
-      box(ctx, R, manilaTable);
-      for (const leg of tableLegs) {
-        seg(ctx, P(leg.x, 0.52, leg.z), P(leg.x, 1.0, leg.z), shade(R, '#4d3319', leg.z), 4);
+      // the figure in the corner sits behind the table, so it is drawn first
+      if (!s.flags.freed_jh) {
+        poly(ctx, jhTorso, shade(R, '#3b3226', 2.7));
+        poly(ctx, jhLegs, shade(R, '#2f281e', 2.6));
+        ctx.fillStyle = shade(R, '#8a7058', 2.75);
+        ctx.beginPath(); ctx.arc(jhHead[0], jhHead[1], 19, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = shade(R, '#2a2219', 2.75);
+        ctx.beginPath(); ctx.arc(jhHead[0], jhHead[1] - 6, 19, Math.PI, 0); ctx.fill();
       }
-      box(ctx, R, manilaChair);
-      box(ctx, R, manilaChairBack);
-      if (s.flags.manila_drawer_open) {
-        box(ctx, R, { x1: -0.1, x2: 0.25, y1: 0.52, y2: 0.62, z1: 1.75, z2: 1.85, color: '#55361a', edge: true });
+      // the octagonal table: legs, the cupboard underneath, then the top with papers on it
+      for (const [x, z] of tableLegs) seg(ctx, P(x, TABLE_Y + 0.02, z), P(x, 1, z), shade(R, '#4d3319', z), 4);
+      box(ctx, R, cupboard);
+      const cd = P(0.08, 0.75, 1.9);
+      seg(ctx, P(0.08, 0.6, 1.9), P(0.08, 0.9, 1.9), shade(R, '#3a2614', 1.9), 1.5);
+      ctx.fillStyle = shade(R, '#c8a868', 1.9); ctx.fillRect(cd[0] - 8, cd[1] - 2, 4, 4); ctx.fillRect(cd[0] + 4, cd[1] - 2, 4, 4);
+      if (s.flags.manila_cupboard) {
+        poly(ctx, [P(-0.12, 0.6, 1.89), P(0.06, 0.6, 1.89), P(0.06, 0.9, 1.89), P(-0.12, 0.9, 1.89)], shade(R, '#1c1208', 1.9));
       }
-
-      // Draw knocking wall seam
-      seg(ctx, P(-1.3, -0.3, 1.7), P(-1.3, 0.4, 1.7), shade(R, '#9a875a', 1.7), 1.5);
-
-      if (s.flags.freed_jh) return;
-      const col = shade(R, '#3b3226', 2.7);
-      poly(ctx, jhTorso, col);
-      poly(ctx, jhLegs, shade(R, '#2f281e', 2.6));
-      ctx.fillStyle = shade(R, '#8a7058', 2.75);
-      ctx.beginPath(); ctx.arc(jhHead[0], jhHead[1], 19, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = shade(R, '#2a2219', 2.75);
-      ctx.beginPath(); ctx.arc(jhHead[0], jhHead[1] - 6, 19, Math.PI, 0); ctx.fill();
-    },
-    drawOver(ctx, t, s) {
-      if (s.flags.manila_dark) {
-        ctx.fillStyle = 'rgba(6,5,3,0.92)'; ctx.fillRect(0, 0, W, H);
+      poly(ctx, tableTop, shade(R, '#8c633a', TABLE_C.z));
+      ctx.strokeStyle = shade(R, '#5a3d1f', 2); ctx.lineWidth = 2; poly(ctx, tableTop); ctx.stroke();
+      paper(ctx, R, [P(-0.1, TABLE_Y - 0.005, 2.05), P(0.08, TABLE_Y - 0.005, 2.0), P(0.12, TABLE_Y - 0.005, 2.2), P(-0.06, TABLE_Y - 0.005, 2.25)], 2.1, '#f2ecd8');
+      if (s.flags.manila_carved !== undefined && !s.flags.manila_healed) {
+        seg(ctx, [carveAt[0] - 10, carveAt[1] - 1], [carveAt[0] + 8, carveAt[1] + 2], '#2a1a0c', 2);
       }
+      box(ctx, R, chairR); box(ctx, R, chairRBack);
+      seg(ctx, P(0.52, 0.65, 2.2), P(0.52, 1, 2.2), shade(R, '#4d3319', 2.2), 3);
+      seg(ctx, P(0.52, 0.65, 2.0), P(0.52, 1, 2.0), shade(R, '#4d3319', 2.0), 3);
+      box(ctx, R, chairL); box(ctx, R, chairLBack);
+      seg(ctx, P(-0.42, 0.65, 1.64), P(-0.42, 1, 1.64), shade(R, '#4d3319', 1.64), 3);
+      seg(ctx, P(-0.42, 0.65, 1.84), P(-0.42, 1, 1.84), shade(R, '#4d3319', 1.84), 3);
     },
     drawView(ctx, t, s) {
-      if (s.flags.manila_dark) {
-        const c = P(0.08, 0.46, 2.0);
-        ctx.save(); ctx.fillStyle = 'rgba(90,255,140,0.85)'; ctx.font = '600 13px ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.fillText('留下記錄，否則會被沖刷乾淨。', c[0], c[1]); ctx.restore();
-      }
       if (s.flags.freed_jh) return;
       const c = P(-0.5, 0.5, 2.5);
       ctx.fillStyle = '#1b1c1e'; ctx.fillRect(c[0] - 18, c[1] - 12, 36, 24);
@@ -972,70 +999,43 @@ export const LEVEL0_SCENES = {
       },
       { id: 'note', rect: bounds(megQuad, 8), label: '牆上的文件', cursor: 'look', click: (g) => g.read('n_meg0') },
       {
-        id: 'table', rect: boxRect(manilaTable, 6), label: '中央的木桌', cursor: 'look',
-        click: (g) => {
-          if (g.s.flags.manila_drawer_open) {
-            if (!g.s.flags.manila_loot_taken) {
-              g.flag('manila_loot_taken');
-              g.give('almond');
-              g.read('n_manila_secret', () => g.say('你從彈開的暗格裡拿出了一瓶乾淨的【杏仁水】，還有一份折疊好的筆記。'));
-            } else {
-              g.say('木桌底下的暗格已經空了。桌面殘留著刀刻痕跡：「它能聽見嗎？」');
-            }
-          } else {
-            g.say('一張表面斑駁的粗糙木桌。桌面刻著一行深刻痕跡：「它能聽見嗎？」木桌側邊有一道極其精密的暗縫，似乎被某種內部機關扣住了。');
-          }
-        },
+        id: 'table', rect: bounds(tableTop, 4), label: '八角形的木桌', cursor: 'look',
+        click: (g) => g.read('n_manila_secret', () => g.say('桌上的紙用十幾種語言寫成，有些被拿走了，留下一圈圈乾淨的印子。')),
         use: {
           knife: (g) => {
-            if (g.s.flags.manila_drawer_open) return g.say('暗格已經打開了。');
-            g.flag('manila_drawer_open'); g.sfx('click');
-            g.say('你用折疊軍刀的刀刃探入木桌側邊的暗縫輕輕一撬。「卡嗒！」暗格彈了開來！');
+            if (g.s.flags.manila_carved !== undefined && !g.s.flags.manila_healed) return g.say('那道刻痕還在。');
+            if (g.s.flags.manila_healed) return g.say('你沒有再刻。反正它會自己長好。');
+            g.flag('manila_carved', g.s.moves); g.sfx('screw');
+            g.say('你用軍刀在桌邊刻了一道短短的痕。木屑捲起來，落在地板上。');
           },
         },
       },
       {
-        id: 'chair', rect: boxRect(manilaChair, 6), label: '木椅（坐下休息）', cursor: 'look',
+        id: 'cupboard', rect: boxRect(cupboard, 6), label: '桌子底下的櫃子', cursor: 'look',
         click: (g) => {
-          if (!g.s.flags.manila_rested) {
-            g.flag('manila_rested'); g.sfx('creak'); g.sanity(15);
-            g.say('你拉開木椅坐了下來。在走廊裡跋涉了太久，這張簡陋的木椅幾乎像奇蹟一樣令人安心。緊繃的神經稍微放鬆了。（清醒度 +15）');
-          } else {
-            g.say('你坐在木椅上。四周安靜得只有日光燈的嗡嗡聲。');
-          }
+          if (g.s.flags.manila_cupboard) return g.say('櫃子裡空了。下一個來補貨的人，不知道還要走多久。');
+          g.flag('manila_cupboard'); g.sfx('open');
+          g.give('almond'); g.give('bar');
+          g.say('你拉開桌下的櫃門。裡面整整齊齊放著一瓶杏仁水和一條能量棒，旁邊壓著一張字條：「拿你需要的。剩下的留給下一個人。」');
         },
       },
       {
-        id: 'wall_knock', rect: bounds(knockWallQuad, 4), label: '傳出異響的牆面', cursor: 'look',
+        id: 'chair', rect: boxRect(chairR, 10), label: '木椅', cursor: 'look',
         click: (g) => {
-          g.say('你側耳貼在泛黃的牆壁上。隔著厚重的牆體，隱約傳來規律的敲擊聲——「咚……咚……咚……」，隨後是一陣微弱的機械摩擦聲。……那邊似乎是另一個遙遠的空間。');
-        },
-        use: {
-          rod: (g) => {
-            if (g.s.flags.manila_drawer_open) return g.say('你用吊桿敲了敲牆，牆那頭沒有再傳來回應。');
-            g.flag('manila_drawer_open'); g.sfx('hit');
-            g.say('你舉起金屬吊桿，朝著傳來聲音的牆面回敲了三下。「咚！咚！咚！」——幾秒鐘的死寂後，中央木桌底下突然發出「卡嗒」一聲，一道暗格彈了開來！');
-          },
-        },
-      },
-      {
-        id: 'lamp', rect: [460, 20, 40, 60], label: '吊燈拉繩', cursor: 'look',
-        click: (g) => {
-          const dark = !g.s.flags.manila_dark;
-          g.flag('manila_dark', dark);
-          g.sfx('click');
-          if (dark) g.say('你拉了一下拉繩，日光燈啪地一聲熄滅了！房間進入了暫時的【熄滅期】。黑暗中，牆外隱隱傳來其他樓層的遠處轟鳴……');
-          else g.say('你再次拉動拉繩，日光燈閃爍了兩下，重新照亮了米黃色的房間。');
+          if (g.s.flags.manila_rested) return g.say('你又坐了一會兒。鋼琴聲彈到同一段，又從頭開始。');
+          g.flag('manila_rested'); g.sanity(15); g.checkpoint();
+          g.say('你在桌邊坐下。鋼琴聲是從牆裡、從天花板裡傳出來的，很輕。你聽了很久，才發現自己的手已經不抖了。（清醒度 +15）');
         },
       },
     ],
   },
 
   l0_red: {
-    level: 0, title: '？？？', room: l0Red, trap: { after: 9, end: 'red' },
+    level: 0, title: '？？？', room: l0Red, trap: redTrap,
     viewMsg: '螢幕上全是雜訊。這裡的東西，連鏡頭都錄不下來。',
     enter(g) {
       g.sfx('sting');
+      if (g.s.flags.red_x) return g.say('你回到了入口的轉角。來的方向還在——可是它好像比剛才窄了。');
       g.say('一切都泛著紅光。地毯又厚又黏，長著黑霉和小小的菇。剝落的黃色壁紙底下，露出深紅色的漆。——你的每一根神經都在叫你：馬上回頭。');
     },
     draw(ctx, t, s, R) {
@@ -1066,36 +1066,48 @@ export const LEVEL0_SCENES = {
       {
         id: 'back', rect: [330, 470, 300, 70], label: '馬上回頭', cursor: 'back',
         click: (g) => {
-          g.sanity(-10);
-          g.go('l0_loop', { free: true, msg: '你轉身就跑，頭也不回。等你停下來喘氣，四周又是黃色的走廊。……你差一點就回不來了。' });
+          const deep = g.s.flags.red_x;
+          g.flag('red_x', 0); g.sanity(deep ? -15 : -10);
+          g.go('l0_loop', { free: true, msg: deep
+            ? '你拚命往來的方向擠。壁紙的邊緣擦過你的肩膀，像一道正在合上的傷口——然後你跌進了黃色的走廊。身後只剩一面普通的牆。'
+            : '你轉身就跑，頭也不回。等你停下來喘氣，四周又是黃色的走廊。……你差一點就回不來了。' });
         },
       },
-      { ...FORWARD('l0_red_hall', '往紅光深處走'), click: (g) => g.go('l0_red_hall', { msg: '你咬著牙，踩著越來越黏稠的地毯，往猩紅色的走廊深處走去……' }) },
+      { ...FORWARD('l0_red_hall', '往紅光深處走'), click: (g) => { redStep(g); g.go('l0_red_hall'); } },
       {
         id: 'tape4', when: (s) => !s.flags.tape4, rect: boxRect(tape4Box, 16), label: '黏在地毯上的錄影帶', cursor: 'take',
         click: (g) => { g.flag('tape4'); g.give('tape4', '你彎腰把錄影帶從黏糊糊的地毯上扯下來。標籤寫著「#4」。——快走。'); },
       },
-      { id: 'corner', rect: bounds(wallQuad(1, -0.6, 1, 4.5, 5.3), 4), label: '深入猩紅走廊', cursor: 'go', click: (g) => g.go('l0_red_hall') },
+      { id: 'corner', rect: bounds(wallQuad(1, -0.6, 1, 4.5, 5.3), 4), label: '另一個轉角', cursor: 'go', click: (g) => g.end('red') },
     ],
   },
 
   l0_red_hall: {
-    level: 0, title: '紅室・走廊', room: l0RedHall,
-    viewMsg: '螢幕上的雜訊劇烈跳動，隱約有紅色的斑點在鏡頭前蠕動。',
-    enter(g) {
-      g.sfx('sting'); g.sanity(-6); g.thirst(-5); g.hunger(-5);
-      g.say('這裡的空氣濃稠得令人作嘔，帶著強烈的生肉與爛蘑菇味。地毯黏腳得像糖漿，每走一步都在瘋狂消耗水分與體力。（清醒度 -6）');
+    level: 0, title: '？？？', room: l0RedHall, trap: redTrap,
+    viewMsg: '螢幕上的雜訊在跳。雜訊裡，有一個人影一直站在走廊盡頭。',
+    enter(g, { first }) {
+      g.sfx('sting'); g.sanity(-6);
+      if (first) g.say('空氣又稠又熱，有一股銅鏽味。地毯黏著鞋底，每抬一次腳都要用力。牆邊有一個被黑霉包住的背包。');
+      else g.say('黏稠的紅色走廊。你回頭看了一眼——入口的轉角比你記得的遠。');
     },
     draw(ctx, t, s, R) {
       for (const [x, y1, y2, z1, z2] of peel) {
-        const pts = [P(x, y1, z1), P(x, y1, z2), P(x, y2, z2), P(x, y2, z1)];
-        poly(ctx, pts, shade(R, '#4a100a', (z1 + z2) / 2));
+        poly(ctx, [P(x, y1, z1), P(x, y1, z2), P(x, y2, z2), P(x, y2, z1)], shade(R, '#4a100a', (z1 + z2) / 2));
       }
       for (const [x, z] of shrooms) {
         const p = P(x, 1, z), r = 20 / z;
         ctx.fillStyle = shade(R, '#7a1c12', z); ctx.beginPath(); ctx.arc(p[0], p[1] - r * 1.5, r * 0.9, Math.PI, 0); ctx.fill();
       }
+      if (!s.flags.red_shroom_cut) {
+        const p = P(hallShroom[0], 1, hallShroom[1]), r = 70 / hallShroom[1], k = 1 + 0.06 * Math.sin(t * 3);
+        ctx.fillStyle = shade(R, '#a02818', hallShroom[1]); ctx.beginPath(); ctx.ellipse(p[0], p[1] - r, r * 1.4 * k, r * k, 0, Math.PI, 0); ctx.fill();
+      }
       box(ctx, R, redPack);
+      if (!s.flags.red_pack_looted) {
+        ctx.strokeStyle = shade(R, '#1a0805', 2.3); ctx.lineWidth = 1.5;
+        const a = P(-0.45, 0.76, 2.1);
+        for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(a[0] - 20 + i * 10, a[1]); ctx.lineTo(a[0] - 26 + i * 12, a[1] + 30); ctx.stroke(); }
+      }
     },
     drawOver(ctx, t) {
       const gl = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, W * 0.75);
@@ -1104,49 +1116,44 @@ export const LEVEL0_SCENES = {
     },
     hotspots: [
       {
-        id: 'back', rect: [330, 470, 300, 70], label: '退回入口轉角', cursor: 'back',
-        click: (g) => g.go('l0_red', { msg: '你費盡全力拔出鞋底，退回了稍早的轉角處。' }),
+        id: 'back', rect: [330, 470, 300, 70], label: '退回轉角', cursor: 'back',
+        click: (g) => { redStep(g); g.go('l0_red', { msg: '你把鞋底從地毯上扯下來，一步一步退回去。' }); },
       },
       {
-        id: 'pack', rect: boxRect(redPack, 8), label: '被菌絲纏繞的戰術背包', cursor: 'look',
+        id: 'pack', rect: boxRect(redPack, 8), label: '被黑霉包住的背包', cursor: 'look',
         click: (g) => {
-          if (!g.s.flags.red_pack_looted) {
-            g.flag('red_pack_looted');
-            g.give('knife');
-            g.give('bar');
-            g.read('n_meg_red', () => g.say('你扯開背包，拿到了一把鋒利的【折疊軍刀】、一根未變質的【能量棒】，以及特工瓦倫丁染血的最後記錄。'));
-          } else {
-            g.say('背包已經被翻空了，只剩下損壞的無線電。耳機裡只有刺耳的尖叫白噪音。');
-          }
+          if (g.s.flags.red_pack_looted) { g.sfx('static'); return g.say('背包空了。掛在肩帶上的無線電還開著，喇叭裡只剩沙沙聲。'); }
+          g.flag('red_pack_looted'); g.sfx('static');
+          g.give('knife'); g.give('bar');
+          g.read('n_meg_red', () => g.say('背包裡有一把折疊刀和一條還沒拆的能量棒。肩帶上的無線電還開著——沙沙聲裡，偶爾有一個字。'));
         },
       },
       {
-        id: 'shrooms', rect: [650, 320, 150, 120], label: '厚實的黑紅菌傘', cursor: 'look',
-        click: (g) => g.say('地毯與牆根相連處的肉質菌菇，像心臟一樣微弱搏動著。表皮堅韌，徒手根本撕不開。'),
+        id: 'shroom', when: (s) => !s.flags.red_shroom_cut, rect: bounds([P(hallShroom[0] - 0.3, 0.7, hallShroom[1]), P(hallShroom[0] + 0.3, 1, hallShroom[1])], 10), label: '牆根鼓起的菌囊', cursor: 'look',
+        click: (g) => g.say('牆根長出一顆拳頭大的菌囊，像心臟一樣慢慢地脹、慢慢地縮。半透明的皮底下，裹著一個瓶子的形狀。徒手撕不開。'),
         use: {
           knife: (g) => {
-            if (g.s.flags.red_shroom_cut) return g.say('菌傘已經被切開了，只剩下乾涸的黑紅色黏液。');
-            g.flag('red_shroom_cut'); g.sfx('hit');
+            g.flag('red_shroom_cut'); g.sfx('steam');
             g.give('almond');
-            g.say('你握緊折疊軍刀，用力切開厚實的菌傘！黑紅汁液飛濺而出，在菌核深處，你赫然挑出一瓶被厚厚菌皮保護著的純淨【杏仁水】！');
+            g.say('你把刀插進菌囊。它像氣球一樣洩了，噴出一股溫熱的臭氣。裡面是一瓶還封著的杏仁水——不知道是從哪一層掉進來，被它吞下去的。');
           },
         },
       },
-      { ...FORWARD('l0_red_core', '往走廊死結走'), click: (g) => g.go('l0_red_core', { msg: '你一步步接近走廊的盡頭。眼前的牆壁已經完全變成了搏動的暗紅肉牆……' }) },
+      { ...FORWARD('l0_red_core', '往更深處走'), click: (g) => { redStep(g); g.go('l0_red_core'); } },
     ],
   },
 
   l0_red_core: {
-    level: 0, title: '紅室・死結', room: l0RedCore,
-    viewMsg: '螢幕徹底被刺眼的紅光覆蓋，音響裡傳來劇烈的心跳聲。',
+    level: 0, title: '？？？', room: l0RedCore, trap: redTrap,
+    viewMsg: '螢幕整片都是紅的。喇叭裡傳出一下、一下的心跳聲——不是你的。',
     enter(g) {
-      g.sfx('sting'); g.sanity(-12);
-      g.say('你抵達了紅室的終點。前路被一堵巨大的暗紅菌牆徹底封死，彷彿一顆沉睡在牆壁裡的活體心臟正在規律搏動……你的理智正在迅速流失！（清醒度 -12）');
+      g.sfx('sting'); g.sanity(-10);
+      g.say('走廊在這裡結束了。盡頭的牆已經不是牆，是一大片暗紅色的肉，正在一下一下地起伏。你的每一根神經都在尖叫。');
     },
     draw(ctx, t, s, R) {
       poly(ctx, redCystQuad, shade(R, '#380a06', 4.9));
       const c = P(0, 0.2, 4.9);
-      const pulse = 1 + 0.1 * Math.sin(t * 3.5);
+      const pulse = s.flags.red_core_looted ? 0.85 : 1 + 0.1 * Math.sin(t * 3.5);
       ctx.fillStyle = shade(R, '#75180f', 4.8);
       ctx.beginPath(); ctx.ellipse(c[0], c[1], 80 * pulse, 95 * pulse, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = shade(R, '#280503', 4.7);
@@ -1159,26 +1166,22 @@ export const LEVEL0_SCENES = {
     },
     hotspots: [
       {
-        id: 'back', rect: [330, 470, 300, 70], label: '拼命往回逃！', cursor: 'back',
-        click: (g) => {
-          g.sanity(-4);
-          g.go('l0_red_hall', { msg: '強烈的求生慾望讓你發瘋似地轉身狂奔！你撕開黏著鞋底的菌絲，逃回了走廊！' });
-        },
+        id: 'back', rect: [330, 470, 300, 70], label: '往回跑', cursor: 'back',
+        click: (g) => { redStep(g); g.go('l0_red_hall', { msg: '你轉身就跑。鞋底黏在地毯上，你連鞋帶一起扯了下來。' }); },
       },
       {
-        id: 'cyst', rect: bounds(redCystQuad, 8), label: '搏動的巨大菌囊', cursor: 'look',
-        click: (g) => g.say('菌囊像肉塊一樣收縮著，裡面隱約裹著一個被金屬夾密封的紙袋。徒手抓會被燙傷。'),
+        id: 'walk_in', rect: [330, 140, 300, 180], label: '起伏的肉牆', cursor: 'go',
+        click: (g) => g.end('red'),
+      },
+      {
+        id: 'cyst', when: (s) => !s.flags.red_core_looted, rect: bounds(faceQuad(-0.35, 0.05, 0.35, 0.55, 4.9), 6), label: '肉牆中間的菌囊', cursor: 'look',
+        click: (g) => g.say('肉牆正中間鼓起一顆大菌囊。裡面裹著一個方方正正的東西，像一本對折的筆記本。手一靠近，它就收縮一下。'),
         use: {
           knife: (g) => {
-            if (g.s.flags.red_core_looted) return g.say('菌囊已經枯萎扁塌，不再搏動。');
-            g.flag('red_core_looted'); g.sfx('hit'); g.sanity(10);
-            g.read('n_red_truth', () => g.say('你用折疊軍刀刺穿菌囊！濃稠的黑液傾瀉而出，你從中掏出了一份密封的絕密文件——《紅室生存報告（最後存檔）》。知道真相讓你的內心稍微安定了些。（清醒度 +10）'));
+            g.flag('red_core_looted'); g.sfx('steam');
+            g.read('n_red_truth', () => g.say('紙上的字有一半被泡爛了。你把它塞進口袋。肉牆的起伏慢了下來——像是在等你。'));
           },
         },
-      },
-      {
-        id: 'walk_in', rect: [380, 180, 200, 200], label: '走進肉牆深處', cursor: 'go',
-        click: (g) => g.end('red'),
       },
     ],
   },
@@ -1523,177 +1526,113 @@ export const LEVEL0_SCENES = {
     ],
   },
 
-  l0_torment_entry: {
-    level: 0, title: '褪色的長廊', room: l0TormentEntry,
-    viewMsg: '觀景窗的綠色在這一區變得極淡，彷彿鏡頭感光元件的色彩正在被吸乾。',
+  l0_torment: {
+    level: 0, title: '走廊？', room: l0Torment, quiet: 0.25,
+    viewMsg: '觀景窗裡，灰霧中有很多人影在墳墓之間走。他們走一圈，又回到同一個地方。',
     enter(g, { first }) {
-      if (first) g.say('走廊的壁紙完全失去了黃色，呈現死寂的石灰色。地上積滿了乾癟的灰白枯葉，深處飄來刺骨的灰霧。');
-      else g.say('灰化的長廊。地上厚厚的灰白枯葉依然靜止著。');
+      if (first) { g.sfx('static'); g.sanity(-5); }
+      g.say(first
+        ? '嗡嗡聲忽然遠了。壁紙的黃色一點一點褪掉，到了前面就只剩灰色。再過去，地毯變成了泥土，泥土上是一圈一圈的墳。霧裡有一輪月亮，一動也不動。一股說不出來的恐懼攫住了你。'
+        : '灰色比剛才更靠近你了。霧裡的月亮還在同一個位置。');
     },
     draw(ctx, t, s, R) {
-      // scattered dead leaves
-      for (const [x, z] of tormentLeaves) {
-        const p = P(x, 1, z), r = 16 / z;
-        ctx.fillStyle = shade(R, '#404040', z);
-        ctx.beginPath(); ctx.ellipse(p[0], p[1], r * 1.4, r * 0.7, 0.4, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = shade(R, '#606060', z);
-        ctx.beginPath(); ctx.ellipse(p[0] + 3, p[1] - 2, r * 0.9, r * 0.4, -0.3, 0, Math.PI * 2); ctx.fill();
-      }
-      if (s.flags.torment_bridge) {
-        // folding ladder placed across the leaves
-        seg(ctx, P(-0.4, 0.96, 1.8), P(-0.4, 0.96, 2.8), '#b8bcc0', 3);
-        seg(ctx, P(0.4, 0.96, 1.8), P(0.4, 0.96, 2.8), '#b8bcc0', 3);
-        for (let z = 1.9; z <= 2.7; z += 0.2) {
-          seg(ctx, P(-0.4, 0.96, z), P(0.4, 0.96, z), '#9ea3a8', 2);
+      // beyond the edge: grey ground, the lone moon, dead trees and graves in rings around a statue
+      poly(ctx, greyFloor, '#5a5a5a');
+      ctx.save(); ctx.shadowColor = 'rgba(240,240,240,0.7)'; ctx.shadowBlur = 30;
+      ctx.fillStyle = '#ededed'; ctx.beginPath(); ctx.arc(CX + 46, 205, 12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      for (let ring = 0; ring < 3; ring++) {
+        const z = 4.2 + ring * 1.1, n = 5 + ring * 2;
+        for (let i = 0; i < n; i++) {
+          const x = -1 + (2 * i) / (n - 1);
+          const p = P(x * (0.55 + ring * 0.25), 1, z), w = 16 / z, h = 30 / z;
+          ctx.fillStyle = ring % 2 ? '#444' : '#3c3c3c'; ctx.fillRect(p[0] - w, p[1] - h * 2, w * 2, h * 2);
         }
       }
+      for (const x of [-0.9, 0.95]) {
+        const p = P(x, 1, 5.2); ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0] + x * 8, p[1] - 90); ctx.lineTo(p[0] - x * 18, p[1] - 130);
+        ctx.moveTo(p[0] + x * 6, p[1] - 70); ctx.lineTo(p[0] + x * 30, p[1] - 100); ctx.stroke();
+      }
+      // the statue at the centre: a man in a hat, broken at the shoulder
+      const st = P(0, 1, 7.4);
+      ctx.fillStyle = '#2e2e2e';
+      ctx.fillRect(st[0] - 9, st[1] - 40, 18, 40); ctx.fillRect(st[0] - 13, st[1] - 44, 26, 4);
+      ctx.beginPath(); ctx.arc(st[0], st[1] - 49, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillRect(st[0] - 10, st[1] - 57, 20, 3); ctx.fillRect(st[0] - 5, st[1] - 63, 10, 6);
+      // dead leaves blown over the edge onto the carpet
+      for (const [x, z] of tormentLeaves) {
+        const p = P(x, 1, z), r = 14 / z;
+        ctx.fillStyle = shade(R, '#3a3a36', z); ctx.beginPath(); ctx.ellipse(p[0], p[1], r * 1.4, r * 0.6, 0.4 + x, 0, Math.PI * 2); ctx.fill();
+      }
+      // M.E.G.'s recorder, left at the edge and half gone to ash
+      if (!s.flags.tape6) {
+        box(ctx, R, evpBox);
+        const a = P(-0.2, 0.86, 3.1);
+        ctx.fillStyle = '#9a9a9a'; ctx.fillRect(a[0] - 14, a[1] - 2, 14, 8);
+        if ((t * 1.5 | 0) % 2 === 0) { ctx.fillStyle = '#c33'; ctx.beginPath(); ctx.arc(a[0] - 34, a[1] + 2, 2, 0, Math.PI * 2); ctx.fill(); }
+      }
     },
-    hotspots: [
-      {
-        id: 'back', rect: [330, 470, 300, 70], label: '退回黃色走廊', cursor: 'back',
-        click: (g) => g.go('l0_loop', { msg: '你轉身穿過門洞，回到了刺眼的黃色走廊。身後的灰霧慢慢散去。' }),
-      },
-      {
-        id: 'leaves', rect: [280, 340, 400, 120], label: '地上厚厚的灰白枯葉', cursor: 'look',
-        click: (g) => {
-          if (g.s.flags.torment_bridge) g.say('折疊梯已經穩穩架在枯葉上方，形成了一道安全的金屬窄橋。');
-          else g.say('覆蓋在地毯上的灰白枯葉。這裡明明沒有任何樹木，枯葉卻厚得像秋天的森林地表。輕輕一碰就會碎裂。');
-        },
-        use: {
-          ladder: (g) => {
-            if (g.s.flags.torment_bridge) return g.say('折疊梯已經架好了。');
-            g.flag('torment_bridge'); g.sfx('creak');
-            g.say('你把折疊梯平放在枯葉上方，搭成了一座懸空金屬窄橋！踩著橫桿走過去，就不會壓碎枯葉發出慘叫了。');
-          },
-        },
-      },
-      {
-        ...FORWARD('l0_torment_graves', '走入灰霧深處'),
-        click: (g) => {
-          if (!g.s.flags.torment_bridge) {
-            g.sfx('sting'); g.sanity(-6);
-            return g.go('l0_torment_graves', { msg: '你踩過枯葉——腳下突然爆發出一陣撕心裂肺的淒厲慘嚎！彷彿踩在無數垂死之人的胸膛上。你的靈魂一陣戰慄，跌跌撞撞衝進了濃霧之中。（清醒度 -6）' });
-          }
-          g.go('l0_torment_graves', { msg: '你踩著折疊梯的橫桿無聲地越過枯葉堆，穿過了灰霧的邊界。' });
-        },
-      },
-    ],
-  },
-
-  l0_torment_graves: {
-    level: 0, title: '痛楚・同心墓園', room: l0TormentGraves,
-    viewMsg: '透過觀景窗，墓碑間遊蕩著無數透明的哀痛虛影。他們在這裡重複著生前最後的苦難。',
-    enter(g) {
-      g.say('走廊的天花板在霧中徹底消失了。漆黑的虛空上方，懸掛著一輪蒼白、靜止不動的孤月。四周矗立著枯死的老樹，一排排石造墓碑排列成完美的同心圓。');
-    },
-    draw(ctx, t, s, R) {
-      // lone stationary moon
-      ctx.save();
-      ctx.shadowColor = 'rgba(230,230,230,0.6)'; ctx.shadowBlur = 35;
-      ctx.fillStyle = '#f0f0f0'; ctx.beginPath(); ctx.arc(CX, 95, 26, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-
-      // dead gnarled trees (silhouettes)
-      const treeL = P(-1.8, 1, 3.2), treeR = P(1.8, 1, 3.2);
-      ctx.strokeStyle = '#222'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(treeL[0], treeL[1]); ctx.lineTo(treeL[0] + 15, treeL[1] - 120); ctx.lineTo(treeL[0] - 25, treeL[1] - 180); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(treeR[0], treeR[1]); ctx.lineTo(treeR[0] - 15, treeR[1] - 120); ctx.lineTo(treeR[0] + 25, treeR[1] - 180); ctx.stroke();
-
-      // concentric gravestones
-      box(ctx, R, { x1: -1.2, x2: -0.85, y1: 0.35, y2: 1.0, z1: 3.5, z2: 3.7, color: '#4a4a4a', edge: true });
-      box(ctx, R, { x1: 0.85, x2: 1.2, y1: 0.35, y2: 1.0, z1: 3.5, z2: 3.7, color: '#4a4a4a', edge: true });
-      box(ctx, R, { x1: -1.8, x2: -1.45, y1: 0.45, y2: 1.0, z1: 4.8, z2: 5.0, color: '#3f3f3f', edge: true });
-      box(ctx, R, { x1: 1.45, x2: 1.8, y1: 0.45, y2: 1.0, z1: 4.8, z2: 5.0, color: '#3f3f3f', edge: true });
+    drawOver(ctx, t, s) {
+      // grey fog: thick past the edge, and the colour draining from the whole picture
+      const gl = ctx.createLinearGradient(0, 0, 0, H);
+      gl.addColorStop(0, 'rgba(120,120,120,0.55)'); gl.addColorStop(0.55, `rgba(140,140,140,${0.35 + 0.05 * Math.sin(t * 0.5)})`); gl.addColorStop(1, 'rgba(110,110,110,0.15)');
+      ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H);
+      if (s.flags.torment_touched) {
+        ctx.fillStyle = 'rgba(60,60,60,0.18)'; ctx.fillRect(0, 0, W, H);
+      }
     },
     drawView(ctx, t) {
-      // translucent ghost silhouettes
-      ctx.save();
-      ctx.fillStyle = 'rgba(180,240,200,0.25)';
-      for (const [x, y] of [[280, 260], [680, 260], [420, 290]]) {
-        const jitter = Math.sin(t * 2 + x) * 4;
-        ctx.beginPath(); ctx.arc(x + jitter, y - 30, 10, 0, Math.PI * 2); ctx.fill();
-        ctx.fillRect(x - 8 + jitter, y - 20, 16, 32);
+      ctx.save(); ctx.fillStyle = 'rgba(200,255,215,0.22)';
+      for (let i = 0; i < 6; i++) {
+        // the souls walk the rings, always the same few steps
+        const a = t * 0.25 + (i * Math.PI) / 3, z = 4.6 + (i % 3) * 0.9;
+        const p = P(Math.sin(a) * (0.7 + (i % 3) * 0.3), 1, z), h = 60 / z;
+        ctx.beginPath(); ctx.arc(p[0], p[1] - h * 1.1, h * 0.22, 0, Math.PI * 2); ctx.fill();
+        ctx.fillRect(p[0] - h * 0.18, p[1] - h * 0.9, h * 0.36, h * 0.9);
       }
       ctx.restore();
     },
     hotspots: [
       {
-        id: 'back', rect: [330, 470, 300, 70], label: '退回長廊', cursor: 'back',
-        click: (g) => g.go('l0_torment_entry', { msg: '你退回了鋪著枯葉的灰暗長廊。' }),
+        id: 'back', rect: [330, 470, 300, 70], label: '回到黃色的走廊', cursor: 'back',
+        click: (g) => g.go('l0_loop', { msg: '你退回走廊。刺眼的黃色、熟悉的嗡嗡聲——你從來沒有這麼高興聽見它。' }),
       },
       {
-        id: 'tombstones', rect: [180, 260, 220, 180], label: '排列成圓圈的墓碑', cursor: 'look',
-        click: (g) => g.read('n_torment_graves'),
-      },
-      {
-        id: 'moon', rect: [CX - 40, 60, 80, 80], label: '天上靜止的孤月', cursor: 'look',
-        click: (g) => g.say('一輪冰冷而蒼白的圓月，靜止在漆黑的虛空中。沒有雲飄過，沒有風，甚至連月光都是死的。'),
-      },
-      {
-        id: 'tree', rect: [50, 160, 120, 250], label: '枯死的老樹', cursor: 'look',
-        click: (g) => g.say('樹幹乾裂得像被大火燒過又風化了數百年的白骨，摸起來冰冷徹骨。'),
-      },
-      {
-        ...FORWARD('l0_torment_statue', '走向墓園正中央的石像'),
-        click: (g) => g.go('l0_torment_statue', { msg: '你穿過一圈又一圈的墓碑，來到了同心圓的正中心。' }),
-      },
-    ],
-  },
-
-  l0_torment_statue: {
-    level: 0, title: '痛楚・兜帽石像', room: l0TormentStatue,
-    viewMsg: '觀景窗裡，石像兜帽下的黑暗中，隱約浮現出一雙微弱的白色眼眸。',
-    enter(g) {
-      g.say('同心圓的正中心。一座戴著深兜帽的男子石像聳立在孤月之下。石像表面布滿了裂紋，單手向前伸出，掌心向上。');
-    },
-    draw(ctx, t, s, R) {
-      // moon behind statue
-      ctx.save();
-      ctx.shadowColor = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 40;
-      ctx.fillStyle = '#f8f8f8'; ctx.beginPath(); ctx.arc(CX, 140, 32, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-
-      // pedestal
-      box(ctx, R, statuePedestal);
-
-      // statue body
-      poly(ctx, faceQuad(-0.25, -0.2, 0.25, 0.5, 3.4), shade(R, '#404040', 3.4));
-      // hooded head
-      ctx.fillStyle = shade(R, '#333333', 3.3);
-      ctx.beginPath(); ctx.arc(P(0, -0.32, 3.4)[0], P(0, -0.32, 3.4)[1], 24, 0, Math.PI * 2); ctx.fill();
-      // hooded face void
-      ctx.fillStyle = '#0a0a0a';
-      ctx.beginPath(); ctx.arc(P(0, -0.3, 3.38)[0], P(0, -0.3, 3.38)[1], 13, 0, Math.PI * 2); ctx.fill();
-      // reaching hand
-      poly(ctx, [P(0.12, 0.05, 3.4), P(0.3, 0.18, 2.6), P(0.36, 0.24, 2.6), P(0.18, 0.12, 3.4)], shade(R, '#4d4d4d', 3.0));
-      // if loot not taken, draw small items on hand
-      if (!s.flags.torment_statue_looted) {
-        ctx.fillStyle = '#cfd2d6';
-        ctx.fillRect(P(0.32, 0.16, 2.6)[0] - 8, P(0.32, 0.16, 2.6)[1] - 6, 16, 10);
-      }
-    },
-    hotspots: [
-      {
-        id: 'back', rect: [330, 470, 300, 70], label: '退回墓園外圈', cursor: 'back',
-        click: (g) => g.go('l0_torment_graves', { msg: '你退回了墓碑群中。' }),
-      },
-      {
-        id: 'statue', rect: [380, 140, 200, 280], label: '戴兜帽男子的破損石像', cursor: 'look',
+        id: 'leaves', rect: [250, 350, 420, 60], label: '飄到地毯上的枯葉', cursor: 'look',
         click: (g) => {
-          if (!g.s.flags.torment_statue_looted) {
-            g.flag('torment_statue_looted');
-            g.give('ash_pendant');
-            g.give('tape6');
-            g.sanity(15);
-            g.say('你從石像伸出的殘破手掌中，取下了一枚冰涼的【石化吊墜】與一卷灰白色的【錄影帶 #6】。那一瞬間，一直糾纏在腦海中的日光燈嗡鳴聲，奇蹟般地平息了下來。（清醒度 +15）');
-          } else {
-            g.say('石像佇立在死寂的月光下。兜帽下的面孔風化得看不出表情，底座刻著細小的銘文。');
-          }
+          g.sfx('static');
+          if (g.s.flags.torment_leaf) return g.say('你沒有再踩。那聲尖叫還在你耳朵裡。');
+          g.flag('torment_leaf'); g.sanity(-4);
+          g.say('你的鞋尖碰到一片枯葉。它碎了——同時發出一聲刺耳的尖叫，像一個人被活活踩斷了肋骨。');
         },
       },
       {
-        id: 'pedestal', rect: boxRect(statuePedestal, 6), label: '石像底座的銘文', cursor: 'look',
-        click: (g) => g.say('底座上的文字已經有些剝落：「……肉體化作飛灰，靈魂永駐於此。非有緣者，莫入熬煎。」'),
+        id: 'wall', rect: bounds(wallQuad(1.1, -0.8, 0.9, 1.4, 2.6), 4), label: '褪色的壁紙', cursor: 'look',
+        click: (g) => g.say('壁紙的黃色正在一點一點流掉，從前面往你這邊爬。你盯著看了一會兒，灰色又往前挪了一格。'),
+      },
+      {
+        id: 'evp', when: (s) => !s.flags.tape6, rect: boxRect(evpBox, 12), label: '邊界上的錄音機', cursor: 'take',
+        click: (g) => {
+          g.flag('tape6'); g.sfx('click');
+          g.give('tape6', '一台 M.E.G. 的錄音機，一半落在灰色那邊。你按下退帶鍵，抽出裡面的帶子——下一秒，灰色的那一半就塌成了一撮灰。帶子上貼著標籤：「#6 EVP」。');
+        },
+      },
+      {
+        id: 'fog', rect: fogRect, label: '灰霧的邊緣', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.torment_touched) {
+            g.flag('torment_touched'); g.sfx('sting'); g.sanity(-10);
+            return g.say('你伸出手。指尖碰到霧的那一瞬間，什麼感覺也沒有——直到你看見指甲變成了灰色，皮膚像燒過的紙一樣捲起來。你猛地抽回手。灰色停在指節上，沒有再往上爬。');
+          }
+          g.end('torment');
+        },
+        use: {
+          rod: (g) => {
+            if (g.s.flags.rod_ash) return g.say('你沒有再試。吊桿已經短了一截。');
+            g.flag('rod_ash'); g.sfx('static');
+            g.say('你用吊桿去探灰霧。桿子的尖端變灰、變白，然後無聲地碎成灰，落在泥土上。你抽回來時，它短了一截。');
+          },
+        },
       },
     ],
   },

@@ -15,9 +15,10 @@ Wiki 內容會隨改寫而變動；引用前請再核對一次原頁面。
 | --- | --- | --- | --- |
 | **Level 1** | 找到一面閃爍的牆，穿過去。現行版沒有列出其他出口。 | 現行 | [Level 0 - "Threshold"](https://backrooms-wiki.wikidot.com/level-0) |
 | Level 1 | 「只能靠 noclip 離開，而且一定會進入 Level 1。」 | 舊版 | [(ARCHIVED) Level 0 - "Tutorial Level"](https://backrooms-wiki.wikidot.com/archived:level-0-2020) |
-| **Manila Room**（馬尼拉房間） | 很難找到的小房間。舊版說要朝同一方向走非常遠才可能遇到；它是死路，是倖存者的會合點，放著 M.E.G. 文件。 | 現行（頁面改寫中） | [Level 0](https://backrooms-wiki.wikidot.com/level-0)、[manila room](https://backrooms-wiki.wikidot.com/manila-room) |
-| **Red Rooms**（紅房間） | 只能從 Level 0 進入：轉過某個轉角時隨機出現，無法預測位置。進去之後「推定沒有出口」。（**遊戲已擴充**：猩紅走廊與菌核死結，可搜刮失聯特工裝備與折疊軍刀，極限回頭逃脫） | 現行 | [Red Rooms](https://backrooms-wiki.wikidot.com/red-rooms) |
-| **The Torment**（痛楚） | 形而上學異常，短暫顯現在 Level 0。灰霧漫延剝奪色彩，中心為同心圓墓群、哀嚎枯葉、靜止孤月與兜帽石像。（**遊戲已做**：l0_torment_entry、l0_torment_graves、l0_torment_statue，折疊梯避難、墓碑閱覽、石化吊墜與錄影帶 #6） | 現行 | [The Torment / 痛楚](https://backrooms-wiki-cn.wikidot.com/the-torment) |
+| **Manila Room**（馬尼拉房間） | 很難找到的小房間，8×8 公尺，牆很厚，木地板，一張八角桌和兩把椅子；桌上放著生存與 noclip 指南，桌下的櫃子裡有志願者送來的食物、水和文件。孤立效應在這裡失效，嗡嗡聲變弱、牆裡傳出鋼琴聲；沒人看著時，家具和牆的損傷會自己復原。（**遊戲已做**：八角桌、兩把椅子、桌上文件、桌下櫃子、鋼琴聲、刀痕復原。舊版的「敲牆暗號」和「熄滅期」不是 Wiki 設定，已移除） | 現行（頁面改寫中） | [Level 0](https://backrooms-wiki.wikidot.com/level-0)、[manila room](https://backrooms-wiki.wikidot.com/manila-room) |
+| **Red Rooms**（紅房間） | 只能從 Level 0 進入：轉過某個轉角時隨機出現，無法預測位置。進去之後「推定沒有出口」。M.E.G. 有三名外勤人員在裡面失聯，無線電待得越久越差。 | 現行 | [Red Rooms](https://backrooms-wiki.wikidot.com/red-rooms) |
+| Red Rooms（遊戲改編） | **以下是遊戲原創，不是 Wiki 設定**：入口後面還有一段黏稠的走廊（失聯特工的背包、折疊刀）和一面會呼吸的肉牆。往裡或往外每走一步，能停留的秒數就少 2 秒（入口 9 秒，最少 3 秒），所以來回走不能拖時間。 | 遊戲 | — |
+| **The Torment**（痛楚） | 在 Level 0 顯現幾個小時後消失的灰色異常區域。流浪者只能在邊緣短暫接觸，沒有確定的進入方法，出口「無」。內有排成圓圈的墳墓、圍繞中央一座破損的戴帽男子石像，七英尺高的枯樹，踩到會尖叫的枯葉，唯一的光是靜止的月亮，濃霧讓能見度只有五英尺。碰到異常表面的東西會變灰、化為灰燼；死者的靈魂在墳墓間重溫最糟的記憶，M.E.G. 用 EVP 設備收集到循環的訊號。（**遊戲已做**：第 5 圈起的單數圈，走廊右側盡頭褪成灰色，可走到 `l0_torment` 邊緣；撿 M.E.G. 錄音機裡的錄影帶 #6（EVP，按音量排序是藏頭句）；碰霧手指變灰，走進去是「痛楚」結局；出現三個單數圈後永久消失。EVP 的八句話是遊戲自己寫的，只沿用了「按音量排序得到藏頭句」的做法） | 現行 | [痛楚](https://backrooms-wiki-cn.wikidot.com/the-torment)（作者 Sky3，譯者 highlightingman）、[The Torment](https://backrooms-wiki.wikidot.com/the-torment) |
 | **Level 0.2 "Remodeled Mess"** | 燈管的嗡嗡聲變小、地毯變乾、房間開始像施工中時，有機會找到一扇門。（**遊戲已做**：濕透的房間 → 乾燥的走廊 → `l02_room` 翻新走廊／洗手間／施工辦公室，崩塌後經骨架、托樑、落板走廊逃回 Level 0） | 現行 | [Level 0.2](https://backrooms-wiki.wikidot.com/level-0-2) |
 | **Level 0.7 "The Reminiscence District"** | Level 0 的子層級，是保存「後室歷代改版」的時間泡。頁面的隱藏區塊寫了入口：穿過 Level 0，直到周圍開始顯得更陳舊（白熾燈泡、石牆等）；離開只能轉身走回較現代的區段。 | 現行 | [Level 0.7](https://backrooms-wiki.wikidot.com/level-0-7) |
 

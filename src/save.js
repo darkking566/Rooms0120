@@ -16,7 +16,12 @@ export const SAVE_VERSION = 1;
 export const MIGRATIONS = {};
 
 // old scene id → current scene id
-export const SCENE_ALIASES = {};
+export const SCENE_ALIASES = {
+  // the walk-in Torment scenes became a single scene at its edge
+  l0_torment_entry: 'l0_torment',
+  l0_torment_graves: 'l0_torment',
+  l0_torment_statue: 'l0_torment',
+};
 
 // where a save whose scene no longer exists (and has no alias) wakes up
 export const FALLBACK_SCENE = 'l0_start';

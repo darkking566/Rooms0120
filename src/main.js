@@ -569,7 +569,8 @@ function frame(now) {
   }
   if (active) {
     sceneT += dt;
-    if (sc.trap && (!sc.trap.when || sc.trap.when(S)) && sceneT > sc.trap.after) {
+    // trap.after is seconds, or a function of the state that returns them
+    if (sc.trap && (!sc.trap.when || sc.trap.when(S)) && sceneT > (typeof sc.trap.after === 'function' ? sc.trap.after(S) : sc.trap.after)) {
       sceneT = -Infinity;
       if (sc.trap.run) sc.trap.run(g); else g.end(sc.trap.end);
     }

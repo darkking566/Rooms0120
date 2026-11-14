@@ -45,6 +45,24 @@ refs('scare kinds', /\bscare\([^;]*?,\s*\d+,\s*'(\w+)'\)/g, SCARES);
 check([...COMPLETIONS].every((k) => ENDINGS[k]), 'every ending that finishes the game exists');
 check(GHOST_LOOT.every((id) => ITEMS[id]), 'supply crates only hold real items');
 
+{
+  // sound effects are looked up by name in audio.js; an unknown name plays nothing and fails silently
+  const audio = fs.readFileSync(path.join(root, 'src', 'audio.js'), 'utf8');
+  const known = new Set([...audio.slice(audio.indexOf('sfx(name)')).matchAll(/case '(\w+)'/g)].map((m) => m[1]));
+  const bad = [];
+  for (const [file, src] of files) for (const m of src.matchAll(/\bsfx\('(\w+)'\)/g)) if (!known.has(m[1])) bad.push(`${m[1]} (src/${file}.js)`);
+  check(bad.length === 0, `sound effects all exist${bad.length ? `; unknown: ${bad.join(', ')}` : ''}`);
+}
+{
+  // scenes and items talk to the game through the `g` object in main.js; calling a method it lacks throws
+  const main = files.find(([f]) => f === 'main')[1];
+  const body = main.slice(main.indexOf('\nconst g = {'), main.indexOf('\n};', main.indexOf('\nconst g = {')));
+  const api = new Set([...body.matchAll(/^ {2}(?:get )?(\w+)(?:\(|:)/gm)].map((m) => m[1]));
+  const bad = new Set();
+  for (const [file, src] of files) for (const m of src.matchAll(/\bg\.(\w+)\(/g)) if (!api.has(m[1])) bad.add(`g.${m[1]} (src/${file}.js)`);
+  check(api.size > 10 && bad.size === 0, `${api.size} game API methods, every call names one${bad.size ? `; unknown: ${[...bad].join(', ')}` : ''}`);
+}
+
 console.log('Scenes');
 {
   const bad = Object.entries(SCENES).filter(([, sc]) => !(sc.level in LEVELS)).map(([id]) => id);

@@ -381,6 +381,55 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await endingIs('red'), 'lingering in the Red Rooms ends the game');
   check(await page.isVisible('#btnRetry'), 'retry offered after the Red Rooms ending');
 
+  console.log('Manila Room, deeper Red Rooms and the Torment');
+  await page.click('#btnRetry'); await started();
+  const docOpen = () => page.isVisible('#doc');
+  const fl = (k) => page.evaluate((key) => window.__rooms.state.flags[key], k);
+  await page.evaluate(() => { const r = window.__rooms; r.state.sanity = 60; r.g.go('l0_manila', { free: true }); });
+  await shot('44-l0_manila-table');
+  await hit('cupboard'); check(await has('almond') && await has('bar'), 'the cupboard under the octagonal table holds water and food');
+  { const s0 = await sanity(); await hit('chair'); const s1 = await sanity(); await hit('chair');
+    check(s1 > s0 && await sanity() === s1, 'sitting at the table restores sanity, once'); }
+  await hit('table'); check(await docOpen(), 'the papers on the table can be read'); await closeDoc();
+
+  await page.evaluate(() => { const st = window.__rooms.state; st.sanity = 100; st.flags.red_x = 0; window.__rooms.g.go('l0_red', { free: true }); });
+  await hit('forward'); check(await scene() === 'l0_red_hall', 'went deeper into the Red Rooms');
+  await shot('45-l0_red_hall');
+  await hit('pack'); check(await docOpen(), "the agent's log is in the pack"); await closeDoc();
+  check(await has('knife'), 'took the knife from the pack');
+  await slot('knife'); await hit('shroom'); check(await fl('red_shroom_cut'), 'the knife cuts open the cyst in the hall');
+  await hit('forward'); check(await scene() === 'l0_red_core', 'reached the end of the Red Rooms');
+  await slot('knife'); await hit('cyst'); check(await docOpen(), 'the knife opens the cyst in the flesh wall'); await closeDoc();
+  check(await page.evaluate(() => window.__rooms.state.flags.red_x) === 2, 'every step deeper counts against you');
+  await hit('back'); await hit('back'); await hit('back');
+  check(await scene() === 'l0_loop' && await fl('red_x') === 0, 'running straight back out still gets you out of the Red Rooms');
+  await page.evaluate(() => { window.__rooms.state.flags.red_x = 3; window.__rooms.g.go('l0_red_hall', { free: true }); });
+  { const t0 = Date.now(); check(await endingIs('red') && Date.now() - t0 < 6000, 'after walking back and forth, the Red Rooms keep you within seconds'); }
+
+  await page.click('#btnRetry'); await started();
+  await page.evaluate(() => {
+    const st = window.__rooms.state; st.sanity = 100; st.loops = 3; delete st.flags.torment_from; delete st.flags.torment_gone;
+    if (!st.inv.includes('camcorder')) st.inv.push('camcorder');
+    window.__rooms.g.go('l0_loop', { free: true });
+  });
+  await hit('forward'); check(!(await ids()).includes('torment'), 'no grey doorway on the 4th loop');
+  await hit('forward'); check((await ids()).includes('torment') && await fl('torment_from') === 5, 'a grey doorway appears on the 5th loop');
+  { const hs = await page.evaluate(() => window.__rooms.hotspots());
+    const [a, b] = ['wall', 'torment'].map((id) => hs.find((h) => h.id === id).rect);
+    check(a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[3] <= b[1] || b[1] + b[3] <= a[1], 'the grey doorway does not cover the flickering wall'); }
+  await shot('46-l0_loop-torment');
+  await hit('torment'); check(await scene() === 'l0_torment', 'reached the edge of the Torment');
+  await shot('47-l0_torment');
+  await hit('evp'); check(await has('tape6'), "took tape #6 out of M.E.G.'s recorder at the edge");
+  await slot('tape6'); await slot('camcorder'); check(await docOpen(), 'tape #6 plays on the camcorder'); await closeDoc();
+  await hit('back');
+  for (const n of [7, 9]) { await hit('forward'); await hit('forward'); check((await ids()).includes('torment'), `the grey doorway is still there on loop ${n}`); }
+  await hit('forward'); await hit('forward');
+  check(!(await ids()).includes('torment') && await fl('torment_gone'), 'then the Torment is gone for good');
+  await page.evaluate(() => window.__rooms.g.go('l0_torment', { free: true }));
+  await hit('fog'); check(!(await page.isVisible('#ending')) && await fl('torment_touched'), 'touching the grey costs you, but you can still pull back');
+  await hit('fog'); check(await endingIs('torment'), 'walking into the grey gives the Torment ending');
+
   console.log('Dehydration');
   await page.click('#btnRetry'); await started();
   await page.evaluate(() => { const st = window.__rooms.state; st.thirst = 0.5; st.sanity = 6; });
