@@ -66,6 +66,12 @@ const { chromium } = require('playwright');
         }
         await hit('window');
       },
+      c1x: async () => {
+        await enter.c1();
+        await hit('ahead');
+        await page.evaluate(() => { window.__rooms.g.give('dragon_scale'); window.__rooms.g.go('c1_mirror'); });
+        await hit('rift_portal');
+      },
     };
     async function reload() {
       await page.reload(); await page.click('#btnCont');
@@ -428,6 +434,57 @@ const { chromium } = require('playwright');
     await hit('back');
     await hit('back');
     check((await state()).scene === 'c1_hall', 'returns from East Boat City back to c1_hall');
+
+    console.log('Level C-1 — 驤亭');
+    await start();
+    await page.evaluate(() => window.__rooms.g.go('c1_mirror'));
+    const mirrorNoScale = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+    check(!mirrorNoScale.includes('rift_portal'), 'mirror rift closed without dragon_scale');
+    await page.evaluate(() => window.__rooms.g.give('dragon_scale'));
+    await hit('rift_portal');
+    check((await state()).scene === 'c1x_rift' && (await state()).inv.includes('dragon_scale'), 'dragon_scale opens rift to c1x_rift without being consumed');
+    await hit('stone'); await closeDoc();
+    check((await state()).notes.includes('n_c1x_rift'), 'reads rift stone marker n_c1x_rift');
+    await hit('back');
+    check((await state()).scene === 'c1_mirror' && (await state()).inv.includes('dragon_scale'), 'returns from c1x_rift back to c1_mirror keeping dragon_scale');
+    await hit('rift_portal');
+    await hit('ahead');
+    check((await state()).scene === 'c1x_plain', 'enters c1x_plain');
+    const plainInv = (await state()).inv.length;
+    await hit('grass');
+    check((await state()).inv.length === plainInv, 'searching plains grass gives no items');
+    await hit('to_river');
+    await page.evaluate(() => window.__rooms.g.drink(-50));
+    const thirstBeforeRiver = (await state()).thirst;
+    await hit('drink_river');
+    check((await state()).thirst > thirstBeforeRiver, 'river in Xiangting restores thirst');
+    await hit('back');
+    await hit('to_outskirts');
+    await hit('approach'); await closeDoc();
+    check((await state()).flags.c1x_progenitor_seen && (await state()).notes.includes('n_c1x_progenitor'), 'watches Progenitor and reads n_c1x_progenitor');
+    await hit('back');
+    await hit('to_base');
+    check((await state()).flags.c1x_dread_seen, 'immune to Dragon-blood presence at base');
+    await hit('faceless'); await hit('steed');
+    await hit('to_eye');
+    await hit('eye_manual'); await closeDoc();
+    await hit('alpha_log'); await closeDoc();
+    await hit('skeleton');
+    await reload();
+    check((await state()).scene === 'c1x_eye' && (await state()).flags.c1x_progenitor_seen, 'reloading mid-Xiangting preserves scene and flags');
+    await hit('pod');
+    for (const [dreamId, name] of [['dream_fall', 'fall'], ['dream_water', 'water'], ['dream_chase', 'chase']]) {
+      await hit(dreamId);
+      await hit('choice_interfere');
+      const postHs = await page.evaluate(() => window.__rooms.hotspots().map((h) => h.id));
+      check(!postHs.includes(dreamId), `dream ${name} can only be entered once`);
+    }
+    await page.waitForSelector('#doc:not([hidden])');
+    await closeDoc();
+    await page.waitForSelector('#ending:not([hidden])');
+    check((await state()).notes.includes('n_c1x_eye_done'), 'three interferes trigger n_c1x_eye_done and torn_script ending');
+    await page.click('#btnRetry');
+    check((await state()).scene === 'c1x_rift', 'retrying torn_script restores C1.3 entry checkpoint');
 
     console.log('Touch viewport and old saves');
     const mobile = await browser.newContext({ viewport: { width: 375, height: 740 }, hasTouch: true, isMobile: true });

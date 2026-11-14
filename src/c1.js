@@ -264,6 +264,10 @@ export const C1_SCENES = {
         poly(ctx, mw, '#e2edf4');
         ctx.strokeStyle = '#c4cfd8'; ctx.lineWidth = 2; poly(ctx, mw); ctx.stroke();
       }
+      if (s.inv.includes('dragon_scale')) {
+        glow(ctx, 560, 260, 62, '#69b8ff', 0.45);
+        poly(ctx, faceQuad(0.24, -0.55, 0.72, 0.85, 7.46), 'rgba(90, 170, 245, 0.35)');
+      }
       // Faint silhouette reflected inside the back mirror wall
       const pTop = P(0, -0.32, 7.45), pBot = P(0, 0.72, 7.45);
       ctx.save();
@@ -279,7 +283,7 @@ export const C1_SCENES = {
     drawOver: c1DrawOver,
     hotspots: [
       back('c1_hall', '回到長廊'),
-      hit('mirror', bounds(c1MirrorWall, 10), '整面鏡牆', (g) => {
+      hit('mirror', bounds(faceQuad(-0.92, -0.72, 0.16, 0.92, 7.48), 10), '整面鏡牆', (g) => {
         if (once(g, 'c1_mirror_spooked')) {
           g.sanity(-3);
           g.sfx('sting');
@@ -287,6 +291,9 @@ export const C1_SCENES = {
         }
         g.say('冰涼平滑的鏡面如實映出你站著的身影，玻璃上連半個指紋都沒有。');
       }),
+      hit('rift_portal', bounds(faceQuad(0.22, -0.56, 0.74, 0.86, 7.46), 10), '鏡面深處的藍色裂隙', (g) => {
+        g.go('c1x_rift', { msg: '懷裡那片龍鱗隱隱發燙。鏡面沒有碎裂，而是像水波般朝兩側讓開，讓你踏進一道冰冷的藍光裂縫。' });
+      }, 'go', { when: (s) => s.inv.includes('dragon_scale') }),
     ],
   },
 
@@ -661,6 +668,365 @@ export const C1_SCENES = {
               return g.give('bar', '配給箱裡放著一條封口完好的能量棒。');
             }
             g.say('配給箱已經空了。');
+          }),
+        ],
+      },
+    };
+  })(),
+
+  // ---------- Report III: 驤亭 (Level C-1.3) ----------
+  ...(() => {
+    const skyPal = pal('#8ba6b8', '#9ec0d6', '#5e7346', '#a4bac8', '#eaf4fa');
+    const basePal = pal('#5e666e', '#6f7c86', '#4c5448', '#7d8a94', '#dce6ee');
+    const eyePal = pal('#222830', '#161a20', '#1a2026', '#0c1014', '#72b8e8');
+
+    const meadowRoom = room(skyPal, { hw: 2.2, depth: 9.5, fogEnd: 18, baseboard: false, lights: [] });
+    const baseRoom = room(basePal, { hw: 2.0, depth: 9, fogEnd: 16, lights: [2.4, 5.8] });
+    const eyeRoom = room(eyePal, { hw: 1.6, depth: 7.5, fogEnd: 11, lights: [2.2, 5.2] });
+
+    let clankWait = 6;
+    let wingAnimT = 0;
+
+    function drawGrass(ctx, seedShift = 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(72, 98, 48, 0.65)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 34; i++) {
+        const x = 40 + ((i * 73 + seedShift * 31) % 880);
+        const y = 335 + ((i * 37) % 130);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 6, y - 22, x - 3 + (i % 5) * 2, y - 38);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    const riftQuad = faceQuad(-0.22, -0.78, 0.22, 0.72, 2.2);
+    const riftStone = { x1: -1.3, x2: -0.75, y1: 0.35, y2: 1, z1: 2.4, z2: 2.9, color: '#58626b', top: '#6d7882', edge: true };
+    const riftAhead = faceQuad(0.35, -0.35, 1.35, 0.95, 8.999);
+
+    const plainGrassSpot = [280, 355, 220, 95];
+    const plainRiverPath = wallQuad(2.2, -0.25, 0.95, 3.6, 5.2);
+    const plainBasePath = faceQuad(-0.45, -0.45, 0.65, 0.95, 9.2);
+    const plainOutskirtsPath = wallQuad(-2.2, -0.25, 0.95, 3.2, 4.8);
+
+    const riverWaterRect = [180, 310, 600, 145];
+
+    const baseGuardQuad = faceQuad(-1.15, -0.35, -0.65, 0.95, 4.2);
+    const baseSteedQuad = faceQuad(0.65, -0.15, 1.35, 0.95, 4.4);
+    const baseEyeDoor = faceQuad(-0.35, -0.5, 0.35, 0.98, 8.999);
+
+    const podBox = { x1: -0.48, x2: 0.48, y1: -0.1, y2: 0.95, z1: 4.1, z2: 5.1, color: '#2b3642', top: '#3c4c5c', edge: true };
+    const relayManualQuad = wallQuad(-1.6, -0.35, 0.35, 2.3, 3.3);
+    const alphaLogQuad = wallQuad(1.6, -0.35, 0.35, 2.3, 3.3);
+    const skeletonQuad = faceQuad(0.7, 0.12, 1.32, 0.92, 3.5);
+
+    const outProgenitorRect = [340, 140, 280, 210];
+
+    const DREAMS = [
+      { n: 1, title: '墜落', desc: '【情景一：高處墜落】你正從一座沒有欄杆的灰白高塔上筆直下墜，風聲撕扯耳膜，底下什麼緩衝也沒有。牆縫裡伸出一截鏽蝕鐵鉤——要伸手死抓，還是照推演落到底？', act: '你猛地拽住牆縫鐵鉤，手臂險些脫臼，原本註定的塔底竟像空白稿紙一樣裂開了一條生路。', pass: '你沒有伸手。下墜的最後一瞬間，推演的畫面準時熄成黑屏。' },
+      { n: 2, title: '溺水', desc: '【情景二：被水淹沒】漆黑冷潮轉眼淹過下巴，頭頂唯一的通氣鐵柵正被人緩緩推闔。要咬緊牙關硬撞開它，還是順從這段推演沉下去？', act: '指節撞在鏽柵上生疼，鐵條竟應聲彎斷——黑水倒流退去，這條預知被硬生生改寫。', pass: '鐵柵徹底合上，意識在最後一串氣泡裡歸零。' },
+      { n: 3, title: '追逐', desc: '【情景三：黑暗被追逐】黑暗裡的腳步聲緊貼在背脊後方，前路卻越縮越窄成了一面死牆。要反身撞破側邊那道看起來是實心的暗牆，還是乖乖跑到死巷盡頭？', act: '你斜肩朝不可能開路的暗牆撞過去——整面牆像未上墨的草稿般破碎，身後的腳步瞬間卡死在頁緣之外。', pass: '死牆在面前封死，身後的影子準時追上了你的腳跟。' },
+    ];
+
+    const dreamDone = (s, n) => !!s.flags[`c1x_dream_${n}`];
+    function dreamsCompleted(s) {
+      return DREAMS.every((d) => dreamDone(s, d.n));
+    }
+
+    function applyDreamChoice(g, interfere) {
+      const idx = (g.s.flags.c1x_active_dream || 1) - 1;
+      const d = DREAMS[idx] || DREAMS[0];
+      g.s.flags[`c1x_dream_${d.n}`] = interfere ? 'interfere' : 'submit';
+      g.flag('c1x_active_dream', 0);
+      if (interfere) {
+        g.sanity(-10);
+        g.sfx('sting');
+        g.flag('c1x_interfere_count', (g.s.flags.c1x_interfere_count || 0) + 1);
+      } else {
+        g.sanity(-3);
+      }
+      const outcomeMsg = interfere ? d.act : d.pass;
+      if (dreamsCompleted(g.s)) {
+        g.flag('c1x_in_pod', false);
+        const allThree = (g.s.flags.c1x_interfere_count || 0) >= 3;
+        if (allThree) {
+          return g.read('n_c1x_eye_done', () => {
+            if (g.s.flags.c1x_progenitor_seen) g.end('torn_script');
+          });
+        }
+        return g.say(`${outcomeMsg} 三次入夢推演全部結束，計數牌默默跳到了「24」。`);
+      }
+      g.say(outcomeMsg);
+    }
+
+    return {
+      c1x_rift: {
+        level: 'C1.3', title: '空間裂隙', room: meadowRoom, quiet: 0.65,
+        viewMsg: '觀景窗拍著這道垂直藍光裂隙時，取景框邊緣泛起微弱的水波紋。',
+        enter(g, { first }) {
+          if (first) g.say('純淨得近乎灼眼的垂直藍光裂隙懸在半空，四周是齊尾高的蒼翠野草。據說尊父就是在此為這片草原賜名「驤亭」。');
+        },
+        draw(ctx, t, s, R) {
+          drawGrass(ctx, 1);
+          glow(ctx, 480, 250, 95 + Math.sin(t * 3) * 8, '#5ab6ff', 0.55);
+          poly(ctx, riftQuad, '#b2e4ff');
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; poly(ctx, riftQuad); ctx.stroke();
+          box(ctx, R, riftStone);
+          poly(ctx, riftAhead, '#687e52');
+          txt(ctx, '草原深處 →', CX(riftAhead), CY(riftAhead), '#ecf4df', 12);
+        },
+        hotspots: [
+          hit('back', [330, 470, 300, 70], '穿過裂隙回鏡廳', (g) => {
+            if (!g.has('dragon_scale')) {
+              return g.say('沒有龍血族信物，藍色裂隙的光幕像玻璃牆般把你推了回來。');
+            }
+            g.go('c1_mirror', { msg: '龍鱗透出一線暖意，藍光分開——你重新踩上鏡廳一塵不染的木地板。' });
+          }, 'back'),
+          hit('stone', boxRect(riftStone, 8), '裂隙邊界石標', (g) => g.read('n_c1x_rift')),
+          hit('ahead', bounds(riftAhead, 8), '走入齊尾高的草原', (g) => g.go('c1x_plain'), 'go'),
+        ],
+      },
+
+      c1x_plain: {
+        level: 'C1.3', title: '齊尾的草原', room: meadowRoom, quiet: 0.75,
+        viewMsg: '觀景窗掃過整片低丘與雜草，方圓之內連半個異常熱源或實體都看不到。',
+        enter(g, { first }) {
+          if (first) g.say('望出去約七成以上都是沒過腿肚的長草，遠處伏著低矮山丘和稀疏林地。安靜、空氣微乾，卻連一隻蟲或流浪者都沒遇上。');
+        },
+        draw(ctx, t, s, R) {
+          drawGrass(ctx, 3);
+          poly(ctx, plainOutskirtsPath, '#5f7348');
+          txt(ctx, '← 郊外高草', CX(plainOutskirtsPath), CY(plainOutskirtsPath), '#e6efda', 11);
+          poly(ctx, plainBasePath, '#4d575e');
+          txt(ctx, '驤亭基地', CX(plainBasePath), CY(plainBasePath), '#dce5ec', 12);
+          poly(ctx, plainRiverPath, '#466a80');
+          txt(ctx, '江流 →', CX(plainRiverPath), CY(plainRiverPath), '#d8eef8', 11);
+        },
+        hotspots: [
+          back('c1x_rift', '返回藍色裂隙'),
+          hit('grass', plainGrassSpot, '搜查齊尾草叢', (g) => g.say('你撥開雜草找了一圈，什麼可用物資也沒留下——這裡對外人而言幾乎毫無資源可言，也沒有發現任何外來實體。')),
+          hit('to_outskirts', bounds(plainOutskirtsPath, 8), '西側郊外草坡', (g) => g.go('c1x_outskirts'), 'go'),
+          hit('to_base', bounds(plainBasePath, 8), '驤亭基地', (g) => g.go('c1x_base'), 'go'),
+          hit('to_river', bounds(plainRiverPath, 8), '錯綜交織的江流', (g) => g.go('c1x_river'), 'go'),
+        ],
+      },
+
+      c1x_river: {
+        level: 'C1.3', title: '江流', room: meadowRoom, quiet: 0.65,
+        viewMsg: '觀景窗裡，交叉蜿蜒的河道清澈見底，看不見異常生物。',
+        enter(g, { first }) {
+          if (first) g.say('複雜交錯的河道切開草原，水聲比想像中還要平緩清澈——在這個資源匱乏的地方，這大概是少數能補水的地方。');
+        },
+        draw(ctx, t, s, R) {
+          poly(ctx, [P(-2.2, 0.42, 1.5), P(2.2, 0.42, 1.5), P(2.2, 0.95, 7.2), P(-2.2, 0.95, 7.2)], '#426b82');
+          for (let i = 0; i < 4; i++) {
+            const y = 315 + i * 28;
+            seg(ctx, [210 + i * 20, y], [740 - i * 25, y], 'rgba(205, 232, 248, 0.42)', 2);
+          }
+          drawGrass(ctx, 7);
+        },
+        hotspots: [
+          back('c1x_plain', '回到草原'),
+          hit('drink_river', riverWaterRect, '捧起乾淨的江水喝', (g) => {
+            g.sfx('drink');
+            if (once(g, 'c1x_river_drunk')) {
+              g.drink(40);
+              return g.say('冰涼清冽的江水一口氣沖散了乾渴。在物資幾乎為零的驤亭，這點水比什麼都珍貴。');
+            }
+            g.drink(15);
+            g.say('你又捧起幾口清澈江水潤潤喉。');
+          }),
+        ],
+      },
+
+      c1x_base: {
+        level: 'C1.3', title: '驤亭基地外', room: baseRoom, quiet: 0.45,
+        viewMsg: '觀景窗裡，那個戴著骨面與瞳石的無面靈站得筆直，反倒是遠處的龍裔壓低了身姿。',
+        enter(g, { first }) {
+          clankWait = 4;
+          if (once(g, 'c1x_dread_seen')) {
+            return g.say('一陣沉重的「龍血威懾」無聲壓過基地：龍裔住區廊下的身影齊刷刷低下頭，站崗的無面靈也僵住了動作。所有人都在發抖，只有你沒有——你忽然有點不安，因為在場只有你站在「範圍之外」。');
+          }
+          if (first) g.say('仍在施工中的驤亭基地：鷹架、吊臂，以及背後龍裔住區的屋簷。');
+        },
+        update(g, dt) {
+          clankWait -= dt;
+          if (clankWait <= 0) {
+            clankWait = 5 + rand() * 5;
+            g.sfx('clank');
+          }
+        },
+        draw(ctx, t, s, R) {
+          // Scaffolding & crane silhouettes
+          seg(ctx, P(-1.8, -0.9, 6.2), P(1.2, -0.9, 6.2), '#3c434a', 4);
+          seg(ctx, P(-1.5, -0.9, 6.2), P(-1.5, 1, 6.2), '#3c434a', 5);
+          seg(ctx, P(1.6, -0.9, 5.2), P(1.6, 1, 5.2), '#3c434a', 4);
+          // Faceless guard with bone mask + 瞳石 crystal
+          poly(ctx, baseGuardQuad, '#2b3036');
+          const gp = P(-0.9, -0.05, 4.2);
+          ctx.fillStyle = '#ddd8cc'; ctx.beginPath(); ctx.ellipse(gp[0], gp[1], 10, 13, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#8b5cf6'; ctx.fillRect(gp[0] - 5, gp[1] - 3, 3, 3); ctx.fillRect(gp[0] + 2, gp[1] - 3, 3, 3);
+          // Dragon-scale steed silhouette (龍鱗駒)
+          poly(ctx, baseSteedQuad, '#343c44');
+          txt(ctx, '龍鱗駒', CX(baseSteedQuad), baseSteedQuad[0][1] - 8, '#cbd5de', 10);
+          // Entrance to Alpha's Eye dark room
+          poly(ctx, baseEyeDoor, '#191e24');
+          txt(ctx, '暗室（K014）', CX(baseEyeDoor), CY(baseEyeDoor), '#86c5f4', 11);
+        },
+        hotspots: [
+          back('c1x_plain', '回到草原'),
+          hit('faceless', bounds(baseGuardQuad, 8), '站崗的無面靈與骨面', (g) => {
+            g.say('這名無面靈（Entity-9）戴著阿爾法賜予的骨面，雙眼嵌著淡淡發光的紫晶「瞳石」。因為人類免疫龍血威懾，他只安靜站在一旁沒有任何舉動。');
+          }),
+          hit('steed', bounds(baseSteedQuad, 8), '栓在欄邊的龍鱗駒', (g) => {
+            g.say('披著細密深鱗的馬獸正安靜低頭。據說尊父當年就是將這支龍裔坐騎與此地合稱「驤亭」——除了伸手感覺到的冰涼鱗甲，這裡什麼也帶不走。');
+          }),
+          hit('to_eye', bounds(baseEyeDoor, 8), '阿爾法之眼暗室', (g) => g.go('c1x_eye'), 'go'),
+        ],
+      },
+
+      c1x_eye: {
+        level: 'C1.3', title: '阿爾法之眼暗室', room: eyeRoom, quiet: 0.7,
+        viewMsg: '觀景窗裡，中控台指示燈與無頭爬行類骨架都蒙上一層淡淡的藍影。',
+        enter(g, { first }) {
+          g.flag('c1x_in_pod', false);
+          g.flag('c1x_active_dream', 0);
+          if (first) g.say('暗室中央安放著編號 K014「阿爾法之眼」：主艙體、中轉器與資料處理系統正低鳴運轉。角落架著一座奇異的骨架展示台。');
+        },
+        draw(ctx, t, s, R) {
+          box(ctx, R, podBox);
+          glow(ctx, 480, 250, 75 + Math.sin(t * 2.5) * 6, '#58b4ff', s.flags.c1x_in_pod ? 0.55 : 0.25);
+          // Run counter plaque: 23 -> 24 once all 3 dreams finished
+          const countNum = dreamsCompleted(s) ? '24' : '23';
+          ctx.fillStyle = '#0e141a'; ctx.fillRect(452, 204, 56, 28);
+          ctx.strokeStyle = '#5ca4d8'; ctx.lineWidth = 1.5; ctx.strokeRect(452, 204, 56, 28);
+          txt(ctx, countNum, 480, 223, '#9bd8ff', 15);
+          // Relay manual & Alpha/Ashou log papers
+          paper(ctx, R, relayManualQuad, 2.8, '#dce8f2');
+          paper(ctx, R, alphaLogQuad, 2.8, '#e8e2d2');
+          // Headless reptile skeleton display
+          poly(ctx, skeletonQuad, '#2b323a');
+          const sp = [CX(skeletonQuad), CY(skeletonQuad)];
+          ctx.strokeStyle = '#cfc9b8'; ctx.lineWidth = 2;
+          seg(ctx, [sp[0] - 18, sp[1] + 12], [sp[0] + 16, sp[1] - 4], '#cfc9b8', 3);
+          for (let r = -10; r <= 10; r += 5) seg(ctx, [sp[0] + r, sp[1] - 2], [sp[0] + r + 2, sp[1] + 14], '#cfc9b8', 1.5);
+          // Active dream overlay inside pod canvas
+          if (s.flags.c1x_in_pod) {
+            ctx.fillStyle = 'rgba(8, 16, 26, 0.68)';
+            ctx.fillRect(160, 120, 640, 260);
+            ctx.strokeStyle = '#5ba8e0'; ctx.lineWidth = 2; ctx.strokeRect(160, 120, 640, 260);
+            if (s.flags.c1x_active_dream) {
+              const dr = DREAMS[(s.flags.c1x_active_dream || 1) - 1] || DREAMS[0];
+              txt(ctx, `入夢中・${dr.title}`, 480, 165, '#b6e2ff', 18);
+              ctx.fillStyle = '#2c4e6e'; ctx.fillRect(260, 265, 160, 56);
+              ctx.fillStyle = '#2f3842'; ctx.fillRect(540, 265, 160, 56);
+              txt(ctx, '干涉（清醒度 -10）', 340, 298, '#ffffff', 13);
+              txt(ctx, '順從（清醒度 -3）', 620, 298, '#cfd8e0', 13);
+            } else {
+              txt(ctx, 'K014 阿爾法之眼・選擇入夢情景', 480, 158, '#9fd5fa', 16);
+              DREAMS.forEach((dr, i) => {
+                const bx = 205 + i * 195;
+                const done = dreamDone(s, dr.n);
+                ctx.fillStyle = done ? '#1a222a' : '#25394d';
+                ctx.fillRect(bx, 200, 160, 82);
+                ctx.strokeStyle = done ? '#3d4c59' : '#6cb8ec'; ctx.strokeRect(bx, 200, 160, 82);
+                txt(ctx, done ? `${dr.title}（已推演）` : dr.title, bx + 80, 246, done ? '#6f808f' : '#e6f5ff', 13);
+              });
+            }
+          }
+        },
+        hotspots: [
+          back('c1x_base', '回到基地外'),
+          hit('eye_manual', bounds(relayManualQuad, 8), 'K014 設備簡述', (g) => g.read('n_c1x_eye'), 'look', {
+            when: (s) => !s.flags.c1x_in_pod,
+          }),
+          hit('alpha_log', bounds(alphaLogQuad, 8), '阿爾法與阿守的紀錄殘段', (g) => g.read('n_c1x_alpha'), 'look', {
+            when: (s) => !s.flags.c1x_in_pod,
+          }),
+          hit('skeleton', bounds(skeletonQuad, 8), '無頭骨架展示台', (g) => g.say('玻璃櫃裡架著一具中等體型的爬行類骨骼標本，頸椎整齊斷折，唯獨少了整個頭骨。'), 'look', {
+            when: (s) => !s.flags.c1x_in_pod,
+          }),
+          hit('pod', boxRect(podBox, 8), '爬進 K014 艙體入夢', (g) => {
+            if (dreamsCompleted(g.s)) {
+              if (g.s.flags.c1x_progenitor_seen && (g.s.flags.c1x_interfere_count || 0) >= 3) {
+                return g.read('n_c1x_eye_done', () => g.end('torn_script'));
+              }
+              return g.say('計數牌已經停在「24」，這個儲存格裡的推演分支已經全數跑完。');
+            }
+            g.flag('c1x_in_pod', true);
+            g.say('艙門合攏，神經中轉器傳來微涼的脈衝。意識沉進去後，三個尚未翻開的未來情景浮在眼前。');
+          }, 'go', { when: (s) => !s.flags.c1x_in_pod }),
+          hit('dream_fall', [205, 200, 160, 82], '情景一：高處墜落', (g) => {
+            g.flag('c1x_active_dream', 1);
+            g.say(DREAMS[0].desc);
+          }, 'go', { when: (s) => s.flags.c1x_in_pod && !s.flags.c1x_active_dream && !dreamDone(s, 1) }),
+          hit('dream_water', [400, 200, 160, 82], '情景二：被水淹沒', (g) => {
+            g.flag('c1x_active_dream', 2);
+            g.say(DREAMS[1].desc);
+          }, 'go', { when: (s) => s.flags.c1x_in_pod && !s.flags.c1x_active_dream && !dreamDone(s, 2) }),
+          hit('dream_chase', [595, 200, 160, 82], '情景三：黑暗被追逐', (g) => {
+            g.flag('c1x_active_dream', 3);
+            g.say(DREAMS[2].desc);
+          }, 'go', { when: (s) => s.flags.c1x_in_pod && !s.flags.c1x_active_dream && !dreamDone(s, 3) }),
+          hit('choice_interfere', [260, 265, 160, 56], '干涉未來（清醒度 -10）', (g) => applyDreamChoice(g, true), 'go', {
+            when: (s) => s.flags.c1x_in_pod && !!s.flags.c1x_active_dream,
+          }),
+          hit('choice_submit', [540, 265, 160, 56], '順從走向（清醒度 -3）', (g) => applyDreamChoice(g, false), 'go', {
+            when: (s) => s.flags.c1x_in_pod && !!s.flags.c1x_active_dream,
+          }),
+          hit('exit_pod', [405, 315, 150, 44], '退出艙體', (g) => {
+            g.flag('c1x_in_pod', false);
+            g.say('你撐起艙蓋退回冰涼的暗室裡。');
+          }, 'go', { when: (s) => s.flags.c1x_in_pod && !s.flags.c1x_active_dream }),
+        ],
+      },
+
+      c1x_outskirts: {
+        level: 'C1.3', title: '郊外', room: meadowRoom, quiet: 0.75,
+        viewMsg: '觀景窗拉遠一看，草坡邊那道高大剪影背後的膜翼輪廓大得幾乎遮住半片低丘。',
+        enter(g, { first }) {
+          wingAnimT = 0;
+          if (first) g.say('西側寂靜的長草坡。遠方低丘上似乎有兩道身影正低聲交談：一個身材高大、帶著收攏的雙翼；另一個肩頭披著獸類頭骨。');
+        },
+        update(g, dt) {
+          if (wingAnimT > 0) wingAnimT = Math.max(0, wingAnimT - dt);
+        },
+        draw(ctx, t, s, R) {
+          drawGrass(ctx, 9);
+          // Ashou (wearing skull) stays faintly on grass edge; Progenitor spreads wide membrane wings and flies off
+          const ap = [420, 255];
+          ctx.fillStyle = '#363b3e'; ctx.fillRect(ap[0] - 8, ap[1] - 18, 16, 42);
+          ctx.fillStyle = '#ddd6c4'; ctx.beginPath(); ctx.ellipse(ap[0], ap[1] - 26, 9, 10, 0, 0, Math.PI * 2); ctx.fill();
+          if (!s.flags.c1x_progenitor_seen || wingAnimT > 0) {
+            const lift = wingAnimT > 0 ? (2.6 - wingAnimT) * 55 : 0;
+            const span = wingAnimT > 0 ? 185 : 52;
+            const px = 525, py = 242 - lift;
+            ctx.save();
+            ctx.fillStyle = 'rgba(28, 32, 38, 0.88)';
+            ctx.beginPath();
+            ctx.moveTo(px, py - 14);
+            ctx.lineTo(px - span, py - 68);
+            ctx.lineTo(px - span * 0.55, py + 12);
+            ctx.lineTo(px, py - 4);
+            ctx.lineTo(px + span * 0.55, py + 12);
+            ctx.lineTo(px + span, py - 68);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillRect(px - 10, py - 24, 20, 54);
+            ctx.restore();
+          }
+        },
+        hotspots: [
+          back('c1x_plain', '退回草原'),
+          hit('approach', outProgenitorRect, '伏在草叢裡靠近聆聽', (g) => {
+            if (!g.s.flags.c1x_progenitor_seen) {
+              g.flag('c1x_progenitor_seen', true);
+              wingAnimT = 2.6;
+              g.sfx('clank');
+            }
+            g.read('n_c1x_progenitor');
           }),
         ],
       },
