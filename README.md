@@ -29,21 +29,30 @@ Then open <http://localhost:8080>. There are no dependencies; Node 18 or newer i
 npm test
 ```
 
-Plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
+First runs a quick static check (`tests/integrity.mjs`, no browser): every scene, item, note, ending and flag the code names must exist, and save migration must keep old saves playable. `npm run test:integrity` runs only that part. Then it plays the whole game in headless Chromium with real mouse clicks. It also checks the Level 0 viewfinder puzzles, the cubicle reset, the smiler scare, the wrong-code and wrong-pressure paths, save/load, and the phone layout. It needs Playwright with Chromium installed; set `SHOTS=<dir>` to also save a screenshot of every scene.
 
-The second suite walks all four sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`.
+The second suite walks all four sublevels, including unsafe repairs, cold and pursuit timers, paused hazards while reading, one-time rewards, item persistence, checkpoints, old saves and phone taps. To use a system-installed Chromium, run `CHROMIUM_PATH=/path/to/chromium npm test`. Otherwise install the pinned Playwright with `npm install` and `npx playwright install chromium`. GitHub Actions runs `npm test` on every push and pull request (`.github/workflows/test.yml`).
+
+The browser tests load the game with `?seed=120`, so every random event happens the same way on every run. You can do the same while playing to reproduce a run.
 
 ## How it's built
 
 | File | What it does |
 | --- | --- |
 | `src/render.js` | Procedural one-point-perspective renderer: rooms, boxes, pipes, notes, the flashlight darkness mask, the smiler, film grain and the camcorder overlay. Every scene is drawn in code; there are no image files. |
-| `src/scenes.js` | The scene graph: each scene's room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
-| `src/sublevels.js` | The B.N.T.G. pillar route and the four sublevels: procedural scenery, repair puzzles, cold, pursuit and historical districts. |
+| `src/scenes.js` | The scene graph: collects every level's scenes into one map and defines the levels (`LEVELS`). Each scene has room parameters, extra drawing and clickable hotspots (go, look, take, or use an item). |
+| `src/levels/level0.js`, `level1.js`, `level2.js` | The scenes of Levels 0, 1 and 2, with their scenery and puzzles. Shared helpers (`BACK`, `FORWARD`, palettes, smilers) are in `src/levels/common.js`. |
+| `src/sublevels.js` | Collects the sublevels' scenes and defines their levels. |
+| `src/levels/level0-1.js` … `level0-7.js` | The B.N.T.G. pillar route and Levels 0.1, 0.2, 0.3, 0.5 and 0.7 (plus the old Level 1 behind 0.7's rift): procedural scenery, repair puzzles, cold, pursuit and historical districts. Their shared helpers are in `src/levels/sublevel-kit.js`. |
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
 | `src/main.js` | State, input, inventory, the camcorder viewfinder, modals (notes, keypad, pressure dials), saving and the game loop. |
+| `src/endings.js` | The ending texts, and `COMPLETIONS`: the endings that finish the game (they clear the save and offer no retry). |
+| `src/scares.js` | The jump-scare drawing for each kind of monster. To add a monster, add its drawing here and pass its name to `g.scare()`. |
+| `src/flavor.js` | Whispers at low sanity and what Level 1's phantom supply crates can hold. |
+| `src/save.js` | Save migration. Every save and checkpoint goes through it, so old saves keep working. When you rename a scene, add it to `SCENE_ALIASES`; when you change the save format, bump `SAVE_VERSION` and add a step to `MIGRATIONS`. A save whose scene no longer exists wakes up in Level 0 instead of being thrown away. |
+| `src/rng.js` | Gameplay randomness (`rand()`, `pick()`), seedable with `?seed=<n>`. Use it for anything that changes what happens; cosmetic noise can keep using `Math.random`. |
 
 ### Mechanics
 
@@ -55,8 +64,9 @@ Most mechanics follow the Backrooms Wiki setting:
   - In the **faded room**, J.H.'s old camp, the tally marks on the wall count differently through the lens. The true count opens a locker holding a tape.
   - With the tape in, the camcorder records (the REC overlay appears). Whatever is being recorded can't be rearranged, so only then can you throw yourself through the flickering wall into Level 1.
   - **Blackout Zone** (off the low room): pitch dark, ankle-deep water and near silence. Follow the one humming light by ear; it is panned left, right or ahead and moves whenever you go the wrong way. The camcorder's night mode shows the exits but not the way.
-  - **Manila Room**: the one place in Level 0 where people can see each other. Someone is sitting in the corner, and M.E.G.'s survival sheet is on the wall. It is a dead end.
-  - **Red Rooms**: after enough loops, a red-lit corner appears. Turn back at once and you get away with a sanity hit; go deeper or linger and you get the Red Rooms ending.
+  - **Manila Room**: the one place in Level 0 where people can see each other. Features a central wooden table and chair, wall-knocking echoes that release a hidden drawer with almond water and secret notes, and temporary blackout periods revealing fluorescent writings under the viewfinder.
+  - **Red Rooms**: after enough loops, a red-lit corner appears. Delving deeper leads into the sticky fungus hallway (l0_red_hall) holding an abandoned M.E.G. tactical pack (tactical knife, bar, agent Valentine's log) and into the pulsating flesh dead-end (l0_red_core). Slicing fungal cysts uncovers survival supplies and the final survival report, but lingering drains sanity rapidly toward the Red Rooms ending.
+  - **The Torment (痛楚)**: a metaphysical grayscale anomaly bleeding into Level 0 (l0_torment_entry, l0_torment_graves, l0_torment_statue), appearing on odd loops when wallpaper loses all color. A carpet of dead leaves screams painfully when stepped on (can be bridged with the folding ladder); an open void reveals a lone stationary moon, dead trees, concentric circles of gravestones, and a cracked statue of a hooded man holding the Ash Pendant and Tape #6.
   - **Stairs** (off the pillar room): the step count changes every time you count. Up leads to the **arches**, pale rooms full of archways and the steadiest place in the level: rest there to restore sanity and store a checkpoint (once every few moves). Down leads to the **holes**: rows of pitch-black pits where the light only reaches the next row and sometimes dips so floor and pit look the same. Step only on solid floor; a pit means the fall ending. A bag waits on the far side.
   - **Level 0.2 "Remodeled Mess"**: a doorway off the wet room leads into a corridor where the carpet dries and the hum quiets, and on into a freshly remodelled hall with working WiFi, a clean restroom (water, a wet paper towel, a warning from J.H.) and the 102-CX site office. Take the screwdriver from its toolbox and everything collapses into a half-built wooden house: grab tape #2, keep the dust out with the towel, cross the caved-in hall on the joist that isn't cracking and time your dash past the falling ceiling tiles to the Level 0 door within 40 seconds. Next visit it is all good as new, but stepping into the office brings it down again.
   - **Extra tapes**: #2 in Level 0.2, #3 behind the whispering outlet in the hallway (unscrew it), #4 lying just inside the Red Rooms. Watch them on the camcorder. Show all three to the figure in the Manila Room and he stands up and follows you out, turning the escape into the archived ending.
@@ -94,3 +104,4 @@ The added sublevel settings are adapted from these Chinese Wiki pages, each unde
 | [Level 0.3 — 冰室](https://backrooms-wiki-cn.wikidot.com/level-0-3) | CursedSliver | Ambersight |
 | [Level 0.5 — 淵閉療舍](https://backrooms-wiki-cn.wikidot.com/level-0-5) | FuneralBouncer | xuziqi |
 | [Level 0.7 — 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7), including its linked historical district archive | T-Dragon | jiaoyanerlan2, KkKkK_1234, owl4513 |
+| [痛楚 — The Torment](https://backrooms-wiki-cn.wikidot.com/the-torment) | Original Wiki author | Backrooms-CN translation |

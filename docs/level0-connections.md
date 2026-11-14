@@ -16,7 +16,8 @@ Wiki 內容會隨改寫而變動；引用前請再核對一次原頁面。
 | **Level 1** | 找到一面閃爍的牆，穿過去。現行版沒有列出其他出口。 | 現行 | [Level 0 - "Threshold"](https://backrooms-wiki.wikidot.com/level-0) |
 | Level 1 | 「只能靠 noclip 離開，而且一定會進入 Level 1。」 | 舊版 | [(ARCHIVED) Level 0 - "Tutorial Level"](https://backrooms-wiki.wikidot.com/archived:level-0-2020) |
 | **Manila Room**（馬尼拉房間） | 很難找到的小房間。舊版說要朝同一方向走非常遠才可能遇到；它是死路，是倖存者的會合點，放著 M.E.G. 文件。 | 現行（頁面改寫中） | [Level 0](https://backrooms-wiki.wikidot.com/level-0)、[manila room](https://backrooms-wiki.wikidot.com/manila-room) |
-| **Red Rooms**（紅房間） | 只能從 Level 0 進入：轉過某個轉角時隨機出現，無法預測位置。進去之後「推定沒有出口」。 | 現行 | [Red Rooms](https://backrooms-wiki.wikidot.com/red-rooms) |
+| **Red Rooms**（紅房間） | 只能從 Level 0 進入：轉過某個轉角時隨機出現，無法預測位置。進去之後「推定沒有出口」。（**遊戲已擴充**：猩紅走廊與菌核死結，可搜刮失聯特工裝備與折疊軍刀，極限回頭逃脫） | 現行 | [Red Rooms](https://backrooms-wiki.wikidot.com/red-rooms) |
+| **The Torment**（痛楚） | 形而上學異常，短暫顯現在 Level 0。灰霧漫延剝奪色彩，中心為同心圓墓群、哀嚎枯葉、靜止孤月與兜帽石像。（**遊戲已做**：l0_torment_entry、l0_torment_graves、l0_torment_statue，折疊梯避難、墓碑閱覽、石化吊墜與錄影帶 #6） | 現行 | [The Torment / 痛楚](https://backrooms-wiki-cn.wikidot.com/the-torment) |
 | **Level 0.2 "Remodeled Mess"** | 燈管的嗡嗡聲變小、地毯變乾、房間開始像施工中時，有機會找到一扇門。（**遊戲已做**：濕透的房間 → 乾燥的走廊 → `l02_room` 翻新走廊／洗手間／施工辦公室，崩塌後經骨架、托樑、落板走廊逃回 Level 0） | 現行 | [Level 0.2](https://backrooms-wiki.wikidot.com/level-0-2) |
 | **Level 0.7 "The Reminiscence District"** | Level 0 的子層級，是保存「後室歷代改版」的時間泡。頁面的隱藏區塊寫了入口：穿過 Level 0，直到周圍開始顯得更陳舊（白熾燈泡、石牆等）；離開只能轉身走回較現代的區段。 | 現行 | [Level 0.7](https://backrooms-wiki.wikidot.com/level-0-7) |
 
