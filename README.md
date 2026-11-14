@@ -4,14 +4,29 @@ An original 2D point-and-click horror puzzle game set in the Backrooms. The UI a
 
 You "noclip" out of reality into Level 0 (門檻 / "Threshold"). You then make your way through Level 1 (宜居地帶 / "The Habitable Zone") and Level 2 (廢棄維修通道 / "Abandoned Utility Halls") to a door with a green EXIT sign. Along the way you follow notes signed "J.H.", but Level 0's Isolation Effect means nobody else could have left them…
 
-Level 0 also has four optional sublevels. Their entrances are spread across Level 0 and follow how each wiki article says the sublevel is reached:
+Level 0 also has optional sublevels (`0.1`, `0.3`, `0.4`, `0.5`, `0.7`) and a branching route into the Level C-1 superimposed reports (`偏路`, `東舟市`, `驤亭`, `俄刻阿諾斯號`). Their entrances follow wiki descriptions where available, while inter-report links, puzzles and notes are game adaptations:
 
 | Level | Way in | Based on the article |
 | --- | --- | --- |
 | 0.1 天頂站 | A sleek, broken station inside Level 0. Time your way through an airlock door stuck in a loop, then explore the ring corridor: crew quarters (one rest, a keycard), a galley whose cooking arm lays a seventh tray, and a hydroponic greenhouse. The far section is cooking at +68°C; the climate console can only cool it by shutting down another section, and you choose which (cutting the airlock closes the way back). The observation deck looks into the hollow shell; a flickering hull breach noclips you to Level 1, or sometimes back to Level 0. |
 | 0.3 冰室 | Level 0, frozen; the cold wears down sanity. Task Force 104-CX's work site holds their emails, a blowtorch with a frozen canister and a roll of wool carpet. The live vent hops around its room: wrap it when it lands within reach, the heater can finally warm the camp, and the blowtorch lights. Melt through the ice to a room full of frozen figures — hollow inside — and on to the "clean, tidy, comfortable, warm" room they finished, which lets you out. |
+| 0.4 碾城 | A one-way dead-end sublevel behind a 4.2 m black-purple macro-wormhole off Level 0's archive (`l0_archive`), entered twice past a starry veil. Divided into the unstable Outer Ring, the 21 km Wei Chi Avenue (Hunters' Red Hall), the shielded Inner Ring (Iron Dome), and the suburban Wolf Domain (Ronin). Outside the city, periodic "Layer Fission" shifts the crimson sky and rearranges landmarks; supplies are capped at three items, and there is no way out. |
 | 0.5 淵閉療舍 | Knee-deep brown water and an echo that hurts. Drinking it quenches thirst but makes you sick; a sparking lamp has to be passed between bursts. The hospital has beds — and sleeping in one wakes the Drowned, which follows you without rest and loops the corridors back to the water. Lure it into the water to dissolve it, sleep for real, then follow the corridor to the metal stairs down into Level 1. |
 | 0.7 憶域 | A time bubble of past Level 0s: a modern stretch whose exits are sealed by "no signal" static, then bulbs and candles (toxic wallpaper, an N.T.G. pack with the only water), a Victorian hall where a voice calls from a doorway (don't answer), castle corridors where only the torch-lit archway is safe, a Roman marble hall and Egyptian corridors with a Growler in the dark. Rub the carving and get out by walking back, or sleep in the alcove: with something from the present you wake in the modern stretch, without it you wake beside a rift into an old Level 1. |
+
+### Level C-1 & Level 0.4 (HOMESICK Reports)
+
+Based on the [Level C-1 Hub](https://backrooms-wiki-cn.wikidot.com/level-c-1) and five Chinese Backrooms Wiki reports by **HOMESICK** (with **Lovesicker** on Reports III & IV, licensed **CC BY-SA 3.0**):
+
+- **Report I — [HOMESICK的报告「偏路」](https://backrooms-wiki-cn.wikidot.com/c1-chuckler)** (*HOMESICK*): `LEVEL C-1 偏路` (`C1`). Entered via the cardboard box in `l0_dry`. Spotless white tiles and wood floors with shifting non-linear corridor doors, zero obtainable items, an unseen distant `bang`, rest benches (`+8` sanity once), mirror corridors, and an exit door toward `C-2` (`c2_door` ending, C-2 itself is unimplemented).
+- **Report II — [HOMESICK的报告II「演化机制」](https://backrooms-wiki-cn.wikidot.com/c1-chuckler-ii)** (*HOMESICK*): `LEVEL C-1 東舟市` (`C1.2`). Entered from `c1_hall`'s window after 3 steps. Features East Boat City's slowly growing concrete structures, ACMA containment interviews (`E-024`, `E-025`, `E-013` burning the first `recorder` and dropping `dragon_scale`, `E-002` inside a one-visit collapsing cave requiring 5 seconds of stillness), New Age Garden, and outskirts growls.
+- **Report III — [HOMESICK的报告III「箱庭中人」](https://backrooms-wiki-cn.wikidot.com/c1-chuckler-iii)** (*HOMESICK*; Dragon-blood character concept credited to *Lovesicker*): `LEVEL C-1 驤亭` (`C1.3`). Unlocked non-consumably via `dragon_scale` at `c1_mirror`. Scarce plain with a clean stream, Dragon-blood Base (sensing the Progenitor and resisting its presence), three K014 dreams at Eye of Alpha (yielding counter `24` and the `torn_script` ending), and a return mirror rift back to `偏路`.
+- **Report IV — [HOMESICK的报告IV「在那树荫下」feat. Lovesicker](https://backrooms-wiki-cn.wikidot.com/c1-chuckler-cryer)** (*HOMESICK* & *Lovesicker*): `LEVEL C-1 俄刻阿諾斯號` (`C1.4`). Side trek 7.9 km southeast from `c1e_outskirts`. The stranded hull with unbreakable dark-blue glass, a single-insertion subspace corridor (`fog`, dim `town` with phone booth, flooded `metro` with corpse-rat plague curable via almond water), sea door, Section H with Butler 1399, and rescuing Junjun (`hideout`) only when walking alone to deliver him to East Boat City Medical Dept.
+- **Report V — [HOMESICK的报告V](https://backrooms-wiki-cn.wikidot.com/c1-homesick)** (*HOMESICK*): `LEVEL 0.4 碾城` (`0.4`). Adapted from the **pre-incident state of Report V prior to `/weed-toc`**.
+
+**Wiki Facts vs. Original Game Adaptations:**
+- *From the Wiki:* Individual environments, entities/objects (`E-024`, `E-025`, `E-013`, `E-002`, K014, Progenitor, Oceanus/Butler 1399/Junjun, ACMA/Hunters/Pioneers/Ronin, 4.2 m macro-wormhole, Layer Fission outside the city).
+- *Original to ROOMS0120:* The inter-level connections (cardboard box -> 偏路 -> window -> 東舟市 -> `dragon_scale` -> mirror -> 驤亭; SE trek -> 俄刻阿諾斯號; `l0_archive` wormhole -> Level 0.4), the 90-second compressed Layer Fission cycle in 0.4, the 5-second stillness puzzle for E-002, the single-insertion subspace rule in 俄刻阿諾斯號, J.H.'s inspection notes, and endings `c2_door`, `torn_script`, and `dead_end`. (External locations `C-2`, `C-41`, `C-100`, `Level 38` and unreleased passwords are intentionally omitted.)
 
 These routes, puzzles and J.H. notes are game adaptations, rather than a full reproduction of each article. The original Level 0 → 1 → 2 route remains available. New levels use the same inventory, autosave and entry checkpoints; existing v1 saves remain compatible.
 
@@ -44,6 +59,7 @@ The browser tests load the game with `?seed=120`, so every random event happens 
 | `src/levels/level0.js`, `level1.js`, `level2.js` | The scenes of Levels 0, 1 and 2, with their scenery and puzzles. Shared helpers (`BACK`, `FORWARD`, palettes, smilers) are in `src/levels/common.js`. |
 | `src/sublevels.js` | Collects the sublevels' scenes and defines their levels. |
 | `src/levels/level0-1.js` … `level0-7.js` | The B.N.T.G. pillar route and Levels 0.1, 0.2, 0.3, 0.5 and 0.7 (plus the old Level 1 behind 0.7's rift): procedural scenery, repair puzzles, cold, pursuit and historical districts. Their shared helpers are in `src/levels/sublevel-kit.js`. |
+| `src/c1.js`, `src/level04.js` | The Level C-1 superimposed branches (`偏路`, `東舟市`, `驤亭`, `俄刻阿諾斯號`) and Level 0.4 (`碾城`) with its macro-wormhole and Layer Fission timer. |
 | `src/items.js` | Inventory items, combinations and icons. |
 | `src/notes.js` | J.H.'s notes. |
 | `src/audio.js` | WebAudio-synthesised ambience for each level, plus sound effects. There are no audio files. |
@@ -105,3 +121,9 @@ The added sublevel settings are adapted from these Chinese Wiki pages, each unde
 | [Level 0.5 — 淵閉療舍](https://backrooms-wiki-cn.wikidot.com/level-0-5) | FuneralBouncer | xuziqi |
 | [Level 0.7 — 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7), including its linked historical district archive | T-Dragon | jiaoyanerlan2, KkKkK_1234, owl4513 |
 | [痛楚 — The Torment](https://backrooms-wiki-cn.wikidot.com/the-torment) | Sky3 | highlightingman |
+| [Level C-1 報告集](https://backrooms-wiki-cn.wikidot.com/level-c-1) | — | Superposition hub overview |
+| [HOMESICK的报告「偏路」](https://backrooms-wiki-cn.wikidot.com/c1-chuckler) | HOMESICK | Original Chinese |
+| [HOMESICK的报告II「演化机制」](https://backrooms-wiki-cn.wikidot.com/c1-chuckler-ii) | HOMESICK | Original Chinese |
+| [HOMESICK的报告III「箱庭中人」](https://backrooms-wiki-cn.wikidot.com/c1-chuckler-iii) | HOMESICK (Dragon-blood concept: Lovesicker) | Original Chinese |
+| [HOMESICK的报告IV「在那树荫下」feat. Lovesicker](https://backrooms-wiki-cn.wikidot.com/c1-chuckler-cryer) | HOMESICK, Lovesicker | Original Chinese |
+| [HOMESICK的报告V（Level 0.4「碾城」）](https://backrooms-wiki-cn.wikidot.com/c1-homesick) | HOMESICK | Original Chinese (pre-incident `/weed-toc` text) |
