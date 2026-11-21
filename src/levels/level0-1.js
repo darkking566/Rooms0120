@@ -1,43 +1,301 @@
 // The B.N.T.G. pillar walk and Level 0.1 "Zenith Station" (CutTheBirch, CC BY-SA 3.0).
 // Puzzles, scene text and J.H. notes are original.
 import { P, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from '../render.js';
-import { rand } from '../rng.js';
+import { pick, rand } from '../rng.js';
+import { hum } from './common.js';
 import { frostOverlay } from './level0-3.js';
 import { back, clockOf, drawBag, drawShuttle, glow, hit, once, outline, pal, room, sliding, tvStatic, txt } from './sublevel-kit.js';
 
 // ---------- the B.N.T.G. walk to Level 0.1 (entrance) ----------
 // Per the wiki you simply walk into Level 0.1, but Level 0 is too vast to stumble on it;
-// only the B.N.T.G. has a reliable route. Here that route is their stencilled arrows, starting at
-// a doorway on the pillar room's right wall.
+// only the B.N.T.G. has a reliable route. Here that route is a 4-stage trail through the pillar sea.
 export const yellow = pal('#c8b35e', '#d6cc96', '#8f7d3b', '#2a2410', '#fff4c8');
 export const annexDoor = wallQuad(2.2, -0.65, 1, 3.0, 3.9);
 export function drawAnnexEntrance(ctx, R) {
   const [x, y, w] = bounds(annexDoor);
-  txt(ctx, 'B.N.T.G. →', x + w / 2 - 6, y - 10, shade(R, '#d8d2b4', 3.4), 11);
+  const bx = x + w / 2 - 6, by = y - 14;
+  ctx.save();
+  ctx.strokeStyle = shade(R, '#ebe5c8', 3.4, 1, 0.75);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bx - 42, by - 14, 84, 22);
+  txt(ctx, 'B.N.T.G. →', bx, by + 1, shade(R, '#efe9ce', 3.4), 11);
+  ctx.restore();
 }
 export const WALK_STEPS = 4;
+const AISLES = ['left', 'mid', 'right'];
+const AISLE_ZH = { left: '左側柱廊', mid: '中央柱道', right: '右側柱廊' };
 const walkPillars = [
-  { x1: -1.35, x2: -0.95, y1: -1, y2: 1, z1: 3.0, z2: 3.4 },
-  { x1: 0.95, x2: 1.35, y1: -1, y2: 1, z1: 3.0, z2: 3.4 },
-  { x1: -1.35, x2: -0.95, y1: -1, y2: 1, z1: 5.6, z2: 6.0 },
-  { x1: 0.95, x2: 1.35, y1: -1, y2: 1, z1: 5.6, z2: 6.0 },
+  // Far wall pilasters and row 3 (z = 7.2..7.6)
+  { x1: -2.30, x2: -2.16, y1: -1, y2: 1, z1: 6.2, z2: 6.55 },
+  { x1: 2.16, x2: 2.30, y1: -1, y2: 1, z1: 6.2, z2: 6.55 },
+  { x1: -1.42, x2: -0.98, y1: -1, y2: 1, z1: 7.2, z2: 7.6 },
+  { x1: 0.98, x2: 1.42, y1: -1, y2: 1, z1: 7.2, z2: 7.6 },
+  // Mid wall pilasters and row 2 (z = 5.0..5.4)
+  { x1: -2.30, x2: -2.16, y1: -1, y2: 1, z1: 4.0, z2: 4.35 },
+  { x1: 2.16, x2: 2.30, y1: -1, y2: 1, z1: 4.0, z2: 4.35 },
+  { x1: -1.42, x2: -0.98, y1: -1, y2: 1, z1: 5.0, z2: 5.4 },
+  { x1: 0.98, x2: 1.42, y1: -1, y2: 1, z1: 5.0, z2: 5.4 },
+  // Front pair (z = 2.75..3.15)
+  { x1: -1.42, x2: -0.98, y1: -1, y2: 1, z1: 2.75, z2: 3.15 },
+  { x1: 0.98, x2: 1.42, y1: -1, y2: 1, z1: 2.75, z2: 3.15 },
 ].map((b) => ({ ...b, color: yellow.wall }));
-const pillarRect = (b) => bounds([P(b.x1, -1, b.z1), P(b.x2, 1, b.z1)], 8);
-const walkSide = { left: walkPillars[0], right: walkPillars[1] };
-const walkNote = faceQuad(-0.3, 0.1, 0.05, 0.4, 2.999);
-const newMark = (g) => g.flag('l01_mark', rand() < 0.5 ? 'left' : 'right');
-function walkStep(g, side) {
+const walkFront = { left: walkPillars[8], right: walkPillars[9] };
+// Attached squarely to the front face of the front-left pillar (x = -1.42..-0.98, z = 2.75)
+const walkNote = faceQuad(-1.35, 0.04, -1.05, 0.38, 2.749);
+const walkTape = faceQuad(-1.25, 0.01, -1.15, 0.07, 2.748);
+
+const ANNEX_ROOMS = [
+  room(yellow, { hw: 2.3, depth: 9.2, fogEnd: 13.5, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.6, 3.8, 6.0, 8.0], flick: hum }),
+  room(yellow, { hw: 2.3, depth: 9.2, fogEnd: 13.5, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.6, 3.8, 6.0, 8.0], flickerLights: [1], bright: 0.92, flick: hum }),
+  room(yellow, { hw: 2.3, depth: 9.2, fogEnd: 11.5, stripes: true, floorTex: 'carpet', tiles: true, lights: [7.6], bright: 0.56, flick: hum }),
+  room(yellow, { hw: 2.3, depth: 9.2, fogEnd: 13.5, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.8, 4.2], bright: 0.82, flick: hum }),
+];
+
+const markOf = (s) => (AISLES.includes(s.flags.l01_mark) ? s.flags.l01_mark : 'left');
+const peelSideOf = (s) => (markOf(s) === 'right' ? 'right' : 'left');
+const newMark = (g) => {
+  g.flag('l01_mark', pick(AISLES));
+  g.flag('l01_peeled', false);
+};
+
+function stencilInfo(step, mark, side) {
+  if (step === 0) {
+    if (mark === 'left') return side === 'left' ? { real: true, arrow: '←', dir: 'left' } : { real: false, arrow: '→', dir: 'right' };
+    if (mark === 'right') return side === 'right' ? { real: true, arrow: '→', dir: 'right' } : { real: false, arrow: '←', dir: 'left' };
+    return side === 'right' ? { real: true, arrow: '←', dir: 'mid' } : { real: false, arrow: '←', dir: 'left' };
+  }
+  const arrow = mark === 'left' ? '←' : '→';
+  return { real: true, arrow, dir: mark };
+}
+
+function drawPillarSurface(ctx, R, b) {
+  const xm = (b.x1 + b.x2) / 2;
+  seg(ctx, P(xm - 0.08, -1, b.z1 - 0.001), P(xm - 0.08, 1, b.z1 - 0.001), shade(R, b.color, b.z1, 0.78, 0.35), 1);
+  seg(ctx, P(xm + 0.08, -1, b.z1 - 0.001), P(xm + 0.08, 1, b.z1 - 0.001), shade(R, b.color, b.z1, 0.78, 0.35), 1);
+  poly(ctx, faceQuad(b.x1, 0.88, b.x2, 1, b.z1 - 0.001), shade(R, b.color, b.z1, 0.58));
+}
+
+function stencilQuad(b) {
+  return faceQuad(b.x1 + 0.04, -0.56, b.x2 - 0.04, -0.10, b.z1 - 0.002);
+}
+
+function drawStencilMark(ctx, R, b, { real, arrow, faded = false }) {
+  const q = stencilQuad(b);
+  const [x, y, w, h] = bounds(q);
+  const cx = x + w / 2;
+  ctx.save();
+  if (faded) {
+    ctx.fillStyle = 'rgba(28,24,10,0.42)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = shade(R, '#6b6342', b.z1, 1, 0.5);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+    ctx.restore();
+    return;
+  }
+  if (real) {
+    const col = shade(R, '#f3edd4', b.z1);
+    // Crisp corner registration ticks
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.6;
+    const t = 6;
+    for (const [cx0, cy0, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
+      ctx.beginPath(); ctx.moveTo(cx0 + dx * t, cy0); ctx.lineTo(cx0, cy0); ctx.lineTo(cx0, cy0 + dy * t); ctx.stroke();
+    }
+    txt(ctx, 'B.N.T.G.', cx, y + 15, col, 10);
+    txt(ctx, arrow, cx, y + 38, col, 20);
+  } else {
+    // Level 0 mimic: dark damp blotch, misspelled letters, bleeding paint drip
+    ctx.fillStyle = 'rgba(40,28,10,0.68)';
+    ctx.beginPath(); ctx.ellipse(cx, y + h * 0.55, w * 0.58, h * 0.62, 0.08, 0, Math.PI * 2); ctx.fill();
+    const smudge = shade(R, '#cfc397', b.z1, 0.9, 0.85);
+    txt(ctx, 'B.T.N.G.', cx + 1, y + 16, smudge, 10);
+    txt(ctx, arrow, cx - 1, y + 39, smudge, 19);
+    seg(ctx, [cx - 8, y + 40], [cx - 10, y + h + 12], 'rgba(38,26,10,0.6)', 2);
+    seg(ctx, [cx + 12, y + 20], [cx + 13, y + h + 6], 'rgba(38,26,10,0.5)', 1.5);
+  }
+  ctx.restore();
+}
+
+function drawPeelingFlap(ctx, R, b) {
+  const q = faceQuad(b.x1 + 0.02, -0.58, b.x2 - 0.02, -0.06, b.z1 - 0.003);
+  const [x, y, w, h] = bounds(q);
+  ctx.save();
+  // Peek of blue-white stencil border at top-right corner
+  ctx.strokeStyle = 'rgba(235,230,200,0.65)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x + w - 12, y + 3); ctx.lineTo(x + w - 4, y + 3); ctx.lineTo(x + w - 4, y + 11); ctx.stroke();
+  // Dark shadow under the bulging wallpaper flap
+  ctx.fillStyle = 'rgba(24,18,6,0.58)';
+  ctx.beginPath();
+  ctx.moveTo(x + 4, y + 4);
+  ctx.lineTo(x + w - 10, y + 10);
+  ctx.lineTo(x + w + 5, y + h - 4);
+  ctx.lineTo(x - 2, y + h);
+  ctx.closePath();
+  ctx.fill();
+  // Curled yellow wallpaper flap
+  ctx.fillStyle = shade(R, '#b8a24e', b.z1);
+  ctx.beginPath();
+  ctx.moveTo(x, y + 2);
+  ctx.quadraticCurveTo(x + w * 0.45, y + 10, x + w - 14, y + 6);
+  ctx.lineTo(x + w - 2, y + h - 6);
+  ctx.quadraticCurveTo(x + w * 0.5, y + h + 4, x - 3, y + h - 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = shade(R, '#7a682a', b.z1);
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawScratchDecoy(ctx, R, b, arrow) {
+  const q = stencilQuad(b);
+  const [x, y, w, h] = bounds(q);
+  const cx = x + w / 2, cy = y + h * 0.55;
+  ctx.save();
+  ctx.strokeStyle = shade(R, '#3e3315', b.z1, 1, 0.78);
+  ctx.lineWidth = 1.6;
+  for (let i = -2; i <= 2; i++) {
+    seg(ctx, [cx + i * 5 - 3, y + 8], [cx + i * 5 + 2, y + 24], ctx.strokeStyle, 1.3);
+  }
+  txt(ctx, arrow, cx, cy + 12, ctx.strokeStyle, 19);
+  ctx.restore();
+}
+
+function drawCartTracks(ctx, R, aisle, t) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(20,16,6,0.44)';
+  ctx.lineWidth = 4.5;
+  const offsets = [-0.14, 0.14];
+  for (const dx of offsets) {
+    ctx.beginPath();
+    if (aisle === 'left') {
+      const a = P(-0.18 + dx, 1, 1.35), m = P(-1.08 + dx, 1, 1.95), c = P(-1.86 + dx, 1, 3.6);
+      ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(m[0], m[1], c[0], c[1]);
+    } else if (aisle === 'right') {
+      const a = P(0.18 + dx, 1, 1.35), m = P(1.08 + dx, 1, 1.95), c = P(1.86 + dx, 1, 3.6);
+      ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(m[0], m[1], c[0], c[1]);
+    } else {
+      const a = P(dx, 1, 1.35), c = P(dx, 1, 6.4);
+      ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]);
+    }
+    ctx.stroke();
+  }
+  // Subtle cool-air dust motes drifting out of the true aisle
+  const baseX = aisle === 'left' ? -1.85 : aisle === 'right' ? 1.85 : 0;
+  for (let i = 0; i < 6; i++) {
+    const ph = (t * 0.42 + i / 6) % 1;
+    const z = 3.4 - ph * 1.4;
+    const p = P(baseX + Math.sin(t * 1.6 + i) * 0.12, 0.35 - (i % 3) * 0.28, z);
+    ctx.fillStyle = `rgba(175,230,245,${0.28 * (1 - ph)})`;
+    ctx.beginPath(); ctx.arc(p[0], p[1], 2.2, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawReflectiveTape(ctx, R, aisle, lit) {
+  const b = aisle === 'right' ? walkFront.right : walkFront.left;
+  const x1 = aisle === 'left' ? b.x1 + 0.01 : aisle === 'right' ? b.x2 - 0.08 : b.x2 - 0.08;
+  const x2 = x1 + 0.07;
+  const q = faceQuad(x1, -0.25, x2, 0.25, b.z1 - 0.002);
+  poly(ctx, q, lit ? 'rgba(135,255,220,0.88)' : shade(R, '#94a89e', b.z1, 1, 0.48));
+  if (lit) {
+    const [qx, qy, qw, qh] = bounds(q);
+    glow(ctx, qx + qw / 2, qy + qh / 2, 26, 'rgba(135,255,220,0.55)', 0.75);
+  }
+}
+
+function drawThresholdSeam(ctx, R, aisle, s, t) {
+  // Brushed cold steel plates peeking at the base of the guiding pillar
+  const b = aisle === 'right' ? walkFront.right : walkFront.left;
+  const steelFace = faceQuad(b.x1, 0.56, b.x2, 1, b.z1 - 0.002);
+  poly(ctx, steelFace, shade(R, '#88969c', b.z1));
+  outline(ctx, steelFace, shade(R, '#526066', b.z1), 1.5);
+  // Small aluminum B.N.T.G. 0.1 tag riveted onto the steel plate
+  const tp = P((b.x1 + b.x2) / 2, 0.74, b.z1);
+  txt(ctx, '0.1', tp[0], tp[1], shade(R, '#dce8ed', b.z1), 9);
+
+  // Far steel seam & pulsing airlock light visible through the true aisle gap
+  const seam = aisle === 'left'
+    ? wallQuad(-2.3, -0.72, 1, 3.35, 4.15)
+    : aisle === 'right'
+      ? wallQuad(2.3, -0.72, 1, 3.35, 4.15)
+      : faceQuad(-0.68, -0.75, 0.68, 1, 9.18);
+  poly(ctx, seam, '#253137');
+  outline(ctx, seam, '#6e838c', 2);
+  const [sx, sy, sw, sh] = bounds(seam);
+  const pulse = 0.45 + 0.45 * Math.sin(t * 2.4);
+  const lampX = sx + sw * 0.5, lampY = sy + sh * 0.18;
+  ctx.fillStyle = `rgba(110,235,255,${0.75 * pulse + 0.2})`;
+  ctx.beginPath(); ctx.arc(lampX, lampY, 3, 0, Math.PI * 2); ctx.fill();
+  glow(ctx, lampX, lampY, 24, 'rgba(110,235,255,0.45)', pulse);
+  if (aisle === 'mid' && s.view) txt(ctx, 'A-01', lampX, lampY + 18, 'rgba(155,245,220,0.85)', 9);
+}
+
+function inspectPillar(g, side) {
+  const step = g.s.flags.l01_walk || 0;
+  const mark = markOf(g.s);
+  if (step === 0) {
+    const info = stencilInfo(0, mark, side);
+    if (info.real) {
+      return g.say(`模板邊框銳利、牆紙乾燥，「B.N.T.G.」四個字和四角對位點都完整無缺，箭頭清楚指向${AISLE_ZH[info.dir]}。`);
+    }
+    return g.say('牆紙濕得發軟，字母仔細看竟拼成了「B.T.N.G.」，墨跡還在往下暈開——這是這一層模仿出來的假記號。');
+  }
+  if (step === 1) {
+    if (peelSideOf(g.s) === side) {
+      if (!g.s.flags.l01_peeled) {
+        g.flag('l01_peeled', true);
+        g.sfx('page');
+        return g.say(`你扯開翹起的濕壁紙——底下的牆面還留著商隊噴的「B.N.T.G.」真模板，箭頭指向${AISLE_ZH[mark]}！`);
+      }
+      return g.say(`被掀開的壁紙底下清楚寫著「B.N.T.G.」，箭頭指向${AISLE_ZH[mark]}。`);
+    }
+    return g.say('只是有人用指甲在濕壁紙上抓出來的亂七八糟箭頭，沒有任何「B.N.T.G.」字樣。');
+  }
+  if (step === 2) {
+    const hasTape = (side === 'left' && mark !== 'right') || (side === 'right' && mark === 'right');
+    if (hasTape) {
+      return g.say(`這根柱子朝向${AISLE_ZH[mark]}的邊角釘著一條反光定位帶，指尖能感覺到那一側有乾冷氣流正往外透。`);
+    }
+    return g.say('柱面烏黑潮濕，噴漆框早就糊成一片，柱側光禿禿的什麼也沒有。');
+  }
+  // step === 3
+  const hasSteel = (side === 'left' && mark !== 'right') || (side === 'right' && mark === 'right');
+  if (hasSteel) {
+    return g.say(`柱腳撕裂的壁紙底下露出冰冷的霧面鋼板，釘著一枚「0.1」鋁牌——冷氣和氣閘的門響正是從${AISLE_ZH[mark]}那頭傳來的。`);
+  }
+  return g.say('這根柱子從上到下都還是暖烘烘的濕黃壁紙，耳邊只有越來越刺耳的日光燈電流聲。');
+}
+
+function walkStep(g, aisle) {
   const n = g.s.flags.l01_walk || 0;
-  if (side !== g.s.flags.l01_mark) {
+  const mark = markOf(g.s);
+  if (aisle !== mark) {
+    const failMsgs = [
+      '你順著滲水的假記號穿過去。才繞過柱背，燈管閃了一瞬——柱子全換了位置，你又回到了起點。',
+      '你跟著牆上的指甲刮痕拐進去，前方卻只是一堵重複的黃牆。回頭時，已經站回第一排柱子前。',
+      '黑暗裡沒有推車壓痕也沒有冷風。電流嗡鳴一口把你吞掉，再睜眼又回到起點。',
+      '那道看似正常的黃色通路在身後合攏了。你白走了一趟，重新被丟回柱廳入口。',
+    ];
     g.flag('l01_walk', 0); newMark(g); g.sanity(-2);
-    return g.go('l0_annex', { msg: '你從沒有記號的那一邊繞過去。再找的時候，柱子全換了位置，箭頭只剩下最開始那一個。' });
+    return g.go('l0_annex', { msg: failMsgs[n] || failMsgs[0] });
   }
   if (n + 1 >= WALK_STEPS) {
     g.flag('l01_walk', 0);
-    return g.go('l01_airlock', { msg: '你跟著最後一個箭頭走。黃色的牆一面一面變得冰冷、平滑，地毯停在一條鋼製的門檻前。' });
+    g.flag('l01_peeled', false);
+    g.flag('l01_mapped', true);
+    return g.go('l01_airlock', { msg: '你穿過最後一道鋼縫。黃色的牆一面一面變得冰冷、平滑，地毯停在一條鋼製的門檻前。' });
   }
   g.flag('l01_walk', n + 1); newMark(g);
-  g.go('l0_annex', { msg: ['下一根柱子上，又是同樣的模板字。', '箭頭的漆比較新了。有人不久前才補過。', '燈的嗡嗡聲變了調，像隔著玻璃。'][n] });
+  g.go('l0_annex', {
+    msg: [
+      '你穿過第一排柱子。遠處一盞燈管忽然開始閃爍，有根柱子的壁紙正整片鼓起翹開。',
+      '再往前走，前排的燈全滅了。空氣變得陰涼，濕地毯上留著商隊推車壓出的痕跡。',
+      '燈的嗡嗡聲變了調，像隔著玻璃。前方的柱腳已經滲出冰冷的鐵灰色。',
+    ][n],
+  });
 }
 
 // =====================================================================
@@ -146,7 +404,7 @@ const bigWindow = faceQuad(-2.05, -0.92, 2.05, 0.62, 3);
 const breach = wallQuad(2.2, -0.75, 1, 2.45, 3);
 const lastConsole = { x1: -0.5, x2: 0.5, y1: 0.62, y2: 1, z1: 2.2, z2: 2.6, color: '#6f7c82', top: '#9aa8ae', edge: true };
 
-function drawShell(ctx, t) {
+function drawShell(ctx, t, view = false) {
   const [x, y, w, h] = bounds(bigWindow);
   ctx.save(); poly(ctx, bigWindow); ctx.clip();
   const gr = ctx.createRadialGradient(480, 255, 10, 480, 255, w * 0.6);
@@ -174,9 +432,10 @@ function drawShell(ctx, t) {
   }
   // at the very centre, where the experiment was: a ring that bends the light around it
   ctx.save(); ctx.translate(480, 255); ctx.rotate(t * 0.05);
+  const scale = view ? 2.1 : 1;
   for (let k = 0; k < 3; k++) {
-    ctx.strokeStyle = `rgba(170,200,255,${0.1 + k * 0.05})`; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.ellipse(0, 0, 26 + k * 6 + Math.sin(t + k) * 2, 9 + k * 2, 0.2, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(170,200,255,${(view ? 0.22 : 0.1) + k * 0.05})`; ctx.lineWidth = view ? 2.4 : 2;
+    ctx.beginPath(); ctx.ellipse(0, 0, (26 + k * 6 + Math.sin(t + k) * 2) * scale, (9 + k * 2) * scale, 0.2, 0, Math.PI * 2); ctx.stroke();
   }
   ctx.restore();
   ctx.restore();
@@ -187,24 +446,157 @@ function drawShell(ctx, t) {
 
 export const L01_SCENES = {
   l0_annex: {
-    level: 0, title: '柱子間的長路', room: room(yellow, { hw: 2, depth: 8, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.6, 3.6, 5.8] }),
+    level: 0, title: '柱子間的長路',
+    room: (s) => ANNEX_ROOMS[Math.min(3, s.flags.l01_walk || 0)],
+    viewMsg: (s) => [
+      '觀景窗裡，真正的 B.N.T.G. 模板字框泛著淡淡的綠光；另一邊滲水的假字在鏡頭裡顯得模糊扭曲。',
+      '觀景窗好像穿透了那片翹起的壁紙——底下隱約透出清楚的 B.N.T.G. 模板線條與箭頭。',
+      '觀景窗抓到了柱側一條極亮的反光導引帶，還有地毯上延伸進那條柱縫的推車壓痕。',
+      '鏡頭穿透薄霧，拍到那條柱縫後方出現一道冷灰色的鋼板接縫，不像這一層的東西。',
+    ][Math.min(3, s.flags.l01_walk || 0)],
     enter(g, { first }) {
-      if (!g.s.flags.l01_mark) newMark(g);
-      if (first) g.say('柱子一排接一排，沒有盡頭。有一根柱子上噴著褪色的模板字，旁邊是一個箭頭。');
+      if (!AISLES.includes(g.s.flags.l01_mark)) newMark(g);
+      if (first) g.say('成排的黃色方柱望不到盡頭。左、中、右三條柱廊看起來一模一樣，左右前柱上各自留著不同的記號，左柱還貼著一張便條。');
     },
     draw(ctx, t, s, R) {
-      for (const b of walkPillars) box(ctx, R, b);
-      const b = walkSide[s.flags.l01_mark] || walkSide.left, cx = (b.x1 + b.x2) / 2;
-      const p = P(cx, -0.15, b.z1);
-      txt(ctx, 'B.N.T.G.', p[0], p[1], shade(R, '#efe9d0', 3), 11);
-      txt(ctx, '↑', p[0], p[1] + 24, shade(R, '#efe9d0', 3), 22);
-      if (!(s.flags.l01_walk || 0)) paper(ctx, R, walkNote, 3, '#efe7cf');
+      const step = s.flags.l01_walk || 0;
+      const mark = markOf(s);
+      if (step === 2) drawCartTracks(ctx, R, mark, t);
+      if (step === 3) {
+        const seam = mark === 'left'
+          ? wallQuad(-2.3, -0.72, 1, 3.35, 4.15)
+          : mark === 'right'
+            ? wallQuad(2.3, -0.72, 1, 3.35, 4.15)
+            : faceQuad(-0.68, -0.75, 0.68, 1, 9.18);
+        poly(ctx, seam, '#253137');
+        outline(ctx, seam, '#6e838c', 2);
+        const [sx, sy, sw, sh] = bounds(seam);
+        const pulse = 0.45 + 0.45 * Math.sin(t * 2.4);
+        const lampX = sx + sw * 0.5, lampY = sy + sh * 0.18;
+        ctx.fillStyle = `rgba(110,235,255,${0.75 * pulse + 0.2})`;
+        ctx.beginPath(); ctx.arc(lampX, lampY, 3, 0, Math.PI * 2); ctx.fill();
+        glow(ctx, lampX, lampY, 24, 'rgba(110,235,255,0.45)', pulse);
+      }
+
+      for (const b of walkPillars) {
+        box(ctx, R, b);
+        drawPillarSurface(ctx, R, b);
+      }
+
+      if (step === 0) {
+        drawStencilMark(ctx, R, walkFront.left, stencilInfo(0, mark, 'left'));
+        drawStencilMark(ctx, R, walkFront.right, stencilInfo(0, mark, 'right'));
+        paper(ctx, R, walkNote, 2.75, '#efe7cf');
+        poly(ctx, walkTape, shade(R, '#d8c996', 2.75));
+      } else if (step === 1) {
+        const pSide = peelSideOf(s);
+        const other = pSide === 'left' ? 'right' : 'left';
+        const info = stencilInfo(1, mark, pSide);
+        if (s.flags.l01_peeled) drawStencilMark(ctx, R, walkFront[pSide], info);
+        else drawPeelingFlap(ctx, R, walkFront[pSide]);
+        drawScratchDecoy(ctx, R, walkFront[other], other === 'left' ? '←' : '→');
+      } else if (step === 2) {
+        drawStencilMark(ctx, R, walkFront.left, { faded: true });
+        drawStencilMark(ctx, R, walkFront.right, { faded: true });
+        drawReflectiveTape(ctx, R, mark, s.light || s.view);
+      } else {
+        drawThresholdSeam(ctx, R, mark, s, t);
+      }
+    },
+    drawView(ctx, t, s, R) {
+      const step = s.flags.l01_walk || 0;
+      const mark = markOf(s);
+      if (step === 0) {
+        const realSide = stencilInfo(0, mark, 'left').real ? 'left' : 'right';
+        const [x, y, w, h] = bounds(stencilQuad(walkFront[realSide]), 4);
+        ctx.strokeStyle = `rgba(128,255,212,${0.55 + 0.3 * Math.sin(t * 4)})`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+      } else if (step === 1) {
+        const pSide = peelSideOf(s);
+        const info = stencilInfo(1, mark, pSide);
+        const [x, y, w, h] = bounds(stencilQuad(walkFront[pSide]), 3);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(128,255,212,0.8)';
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(x, y, w, h);
+        ctx.setLineDash([]);
+        txt(ctx, info.arrow, x + w / 2, y + h * 0.72, 'rgba(128,255,212,0.9)', 20);
+        ctx.restore();
+      } else if (step === 2) {
+        drawReflectiveTape(ctx, R, mark, true);
+      }
     },
     hotspots: [
-      { ...back('l0_colonnade', '回到長柱列過道'), click: (g) => { g.flag('l01_walk', 0); g.go('l0_colonnade'); } },
-      hit('left', pillarRect(walkSide.left), '從左邊的柱子旁走過去', (g) => walkStep(g, 'left'), 'go'),
-      hit('right', pillarRect(walkSide.right), '從右邊的柱子旁走過去', (g) => walkStep(g, 'right'), 'go'),
-      { ...hit('guide', bounds(walkNote, 8), '貼在柱子上的便條', (g) => g.read('n_annex')), when: (s) => !(s.flags.l01_walk || 0) },
+      { ...back('l0_colonnade', '回到長柱列過道'), click: (g) => { g.flag('l01_walk', 0); g.flag('l01_peeled', false); g.go('l0_colonnade'); } },
+      hit('left', [75, 170, 150, 215], '從左側柱廊穿過去', (g) => walkStep(g, 'left'), 'go'),
+      hit('mid', [320, 185, 320, 195], '從中央柱道穿過去', (g) => walkStep(g, 'mid'), 'go'),
+      hit('right', [735, 170, 150, 215], '從右側柱廊穿過去', (g) => walkStep(g, 'right'), 'go'),
+      { ...hit('guide', bounds(walkNote, 8), '貼在左柱上的便條', (g) => g.read('n_annex')), when: (s) => !(s.flags.l01_walk || 0) },
+      {
+        ...hit('shortcut', [360, 405, 240, 52], '沿記熟的路線直抵門檻', (g) => {
+          g.flag('l01_walk', 0); g.flag('l01_peeled', false);
+          g.go('l01_airlock', { msg: '你照著早已記熟的 B.N.T.G. 路標一路穿過柱海，很快站回那條鋼製門檻前。' });
+        }, 'go'),
+        when: (s) => s.flags.l01_mapped && !(s.flags.l01_walk || 0),
+      },
+      // Stage-specific pillar & environment inspection hotspots (never trigger accidental walks)
+      {
+        ...hit('look_left', [230, 170, 82, 95], '查看左前柱上的記號', (g) => inspectPillar(g, 'left')),
+        when: (s) => !(s.flags.l01_walk || 0),
+      },
+      {
+        ...hit('peel_left', [230, 170, 82, 200], '掀開左柱上翹起的壁紙', (g) => inspectPillar(g, 'left'), 'look', {
+          use: { knife: (g) => inspectPillar(g, 'left') },
+        }),
+        when: (s) => (s.flags.l01_walk || 0) === 1 && peelSideOf(s) === 'left' && !s.flags.l01_peeled,
+      },
+      {
+        ...hit('peel_right', [648, 170, 82, 200], '掀開右柱上翹起的壁紙', (g) => inspectPillar(g, 'right'), 'look', {
+          use: { knife: (g) => inspectPillar(g, 'right') },
+        }),
+        when: (s) => (s.flags.l01_walk || 0) === 1 && peelSideOf(s) === 'right' && !s.flags.l01_peeled,
+      },
+      {
+        ...hit('look_left', [230, 170, 82, 200], '檢查左前柱', (g) => inspectPillar(g, 'left')),
+        when: (s) => {
+          const w = s.flags.l01_walk || 0;
+          return w > 0 && !(w === 1 && peelSideOf(s) === 'left' && !s.flags.l01_peeled);
+        },
+      },
+      {
+        ...hit('look_right', [648, 170, 82, 200], '檢查右前柱', (g) => inspectPillar(g, 'right')),
+        when: (s) => {
+          const w = s.flags.l01_walk || 0;
+          return !(w === 1 && peelSideOf(s) === 'right' && !s.flags.l01_peeled);
+        },
+      },
+      {
+        ...hit('check_tracks', [240, 388, 480, 72], '俯身檢查地毯與氣流', (g) => {
+          const mark = markOf(g.s);
+          g.say(`你蹲下來撫過潮濕地毯——${AISLE_ZH[mark]}的方向留著兩道沉重的推車壓痕，指尖也感覺到一絲不像這一層的乾冷氣流。`);
+        }, 'look', {
+          use: {
+            rod: (g) => {
+              g.sfx('clank');
+              g.say(`你用金屬吊桿敲了敲三條通道的地板——只有${AISLE_ZH[markOf(g.s)]}的地毯底下傳來空洞的金屬回音。`);
+            },
+            torch: (g) => {
+              g.setLight(true);
+              g.say(`手電筒的光掃過柱角，${AISLE_ZH[markOf(g.s)]}旁的柱緣立刻閃出一條銀綠色的反光導引帶。`);
+            },
+          },
+        }),
+        when: (s) => (s.flags.l01_walk || 0) === 2,
+      },
+      {
+        ...hit('check_threshold', [240, 388, 480, 72], '側耳傾聽柱縫深處的動靜', (g) => {
+          const mark = markOf(g.s);
+          g.say(`其他方向的 60 赫茲嗡鳴吵得耳膜發麻；唯有${AISLE_ZH[mark]}深處安靜了一截，隱約傳來「打開、停頓、砰——」的機械氣閘聲。`);
+        }),
+        when: (s) => (s.flags.l01_walk || 0) === 3,
+      },
     ],
   },
 
@@ -470,7 +862,7 @@ export const L01_SCENES = {
       if (first) g.say('一整面玻璃。外面是一個大得沒有邊的空心球殼，內壁上一層一層全是甲板和窗戶。更遠的地方，黃色的房間像樓層一樣往上堆。右邊的牆裂開了，裂口在閃。');
     },
     draw(ctx, t, s, R) {
-      drawShell(ctx, t);
+      drawShell(ctx, t, s.view);
       box(ctx, R, lastConsole);
       const sc = P(0, 0.62, 2.3); ctx.fillStyle = Math.sin(t * 3) > 0 ? '#ff6a4a' : '#5a2018'; ctx.fillRect(sc[0] - 4, sc[1] - 10, 8, 4);
       tvStatic(ctx, breach, t, false);
@@ -479,7 +871,7 @@ export const L01_SCENES = {
     },
     hotspots: [
       back('l01_ring', '回到環形走廊'),
-      hit('window', bounds(bigWindow, 0), '看著球殼的中心', (g) => g.read('n01_core')),
+      hit('window', bounds(bigWindow, 0), '看著球殼的中心', (g) => g.closeup('l01_core_window', { msg: '你走近觀景窗，把額頭貼在冰涼的玻璃上。' })),
       hit('console', boxRect(lastConsole, 6), '一直在閃的廣播台', (g) => g.read('n01_last')),
       hit('noclip', bounds(breach, 4), '從閃爍的裂口切出去', (g) => {
         if (rand() < 0.25) return g.go('l0_pillar', { msg: '你穿過裂口，眼前一黑——腳下又是濕地毯。切出把你丟回了 Level 0，一根柱子旁邊。' });

@@ -92,13 +92,16 @@ const l0Colonnade = {
   openings: [{ side: 1, z1: 3.0, z2: 3.9, top: -0.65 }],
 };
 const colonnadePillars = [
+  { x1: -1.15, x2: -0.8, y1: -1, y2: 1, z1: 7.0, z2: 7.35 },
+  { x1: 0.8, x2: 1.15, y1: -1, y2: 1, z1: 7.0, z2: 7.35 },
   { x1: -1.15, x2: -0.8, y1: -1, y2: 1, z1: 5.6, z2: 5.95 },
   { x1: 0.8, x2: 1.15, y1: -1, y2: 1, z1: 5.6, z2: 5.95 },
   { x1: -1.15, x2: -0.8, y1: -1, y2: 1, z1: 3.6, z2: 3.95 },
   { x1: 0.8, x2: 1.15, y1: -1, y2: 1, z1: 3.6, z2: 3.95 },
   { x1: -1.15, x2: -0.8, y1: -1, y2: 1, z1: 1.9, z2: 2.25 },
 ].map((b) => ({ ...b, color: PAL.l0.wall }));
-const colonnadeMark = faceQuad(-1.12, -0.22, -0.82, 0.14, 1.899);
+const colonnadeMark = faceQuad(-1.12, -0.22, -0.83, 0.14, 1.899);
+const colonnadeKit = { x1: -0.78, x2: -0.44, y1: 0.78, y2: 1.0, z1: 1.95, z2: 2.30, color: '#455048', top: '#5d6c61', edge: true };
 const cabinet = { x1: -1, x2: -0.55, y1: 0.25, y2: 1, z1: 2.0, z2: 2.5, color: '#7a5a33', edge: true };
 const glitchWall = wallQuad(1, -1, 1, 2.2, 3.0);
 
@@ -3229,23 +3232,52 @@ export const LEVEL0_SCENES = {
 
   l0_colonnade: {
     level: 0, title: '長柱列過道', room: l0Colonnade,
-    viewMsg: '觀景窗裡，右邊門洞上的模板字邊緣泛著淡淡的藍色反光——這條柱列明顯被某個組織當成路標維護過。',
+    viewMsg: '觀景窗裡，左柱底的工具箱和右邊門洞上的模板字邊緣都泛著淡淡的螢光——商隊在這裡做過補給與校對。',
     enter(g, { first }) {
-      if (first) g.say('成排的黃色方柱往深處延伸，比剛才那間更長。左前方的柱面上留著試噴過的油漆痕，右牆開著一個噴著模板字的門洞。');
+      if (first) g.say('成排的黃色方柱往深處延伸，比剛才那間更長。左前柱上留著試噴的模板字，柱腳旁擱著一只金屬工具箱，右牆開著噴有「B.N.T.G. →」的門洞。');
     },
     draw(ctx, t, s, R) {
       drawAnnexEntrance(ctx, R);
-      for (const b of colonnadePillars) box(ctx, R, b);
-      poly(ctx, colonnadeMark, 'rgba(65,112,158,0.42)');
+      // Faint cart scuff marks curving from the front pillar into the right doorway
+      ctx.save();
+      ctx.strokeStyle = 'rgba(42,34,12,0.28)'; ctx.lineWidth = 4;
+      for (const dz of [-0.08, 0.14]) {
+        ctx.beginPath();
+        const a = P(-0.4, 1, 2.2 + dz), m = P(0.9, 1, 2.8 + dz), c = P(2.15, 1, 3.4 + dz);
+        ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(m[0], m[1], c[0], c[1]); ctx.stroke();
+      }
+      ctx.restore();
+      for (const b of colonnadePillars) {
+        box(ctx, R, b);
+        poly(ctx, faceQuad(b.x1, 0.86, b.x2, 1, b.z1 - 0.001), shade(R, b.color, b.z1, 0.58));
+      }
+      // Stencil test mark with corner registration ticks
+      poly(ctx, colonnadeMark, 'rgba(65,112,158,0.34)');
       const [mx, my, mw, mh] = bounds(colonnadeMark);
-      txt(ctx, 'B.N.', mx + mw / 2, my + mh * 0.62, '700 13px ui-monospace, monospace', 'rgba(42,84,128,0.78)');
+      ctx.strokeStyle = 'rgba(235,230,200,0.65)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(mx + 2, my + 2, mw - 4, mh - 4);
+      txt(ctx, 'B.N.', mx + mw / 2, my + mh * 0.62, '700 13px ui-monospace, monospace', 'rgba(240,235,210,0.82)');
+      seg(ctx, [mx + mw * 0.68, my + mh * 0.68], [mx + mw * 0.68, my + mh * 0.96], 'rgba(42,84,128,0.55)', 1.5);
+      // B.N.T.G. stencil kit box resting on the floor beside the front-left pillar
+      box(ctx, R, colonnadeKit);
+      const [kx, ky, kw, kh] = boxRect(colonnadeKit);
+      ctx.fillStyle = shade(R, '#c8b26a', colonnadeKit.z1);
+      ctx.fillRect(kx + kw * 0.16, ky + kh * 0.56, kw * 0.52, Math.max(2, kh * 0.14));
+      ctx.fillStyle = '#d4c48a';
+      ctx.fillRect(kx + kw * 0.34, ky + kh * 0.36, 6, 4);
     },
     hotspots: [
       BACK('l0_pillar', '回到柱子的房間'),
-      { id: 'annex', rect: bounds(annexDoor, 4), label: '右邊噴著模板字的門洞', cursor: 'go', click: (g) => g.go('l0_annex') },
+      { id: 'annex', rect: bounds(annexDoor, 4), label: '右邊噴著 B.N.T.G. 模板字的門洞', cursor: 'go', click: (g) => g.go('l0_annex') },
       {
         id: 'stencil_test', rect: bounds(colonnadeMark, 8), label: '柱面上殘缺的藍色噴漆', cursor: 'look',
-        click: (g) => g.say('柱子側面噴著半截褪色的藍色模板字，像是有人在這裡試過噴漆罐，確認方向後才往右牆的門洞裡走。'),
+        click: (g) => g.say('柱子側面噴著「B.N.」半截測試字樣，邊框四角還留著對位點。有人在這裡試過噴漆罐，確認沒有暈開才往右牆的門洞裡走。'),
+      },
+      {
+        id: 'colonnade_kit', rect: boxRect(colonnadeKit, 8), label: '柱腳旁的 B.N.T.G. 噴漆箱', cursor: 'look',
+        click: (g) => g.closeup('l0_colonnade_kit', {
+          msg: '一只擱在柱腳邊的軍綠色工具箱，裡面裝著黃銅模板和商隊留下的路線識別卡。',
+        }),
       },
     ],
   },

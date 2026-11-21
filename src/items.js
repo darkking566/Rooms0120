@@ -127,6 +127,24 @@ export const ITEMS = {
   recorder2: { name: '備用錄音筆', desc: '從三合研究院領出的第二支錄音筆，外殼還貼著檢修標籤。' },
   dragon_scale: { name: '龍鱗', desc: '深黑泛紅的堅硬鱗片，握在手心像剛熄滅的煤炭一樣隱隱發燙。' },
   extinguisher: { name: '乾粉滅火器', desc: '在 Level 0.1「險區」雜物隔間撿到的乾粉滅火器，能暫時壓制驟燃區的局部火勢。' },
+  l1_fuse: { name: '高壓保險絲', desc: 'B.N.T.G. 貨站裡找到的工業陶瓷保險絲，兩端黃銅接點還很乾淨，應該能裝進變電所的斷路槽。' },
+  l1_keycard: { name: 'M.E.G. 藍標識別證', desc: '泛黃的塑膠門禁卡，印著「M.E.G. 第七前哨站・第一區檔案庫」，相片欄被刮花了。' },
+  crowbar: { name: '撬棍', desc: '從天鷹段木板與金屬殘骸下抽出的波紋狀灰色撬棍，綴著點點鏽斑，結實到能撬開最頑固的板條箱。' },
+  yarn: { name: '紗線球', desc: '板條箱裡找到的藍色毛線球。游牧部落「阿里阿德涅之線」用來在錯綜複雜的小徑裡做標記，免得迷路。' },
+  burger: {
+    name: 'Tom 的漢堡套餐', desc: 'Tom 的餐館特製的淌汁起司漢堡配奶昔，還冒著熱氣。（再點一次享用）',
+    self: (g) => {
+      g.take('burger'); g.eat(75); g.drink(40); g.sanity(25); g.sfx('eat');
+      g.say('溫熱的肉汁與起司在嘴裡化開，再配一口冰涼的奶昔——在這鬼地方，這簡直像是一場奢華的夢。');
+    },
+  },
+  l1_ration: {
+    name: '銀灰口糧水壺', desc: '小徑貨架「口糧」箱裡找到的 80 年代銀灰金屬水壺，裡面裝著甘甜的杏仁水。（再點一次飲用）',
+    self: (g) => {
+      g.take('l1_ration'); g.drink(50); g.sanity(35); g.sfx('drink');
+      g.say('你擰開有凹痕的金屬水壺蓋。濃郁甘甜的杏仁水順著喉嚨流下，頭痛與疲憊瞬間消退了一大半。');
+    },
+  },
 };
 
 export function drawIcon(ctx, id, s = 56) {
@@ -325,6 +343,49 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.fillRect(4, -17, 10, 4);
       ctx.strokeStyle = '#1a1c20'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(-4, -14); ctx.quadraticCurveTo(-16, -12, -14, 6); ctx.stroke();
+      break;
+    case 'l1_fuse':
+      ctx.rotate(-0.5);
+      ctx.fillStyle = '#d9c698'; ctx.fillRect(-14, -7, 28, 14);
+      ctx.fillStyle = '#c89e3c'; ctx.fillRect(-19, -8, 6, 16); ctx.fillRect(13, -8, 6, 16);
+      ctx.fillStyle = '#b43a2a'; ctx.fillRect(-5, -7, 10, 4);
+      break;
+    case 'l1_keycard':
+      ctx.fillStyle = '#e4e8ec'; ctx.beginPath(); ctx.roundRect(-18, -12, 36, 24, 3); ctx.fill();
+      ctx.fillStyle = '#2d5a88'; ctx.fillRect(-18, -12, 36, 6);
+      ctx.fillStyle = '#8b959e'; ctx.fillRect(-14, -2, 10, 11);
+      ctx.fillStyle = '#3a4654'; ctx.fillRect(0, 0, 14, 2); ctx.fillRect(0, 5, 10, 2);
+      break;
+    case 'crowbar':
+      ctx.rotate(-0.65);
+      ctx.fillStyle = '#707880'; ctx.fillRect(-3, -16, 6, 36);
+      ctx.strokeStyle = '#707880'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(3, -16, 7, Math.PI, Math.PI * 1.9); ctx.stroke();
+      ctx.fillStyle = '#8b4a2b'; ctx.fillRect(-3, 2, 6, 4); ctx.fillRect(-2, -12, 4, 3);
+      break;
+    case 'yarn':
+      ctx.fillStyle = '#4e7aa8';
+      ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2d4e73'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(-4, -3, 11, -0.5, 2.2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(4, 3, 10, 1.5, 4.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(10, 11); ctx.quadraticCurveTo(20, 18, 16, 22); ctx.stroke();
+      break;
+    case 'burger':
+      ctx.fillStyle = '#d49a4a';
+      ctx.beginPath(); ctx.arc(-2, -4, 15, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#5a2e1a'; ctx.fillRect(-16, -2, 28, 6);
+      ctx.fillStyle = '#e8c43a'; ctx.fillRect(-16, -4, 28, 3);
+      ctx.fillStyle = '#d49a4a'; ctx.fillRect(-16, 5, 28, 6);
+      ctx.fillStyle = '#e8dfd4'; ctx.fillRect(10, -14, 10, 22);
+      ctx.fillStyle = '#d86c7a'; ctx.fillRect(10, -10, 10, 4);
+      break;
+    case 'l1_ration':
+      ctx.fillStyle = '#9aa2a8';
+      ctx.beginPath(); ctx.roundRect(-10, -10, 20, 28, 5); ctx.fill();
+      ctx.fillStyle = '#6e767c'; ctx.fillRect(-4, -17, 8, 8);
+      ctx.fillStyle = '#4b5054'; ctx.fillRect(-6, -20, 12, 4);
+      ctx.fillStyle = '#c8c4b0'; ctx.fillRect(-8, -2, 16, 8);
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);

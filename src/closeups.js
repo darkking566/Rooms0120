@@ -3100,6 +3100,914 @@ export const CLOSEUPS = {
       vignette(ctx, 0.5);
     },
   },
+
+  // Level 0 Colonnade — B.N.T.G. Stencil Kit & Identification Card
+  l0_colonnade_kit: {
+    title: 'B.N.T.G. 噴漆模板箱',
+    draw(ctx) {
+      // Damp carpet background
+      ctx.fillStyle = '#5e5225';
+      ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 420; i++) {
+        const px = (i * 97) % W, py = (i * 53) % H;
+        ctx.fillStyle = i % 2 ? 'rgba(0,0,0,0.14)' : 'rgba(220,200,115,0.08)';
+        ctx.fillRect(px, py, 3, 2);
+      }
+
+      // Open metal case shadow & outer shell
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(192, 92, 592, 362);
+      ctx.fillStyle = '#3c453e';
+      ctx.fillRect(180, 80, 592, 360);
+      ctx.strokeStyle = '#6c796e'; ctx.lineWidth = 4;
+      ctx.strokeRect(180, 80, 592, 360);
+
+      // Dark interior foam tray
+      ctx.fillStyle = '#1b1f1c';
+      ctx.fillRect(198, 98, 556, 324);
+      ctx.strokeStyle = '#2d332f'; ctx.lineWidth = 2;
+      ctx.strokeRect(198, 98, 556, 324);
+
+      // Left compartment: Brass B.N.T.G. stencil plate + depleted spray can
+      ctx.fillStyle = '#9c864e';
+      ctx.fillRect(225, 130, 230, 145);
+      ctx.strokeStyle = '#d8c284'; ctx.lineWidth = 2;
+      ctx.strokeRect(225, 130, 230, 145);
+      // Corner alignment ticks cut into brass plate
+      ctx.fillStyle = '#1b1f1c';
+      for (const [tx, ty] of [[237, 142], [435, 142], [237, 255], [435, 255]]) {
+        ctx.fillRect(tx, ty, 8, 8);
+      }
+      ctx.font = '700 26px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('B.N.T.G.', 340, 196);
+      ctx.font = '700 34px ui-monospace, monospace';
+      ctx.fillText('→', 340, 240);
+
+      // Depleted blue-white spray can below stencil
+      ctx.fillStyle = '#485966';
+      ctx.fillRect(245, 315, 165, 62);
+      ctx.fillStyle = '#c8d6df';
+      ctx.fillRect(410, 326, 22, 40);
+      ctx.fillStyle = '#dde6ea';
+      ctx.fillRect(432, 339, 14, 14);
+      ctx.fillStyle = '#a7c0d2';
+      ctx.fillRect(272, 323, 92, 46);
+      ctx.fillStyle = '#21303b';
+      ctx.font = '700 12px ui-monospace, monospace';
+      ctx.fillText('B.N.T.G. #04', 318, 350);
+
+      // Right compartment: Laminated comparison card (click to read)
+      ctx.fillStyle = '#efe7cf';
+      ctx.fillRect(492, 128, 234, 266);
+      ctx.strokeStyle = '#9b906c'; ctx.lineWidth = 2.5;
+      ctx.strokeRect(492, 128, 234, 266);
+      ctx.fillStyle = '#2b2820';
+      ctx.font = '700 13px ui-monospace, monospace';
+      ctx.fillText('B.N.T.G. 路線識別卡', 609, 156);
+
+      // Valid example box
+      ctx.fillStyle = '#cbb868';
+      ctx.fillRect(514, 174, 190, 78);
+      ctx.strokeStyle = '#3d6b47'; ctx.lineWidth = 2;
+      ctx.strokeRect(514, 174, 190, 78);
+      ctx.fillStyle = '#f2eed8';
+      ctx.font = '700 16px ui-monospace, monospace';
+      ctx.fillText('B.N.T.G.  →', 609, 212);
+      ctx.fillStyle = '#2b5e36';
+      ctx.font = '700 11px ui-monospace, monospace';
+      ctx.fillText('✓ 銳利邊框・乾燥牆面', 609, 238);
+
+      // Mimic example box
+      ctx.fillStyle = '#7b6c36';
+      ctx.fillRect(514, 274, 190, 86);
+      ctx.strokeStyle = '#8b2f28'; ctx.lineWidth = 2;
+      ctx.strokeRect(514, 274, 190, 86);
+      ctx.fillStyle = 'rgba(42,28,16,0.75)';
+      ctx.beginPath(); ctx.ellipse(609, 316, 68, 22, 0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c8bd94';
+      ctx.font = '700 15px ui-monospace, monospace';
+      ctx.fillText('B.T.N.G.  ↘', 609, 314);
+      ctx.fillStyle = '#7e2018';
+      ctx.font = '700 11px ui-monospace, monospace';
+      ctx.fillText('✗ 拼錯字・滲水暈散', 609, 346);
+
+      ctx.fillStyle = '#5c5540';
+      ctx.font = '11px ui-monospace, monospace';
+      ctx.fillText('（點擊卡片查看完整規範）', 609, 382);
+      ctx.textAlign = 'left';
+      vignette(ctx, 0.52);
+    },
+    drawView(ctx, t) {
+      // Camcorder UV glow highlights reflective primer on stencil plate
+      const pulse = 0.55 + 0.35 * Math.sin(t * 4);
+      ctx.save();
+      ctx.strokeStyle = `rgba(128,255,212,${pulse})`;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(225, 130, 230, 145);
+      ctx.fillStyle = 'rgba(128,255,212,0.85)';
+      ctx.font = '700 13px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('UV 反光底漆偵測中 — 「別相信牆裡自己長出來的箭頭」', CX, 60);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    },
+    hotspots: [
+      {
+        id: 'cu_colonnade_card', rect: [490, 126, 238, 270], label: '閱讀商隊路線識別卡', cursor: 'look',
+        click: (g) => g.read('n_colonnade_kit'),
+      },
+    ],
+  },
+
+  // Level 0.1 Observation Deck — Panoramic Spherical Shell Core Window
+  l01_core_window: {
+    title: '觀測台・球殼中心',
+    draw(ctx, t) {
+      const wx = 44, wy = 46, ww = 872, wh = 398;
+      const sx = CX, sy = 244;
+
+      // Station observation bulkhead surround
+      const wallGrad = ctx.createLinearGradient(0, 0, 0, H);
+      wallGrad.addColorStop(0, '#36414a');
+      wallGrad.addColorStop(0.5, '#252e35');
+      wallGrad.addColorStop(1, '#161c21');
+      ctx.fillStyle = wallGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Exterior viewport clipped to the panoramic glass area
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(wx, wy, ww, wh);
+      ctx.clip();
+
+      // 1. Beyond the shell: endless stacked Level 0 yellow rooms growing outside Zenith Station
+      const outerBg = ctx.createRadialGradient(sx, sy, 140, sx, sy, 520);
+      outerBg.addColorStop(0, '#010306');
+      outerBg.addColorStop(0.56, '#091420');
+      outerBg.addColorStop(0.78, '#2d2814');
+      outerBg.addColorStop(1, '#6b5b24');
+      ctx.fillStyle = outerBg;
+      ctx.fillRect(wx, wy, ww, wh);
+
+      // Endless tiers of yellow rooms stacked along the outer flanks outside the spherical shell
+      for (const side of [-1, 1]) {
+        for (let row = 0; row < 12; row++) {
+          const ry = wy + 12 + row * 32;
+          for (let col = 0; col < 6; col++) {
+            const rx = side < 0 ? wx + 8 + col * 36 : wx + ww - 224 + col * 36;
+            const dx = (rx + 15 - sx) / 415;
+            const dy = (ry + 12 - sy) / 205;
+            const dist = dx * dx + dy * dy;
+            if (dist < 0.86) continue;
+            const fade = clamp((dist - 0.86) * 2.0, 0.2, 0.92);
+            const lit = ((row * 7 + col * 11) % 5 !== 0);
+            ctx.fillStyle = lit
+              ? `rgba(218,196,98,${fade * 0.62})`
+              : `rgba(116,100,44,${fade * 0.48})`;
+            ctx.fillRect(rx, ry, 30, 24);
+            if (lit) {
+              ctx.fillStyle = `rgba(255,246,192,${fade * 0.65})`;
+              ctx.fillRect(rx + 8, ry + 3, 14, 3);
+              ctx.fillStyle = `rgba(42,35,14,${fade * 0.55})`;
+              ctx.fillRect(rx + 12, ry + 11, 6, 13);
+            }
+          }
+        }
+      }
+
+      // 2. The colossal hollow spherical shell interior
+      const shellRx = 418, shellRy = 204;
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, shellRx, shellRy, 0, 0, Math.PI * 2);
+      ctx.clip();
+
+      const voidGrad = ctx.createRadialGradient(sx, sy, 18, sx, sy, shellRx);
+      voidGrad.addColorStop(0, '#000003');
+      voidGrad.addColorStop(0.28, '#040911');
+      voidGrad.addColorStop(0.66, '#0a1622');
+      voidGrad.addColorStop(0.92, '#132232');
+      voidGrad.addColorStop(1, '#1d2b34');
+      ctx.fillStyle = voidGrad;
+      ctx.fillRect(wx, wy, ww, wh);
+
+      // Meridian structural trusses converging toward the hollow center
+      ctx.strokeStyle = 'rgba(74,114,142,0.16)';
+      ctx.lineWidth = 1.2;
+      for (let m = 0; m < 16; m++) {
+        const a = (m / 16) * Math.PI * 2 + 0.12;
+        ctx.beginPath();
+        ctx.moveTo(sx + Math.cos(a) * 58, sy + Math.sin(a) * 26);
+        ctx.lineTo(sx + Math.cos(a) * shellRx, sy + Math.sin(a) * shellRy);
+        ctx.stroke();
+      }
+
+      // 13 concentric deck tiers lining the inner wall of the shell
+      // Third lit window flickers and snaps out on a slow loop ("你數到第三扇的時候，它熄了")
+      const thirdCycle = t % 7.5;
+      const thirdLit = thirdCycle < 3.6
+        ? 1
+        : thirdCycle < 4.2
+          ? (Math.sin(t * 42) > 0 ? 0.75 : 0.08)
+          : 0;
+
+      for (let i = 1; i <= 13; i++) {
+        const p = i / 13;
+        const rx = 56 + Math.pow(p, 1.18) * 356;
+        const ry = 23 + Math.pow(p, 1.18) * 176;
+        const alpha = 0.1 + p * 0.28;
+
+        ctx.strokeStyle = `rgba(18,32,44,${0.32 + p * 0.25})`;
+        ctx.lineWidth = 3 + p * 8;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(98,146,176,${alpha})`;
+        ctx.lineWidth = 0.8 + p * 1.4;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const count = 16 + i * 4;
+        const winW = 2.4 + p * 4.5;
+        const winH = 1.5 + p * 2.2;
+        for (let j = 0; j < count; j++) {
+          const a = (j / count) * Math.PI * 2 + i * 0.37;
+          if ((i * 11 + j * 5) % 6 === 0) continue;
+          const px = sx + Math.cos(a) * rx;
+          const py = sy + Math.sin(a) * ry;
+          const isThird = (i === 7 && j === 24);
+          const isLit = (i === 5 && j === 19) || (i === 6 && j === 11) || (i === 9 && j === 35) || (i === 10 && j === 7);
+
+          if (isThird) {
+            if (thirdLit > 0.1) {
+              const hg = ctx.createRadialGradient(px, py, 1, px, py, 12);
+              hg.addColorStop(0, `rgba(255,232,146,${0.48 * thirdLit})`);
+              hg.addColorStop(1, 'rgba(255,220,120,0)');
+              ctx.fillStyle = hg;
+              ctx.beginPath();
+              ctx.arc(px, py, 12, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.fillStyle = thirdLit > 0.1
+              ? `rgba(255,236,158,${0.92 * thirdLit})`
+              : 'rgba(28,42,54,0.42)';
+          } else if (isLit) {
+            ctx.fillStyle = 'rgba(235,210,126,0.85)';
+          } else {
+            ctx.fillStyle = `rgba(42,64,82,${0.25 + p * 0.16})`;
+          }
+          ctx.fillRect(px - winW / 2, py - winH / 2, winW, winH);
+        }
+      }
+
+      // Stretched starlight lines frozen around the mid-shell void
+      ctx.lineCap = 'round';
+      for (let k = 0; k < 20; k++) {
+        const a = (k / 20) * Math.PI * 2 + 0.28;
+        const r = 82 + (k % 5) * 26;
+        const x1 = sx + Math.cos(a - 0.08) * r;
+        const y1 = sy + Math.sin(a - 0.08) * (r * 0.44);
+        const x2 = sx + Math.cos(a + 0.08) * r;
+        const y2 = sy + Math.sin(a + 0.08) * (r * 0.44);
+        ctx.strokeStyle = `rgba(195,222,255,${0.1 + (k % 3) * 0.05})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      ctx.restore(); // end inner shell clip
+
+      // Subtle outer rim glow where Level 0's yellow heat presses against the dark shell
+      ctx.strokeStyle = 'rgba(205,182,88,0.22)';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, shellRx, shellRy, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 3. The center: quiet gravitational lensing ring shaped like a closed eye
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(-0.22);
+
+      const breath = Math.sin(t * 0.9) * 1.4;
+      const lensGlow = ctx.createRadialGradient(0, 0, 8, 0, 0, 92);
+      lensGlow.addColorStop(0, 'rgba(0,0,4,0.95)');
+      lensGlow.addColorStop(0.45, 'rgba(95,140,205,0.16)');
+      lensGlow.addColorStop(0.75, 'rgba(210,190,115,0.08)');
+      lensGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = lensGlow;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 94, 46, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dark quiet core swallowing background light
+      ctx.fillStyle = '#000003';
+      ctx.beginPath();
+      ctx.moveTo(-48, 0);
+      ctx.quadraticCurveTo(0, -21 - breath * 0.5, 48, 0);
+      ctx.quadraticCurveTo(0, 21 + breath * 0.5, -48, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Bent light arcs forming the upper & lower "closed eyelids"
+      for (let k = 0; k < 4; k++) {
+        const span = 54 + k * 8;
+        const arch = 16 + k * 4.6 + breath * (0.4 + k * 0.15);
+        ctx.strokeStyle = k === 0
+          ? 'rgba(225,242,255,0.68)'
+          : k === 3
+            ? 'rgba(224,200,122,0.32)'
+            : `rgba(160,205,250,${0.4 - k * 0.06})`;
+        ctx.lineWidth = k === 0 ? 2.1 : 1.3;
+        ctx.beginPath();
+        ctx.moveTo(-span, 0);
+        ctx.quadraticCurveTo(0, -arch, span, 0);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-span, 0);
+        ctx.quadraticCurveTo(0, arch, span, 0);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(195,225,255,0.44)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-50, 0);
+      ctx.quadraticCurveTo(0, 2.5, 50, 0);
+      ctx.stroke();
+      ctx.restore();
+
+      // 4. Glass pane reflections, forehead condensation smudge & console LED reflection
+      const sheenX = 120 + Math.sin(t * 0.35) * 35;
+      ctx.fillStyle = 'rgba(200,228,245,0.045)';
+      ctx.beginPath();
+      ctx.moveTo(sheenX, wy);
+      ctx.lineTo(sheenX + 95, wy);
+      ctx.lineTo(sheenX - 45, wy + wh);
+      ctx.lineTo(sheenX - 140, wy + wh);
+      ctx.closePath();
+      ctx.fill();
+
+      const fogAlpha = 0.055 + Math.sin(t * 1.4) * 0.018;
+      const fog = ctx.createRadialGradient(sx - 28, sy + 18, 4, sx - 28, sy + 18, 62);
+      fog.addColorStop(0, `rgba(215,235,245,${fogAlpha})`);
+      fog.addColorStop(1, 'rgba(215,235,245,0)');
+      ctx.fillStyle = fog;
+      ctx.beginPath();
+      ctx.arc(sx - 28, sy + 18, 62, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (Math.sin(t * 3) > 0) {
+        const ledGlow = ctx.createRadialGradient(sx + 18, wy + wh - 10, 2, sx + 18, wy + wh - 10, 34);
+        ledGlow.addColorStop(0, 'rgba(255,95,70,0.22)');
+        ledGlow.addColorStop(1, 'rgba(255,95,70,0)');
+        ctx.fillStyle = ledGlow;
+        ctx.fillRect(sx - 20, wy + wh - 44, 76, 44);
+      }
+
+      ctx.restore(); // end glass viewport clip
+
+      // 5. Four-pane window mullions & heavy station frame
+      const mullions = [wx + ww * 0.25 - 6, wx + ww * 0.5 - 6, wx + ww * 0.75 - 6];
+      for (const mx of mullions) {
+        ctx.fillStyle = '#192026';
+        ctx.fillRect(mx - 2, wy, 16, wh);
+        const mg = ctx.createLinearGradient(mx, 0, mx + 12, 0);
+        mg.addColorStop(0, '#96a5ad');
+        mg.addColorStop(0.45, '#687780');
+        mg.addColorStop(1, '#3e4a52');
+        ctx.fillStyle = mg;
+        ctx.fillRect(mx, wy, 12, wh);
+      }
+
+      ctx.strokeStyle = '#151b20';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(wx - 3, wy - 3, ww + 6, wh + 6);
+      ctx.strokeStyle = '#8b9ba3';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(wx, wy, ww, wh);
+
+      for (const rx of [68, 260, 480, 700, 892]) {
+        drawScrew(ctx, rx, 26, 5, 0.3 + rx * 0.01);
+        drawScrew(ctx, rx, 460, 5, -0.4 + rx * 0.01);
+      }
+
+      ctx.fillStyle = 'rgba(165,195,208,0.62)';
+      ctx.font = '600 11px ui-monospace, monospace';
+      ctx.fillText('ZENITH // OBS-01', 50, 463);
+      ctx.textAlign = 'right';
+      ctx.fillText('CORE VIEWPORT', 910, 463);
+      ctx.textAlign = 'left';
+
+      vignette(ctx, 0.44);
+    },
+    drawView(ctx, t) {
+      // Through the camcorder viewfinder: the warped light ring at the center appears MUCH larger
+      const wx = 44, wy = 46, ww = 872, wh = 398;
+      const sx = CX, sy = 244;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(wx, wy, ww, wh);
+      ctx.clip();
+
+      const pulse = Math.sin(t * 2.1) * 4;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(-0.22);
+
+      const aura = ctx.createRadialGradient(0, 0, 26, 0, 0, 240);
+      aura.addColorStop(0, 'rgba(0,0,6,0.65)');
+      aura.addColorStop(0.35, 'rgba(110,210,255,0.22)');
+      aura.addColorStop(0.7, 'rgba(225,205,120,0.12)');
+      aura.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 240, 118, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let k = 0; k < 6; k++) {
+        const rx = 108 + k * 23 + pulse * (0.4 + k * 0.12);
+        const ry = 42 + k * 10 + pulse * 0.35;
+        ctx.strokeStyle = k % 2 === 0
+          ? `rgba(145,235,255,${0.48 - k * 0.06})`
+          : `rgba(245,222,145,${0.32 - k * 0.04})`;
+        ctx.lineWidth = 2.2 - k * 0.2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Inside the viewfinder, the "closed eye" parts slightly into a slit staring back
+      ctx.fillStyle = '#010205';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 64, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(185,245,255,0.72)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-64, 0);
+      ctx.quadraticCurveTo(0, -24, 64, 0);
+      ctx.quadraticCurveTo(0, 24, -64, 0);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(215,248,255,0.78)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 4.5, 16, 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(130,240,195,0.88)';
+      ctx.font = '700 12px ui-monospace, monospace';
+      ctx.fillText('OPTICAL DISTORTION // GRAV-LENS ANOMALY', 74, 88);
+      ctx.fillText('APPARENT DIAMETER: 3.4x', 74, 106);
+      ctx.restore();
+    },
+    hotspots: [
+      {
+        id: 'cu_core_outer',
+        rect: [44, 46, 872, 398],
+        label: '球殼內壁與外層黃色空間',
+        cursor: 'look',
+        click: (g) => g.say(g.s.view
+          ? '觀景窗裡，整個球殼內壁的輪廓都被中心那圈光拉歪了。外層堆疊的黃色房間正把整座空間站包在裡面。'
+          : '一層又一層漆黑的甲板沿著球殼內壁向遠方彎曲，只有少數窗戶還亮著微弱的燈。在更遠的外側，無止盡的黃色房間像樓層一樣往上疊。'),
+      },
+      {
+        id: 'cu_core_center',
+        rect: [340, 145, 280, 200],
+        label: '把額頭貼上玻璃，看著球殼的中心',
+        cursor: 'look',
+        click: (g) => g.read('n01_core'),
+      },
+    ],
+  },
+
+  l1_substation_panel: {
+    title: '第一區變電所・高壓配電盤',
+    draw(ctx, t, s) {
+      const powered = !!s.flags.l1_power;
+      ctx.fillStyle = '#25282c';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#363b40';
+      ctx.fillRect(90, 50, 780, 420);
+      ctx.strokeStyle = '#181a1d'; ctx.lineWidth = 6;
+      ctx.strokeRect(90, 50, 780, 420);
+
+      // Fuse bay on the left
+      ctx.fillStyle = '#1c1f22';
+      ctx.fillRect(135, 110, 240, 290);
+      ctx.strokeStyle = '#687078'; ctx.lineWidth = 2;
+      ctx.strokeRect(135, 110, 240, 290);
+      ctx.fillStyle = '#cfd4d8';
+      ctx.font = 'bold 13px ui-monospace, monospace';
+      ctx.fillText('FEEDER-B  11kV FUSE', 165, 138);
+
+      // Brass clips
+      ctx.fillStyle = '#b48a34';
+      ctx.fillRect(225, 165, 60, 24);
+      ctx.fillRect(225, 325, 60, 24);
+      if (powered) {
+        ctx.fillStyle = '#dfd0a8';
+        ctx.fillRect(233, 189, 44, 136);
+        ctx.fillStyle = '#b43a2a';
+        ctx.fillRect(233, 242, 44, 24);
+        ctx.fillStyle = '#d4a644';
+        ctx.fillRect(229, 175, 52, 18);
+        ctx.fillRect(229, 321, 52, 18);
+      } else {
+        ctx.fillStyle = '#0d0f11';
+        ctx.fillRect(237, 192, 36, 130);
+        ctx.strokeStyle = '#553a2a'; ctx.lineWidth = 2;
+        ctx.strokeRect(237, 192, 36, 130);
+      }
+
+      // Analog voltmeter on top right
+      ctx.fillStyle = '#e8e2ce';
+      ctx.fillRect(450, 105, 360, 160);
+      ctx.strokeStyle = '#1c2024'; ctx.lineWidth = 4;
+      ctx.strokeRect(450, 105, 360, 160);
+      ctx.strokeStyle = '#3a3832'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(630, 245, 115, Math.PI * 1.18, Math.PI * 1.82);
+      ctx.stroke();
+      const angle = powered ? -0.45 + Math.sin(t * 22) * 0.025 : -1.05;
+      ctx.strokeStyle = '#c82d20'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(630, 245);
+      ctx.lineTo(630 + Math.sin(angle) * 102, 245 - Math.cos(angle) * 102);
+      ctx.stroke();
+      ctx.fillStyle = '#24221e';
+      ctx.font = 'bold 14px ui-monospace, monospace';
+      ctx.fillText(powered ? '11.0 kV  NOMINAL' : '0.0 kV  OPEN CIRCUIT', 540, 232);
+
+      // Feeder status lamps
+      const rows = [
+        ['FEEDER A  OUTPOST/FOG', true],
+        ['FEEDER B  FREIGHT LIFT', powered],
+        ['FEEDER C  CTRL/ARCHIVE', powered],
+      ];
+      rows.forEach(([label, on], i) => {
+        const y = 305 + i * 42;
+        ctx.fillStyle = '#1e2226';
+        ctx.fillRect(450, y, 360, 32);
+        ctx.fillStyle = on ? '#42e078' : '#b83228';
+        ctx.beginPath(); ctx.arc(474, y + 16, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#d4dadf';
+        ctx.font = '13px ui-monospace, monospace';
+        ctx.fillText(label, 496, y + 21);
+      });
+      vignette(ctx, 0.56);
+    },
+    hotspots: [
+      {
+        id: 'cu_fuse_slot',
+        rect: [135, 110, 240, 290],
+        label: 'B 路高壓保險絲槽',
+        cursor: 'look',
+        click: (g) => {
+          if (g.s.flags.l1_power) return g.say('高壓保險絲已經裝好，銅接點穩定通電中。');
+          g.say('卡槽是空的，只剩焦黑的痕跡。需要一顆「高壓保險絲」才能恢復這一區的供電。');
+        },
+        use: {
+          l1_fuse: (g) => {
+            if (g.s.flags.l1_power) return g.say('已經通電了。');
+            g.take('l1_fuse');
+            g.flag('l1_power');
+            g.sfx('ok');
+            g.say('你將高壓保險絲壓進黃銅夾片。電壓表指針彈上 11 kV，三盞饋線燈號全部轉綠！');
+          },
+        },
+      },
+      {
+        id: 'cu_sub_meter',
+        rect: [450, 105, 360, 320],
+        label: '電壓表與饋線狀態',
+        cursor: 'look',
+        click: (g) => g.say(g.s.flags.l1_power
+          ? '電壓穩定在 11 kV。貨運電梯檢修門、管制走廊照明與資料室磁力門都已經過電。'
+          : '電壓歸零。FEEDER B（貨運電梯）與 FEEDER C（管制區／資料室）全都亮著紅燈。'),
+      },
+    ],
+  },
+
+  l1_freezer_porthole: {
+    title: '零號冷庫・結霜圓窗',
+    draw(ctx, t) {
+      ctx.fillStyle = '#3f474c';
+      ctx.fillRect(0, 0, W, H);
+      // Heavy riveted steel door
+      ctx.fillStyle = '#606b72';
+      ctx.beginPath(); ctx.arc(CX, CY, 195, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0e1d28';
+      ctx.beginPath(); ctx.arc(CX, CY, 152, 0, Math.PI * 2); ctx.fill();
+      // Cold mist drifting behind glass
+      for (let i = 0; i < 6; i++) {
+        const mx = CX + Math.sin(t * 0.6 + i * 1.3) * 70;
+        const my = CY + Math.cos(t * 0.45 + i * 2.1) * 50;
+        const g = ctx.createRadialGradient(mx, my, 4, mx, my, 95);
+        g.addColorStop(0, 'rgba(180,225,245,0.22)');
+        g.addColorStop(1, 'rgba(180,225,245,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(mx, my, 95, 0, Math.PI * 2); ctx.fill();
+      }
+      // Frost rim
+      ctx.strokeStyle = 'rgba(225,245,255,0.5)'; ctx.lineWidth = 14;
+      ctx.beginPath(); ctx.arc(CX, CY, 146, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#2b3238'; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.arc(CX, CY, 162, 0, Math.PI * 2); ctx.stroke();
+      vignette(ctx, 0.68);
+    },
+    drawView(ctx, t) {
+      ctx.save();
+      ctx.globalAlpha = 0.62 + Math.sin(t * 3) * 0.08;
+      ctx.fillStyle = '#c8f5e2';
+      for (const [hx, hy] of [[CX - 46, CY + 12], [CX + 44, CY - 14]]) {
+        ctx.beginPath(); ctx.ellipse(hx, hy, 22, 28, 0, 0, Math.PI * 2); ctx.fill();
+        for (let f = -2; f <= 2; f++) {
+          ctx.beginPath(); ctx.ellipse(hx + f * 9, hy - 36 + Math.abs(f) * 4, 4, 15, f * 0.08, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.font = 'bold 13px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('INNER GLASS // -18°C // NO COMPRESSOR', CX, CY + 122);
+      ctx.restore();
+    },
+    hotspots: [
+      {
+        id: 'cu_porthole',
+        rect: [CX - 160, CY - 160, 320, 320],
+        label: '貼近圓窗往裡看',
+        cursor: 'look',
+        click: (g) => {
+          if (g.s.view) {
+            if (!g.s.flags.l1_porthole_seen) { g.flag('l1_porthole_seen'); g.sanity(-5); }
+            return g.say('觀景窗裡，兩隻蒼白的掌印從玻璃內側死死按著霜面——但隔間裡面明明什麼也沒有。');
+          }
+          g.say('厚重的冰霜把圓窗糊得只剩一片冷藍的霧。奇怪的是，霜全都結在玻璃內側。');
+        },
+      },
+    ],
+  },
+
+  l1_archive_crt: {
+    title: '第一層資料室・琥珀色終端機',
+    draw(ctx, t) {
+      ctx.fillStyle = '#18140e';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#332c22';
+      ctx.fillRect(110, 44, 740, 430);
+      ctx.fillStyle = '#191206';
+      ctx.fillRect(150, 76, 660, 354);
+      ctx.strokeStyle = '#5c4d38'; ctx.lineWidth = 5;
+      ctx.strokeRect(150, 76, 660, 354);
+
+      ctx.fillStyle = '#ffb84a';
+      ctx.font = 'bold 15px ui-monospace, monospace';
+      const lines = [
+        'M.E.G. ARCHIVE TERMINAL  //  LEVEL 1 HABITABLE ZONE',
+        '----------------------------------------------------',
+        'SECTOR 1-A  WAREHOUSE / ARRIVAL ....... [ACTIVE]',
+        'SECTOR 1-B  DOCK / CISTERN / SUBSTATION [ONLINE]',
+        'SECTOR 1-C  NORTH SCORCHED / OUTPOST .. [EVACUATED]',
+        'SECTOR 1-D  GARDEN / OUROBOROS WORKS .. [CONTAINED]',
+        '----------------------------------------------------',
+        'CROSS-REF FILE: RECORD 0120 / J.H.',
+        'STATUS: ARCHIVED // SUBJECT STILL LOOPING',
+      ];
+      lines.forEach((ln, i) => ctx.fillText(ln, 184, 120 + i * 30));
+      if (Math.floor(t * 2) % 2 === 0) ctx.fillRect(184, 386, 12, 18);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      for (let y = 76; y < 430; y += 4) ctx.fillRect(150, y, 660, 1);
+      vignette(ctx, 0.54);
+    },
+    drawView(ctx) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(185,255,215,0.88)';
+      ctx.font = 'bold 14px ui-monospace, monospace';
+      ctx.fillText('CAM OVERLAY: RECORD 0120 MATCH', 184, 412);
+      ctx.restore();
+    },
+    hotspots: [
+      {
+        id: 'cu_crt_map',
+        rect: [150, 76, 660, 210],
+        label: '檢視第一層區塊圖',
+        cursor: 'look',
+        click: (g) => g.say('螢幕顯示了完整的 Level 1 區域拓撲：從倉庫與裝卸月台、地下蓄水池與變電所、燒毀的北區前哨站，一路延伸到溫室與銜尾蛇工地。'),
+      },
+      {
+        id: 'cu_crt_log',
+        rect: [150, 286, 660, 144],
+        label: '讀取 #0120 索引紀錄',
+        cursor: 'look',
+        click: (g) => g.say('終端機閃爍了一下：「警告：0120 號房並不存在於第一層平面圖上，但所有通風管與走廊最終都偵測到同一段錄音訊號。」'),
+      },
+    ],
+  },
+
+  l1_clipp_poster: {
+    title: '阿麗亞娜集團・C.L.I.P.P. 協議海報',
+    draw(ctx) {
+      ctx.fillStyle = '#1c2428';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#ece6d4';
+      ctx.fillRect(140, 38, 680, 444);
+      ctx.strokeStyle = '#3c4a52'; ctx.lineWidth = 6;
+      ctx.strokeRect(140, 38, 680, 444);
+      ctx.fillStyle = '#263842';
+      ctx.fillRect(140, 38, 680, 68);
+      ctx.fillStyle = '#f2ede0';
+      ctx.font = 'bold 22px ui-monospace, monospace';
+      ctx.fillText('ARIANE CIRCLE // C.L.I.P.P. PROTOCOL', 200, 80);
+
+      const steps = [
+        ['C', '評估環境 Check your environment — 確認威脅與建築結構'],
+        ['L', '找尋出口 Locate an exit — 尋找門、窗、反向切出或閾界'],
+        ['I', '查資料庫 Inspect the database — 比對層級與安全出口情報'],
+        ['P', '準備裝備 Prepare your equipment — 手電筒、工具、乾淨衣物'],
+        ['P', '觀察環境 Perimeter your environment — 建立臨時安全區'],
+      ];
+      steps.forEach(([k, desc], i) => {
+        const y = 136 + i * 64;
+        ctx.fillStyle = '#2d4a58';
+        ctx.fillRect(175, y, 44, 44);
+        ctx.fillStyle = '#fff8e8';
+        ctx.font = 'bold 24px ui-monospace, monospace';
+        ctx.fillText(k, 190, y + 30);
+        ctx.fillStyle = '#242a2e';
+        ctx.font = '15px sans-serif';
+        ctx.fillText(desc, 236, y + 28);
+      });
+      vignette(ctx, 0.48);
+    },
+    hotspots: [
+      {
+        id: 'cu_clipp_read',
+        rect: [140, 38, 680, 444],
+        label: '細讀 C.L.I.P.P. 協議',
+        cursor: 'look',
+        click: (g) => {
+          g.flag('l1_clipp_read');
+          g.say('阿麗亞娜集團的赫爾墨斯團隊提醒：面對完全陌生的層級切出時，依序執行 C-L-I-P-P 五步，才不會在混亂中喪命。Level 1 只是旅程的起點。');
+        },
+      },
+    ],
+  },
+
+  l1_entity_manual: {
+    title: '希波克拉底-1・《宜居地帶常見實體圖鑑》',
+    draw(ctx) {
+      ctx.fillStyle = '#181e1c';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#dfd8c4';
+      ctx.fillRect(90, 38, 780, 448);
+      ctx.strokeStyle = '#3b4a42'; ctx.lineWidth = 4;
+      ctx.strokeRect(90, 38, 780, 448);
+      ctx.fillStyle = '#273830';
+      ctx.fillRect(90, 38, 780, 52);
+      ctx.fillStyle = '#edf2e6';
+      ctx.font = 'bold 18px ui-monospace, monospace';
+      ctx.fillText('HIPPOCRATES-1 // LEVEL 1 ENTITY COMPENDIUM (11 SPECIES)', 135, 70);
+
+      const entities = [
+        ['1. 手臂 Arms', '停電時自通風管伸出 → 用手電筒照射驅離'],
+        ['2. 肢團 Clumps', '成團肢體高速衝刺 → 無視覺，保持安靜'],
+        ['3. 爬菌 Crawler', '致病真菌 → 禁飲未密封水坑與變質食物'],
+        ['4. 鈍人 Dullers', '切行穿牆突襲 → 聽見抓刮聲立刻遠離牆面'],
+        ['5. 啼物 Weepers', '線纜組成智力低下 → 朝頭頂丟重物或扯斷線纜'],
+        ['6. 獵犬 Hounds', '犬形野獸人態 → 不可避時直視眼睛並製造噪音'],
+        ['7. Nguithr\'xurh', '天花板發光球狀蛛網 → 絕不從網下走過'],
+        ['8. 竊皮者 Skin-Stealer', '披人皮說「全鬆垮了」→ 對話辨識後冷靜遠離'],
+        ['9. 笑魘 Smilers', '趨光發光獸面 → 關掉光源或丟棄誘餌'],
+        ['10. 牧蛇 Wranglers', '鑽牆催眠巨蛇 → 牆頂震動時安靜離開'],
+        ['11. 悲屍 Wretches', '攻擊性強不死人形 → 就算聽懂牠說的話也別互動'],
+      ];
+      entities.forEach(([name, tip], i) => {
+        const y = 116 + i * 32;
+        ctx.fillStyle = i % 2 ? 'rgba(40,55,48,0.08)' : 'rgba(40,55,48,0.02)';
+        ctx.fillRect(108, y - 18, 744, 28);
+        ctx.fillStyle = '#1f2b25';
+        ctx.font = 'bold 13px ui-monospace, monospace';
+        ctx.fillText(name, 120, y);
+        ctx.fillStyle = '#3a4640';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(tip, 320, y);
+      });
+      vignette(ctx, 0.45);
+    },
+    hotspots: [
+      {
+        id: 'cu_entity_list',
+        rect: [90, 38, 780, 448],
+        label: '記下 11 種實體與瘟疫地精應對守則',
+        cursor: 'look',
+        click: (g) => {
+          if (!g.s.flags.l1_entity_studied) { g.flag('l1_entity_studied'); g.sanity(5); }
+          g.say('阿麗亞娜集團與「引領者」當年合作整理的這份圖鑑涵蓋了全 11 種宜居地帶實體——還附註遇到「瘟疫地精」時可用刀或斧頭嚇退。');
+        },
+      },
+    ],
+  },
+
+  l1_crate_open_cu: {
+    title: '開箱檢視・商人保險庫補給箱',
+    draw(ctx) {
+      ctx.fillStyle = '#1b1814';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#6c5336';
+      ctx.fillRect(160, 75, 640, 380);
+      ctx.fillStyle = '#2d2318';
+      ctx.fillRect(190, 105, 580, 320);
+
+      // Left compartment: dangerous solid nitrogen & broken glass
+      ctx.fillStyle = '#4e5d66';
+      ctx.fillRect(215, 130, 240, 260);
+      ctx.fillStyle = '#b4e4ff';
+      ctx.fillRect(245, 165, 80, 70);
+      ctx.fillStyle = '#dcebf2';
+      ctx.font = 'bold 12px ui-monospace, monospace';
+      ctx.fillText('CAUTION: SOLID N2 & GLASS', 225, 370);
+
+      // Right compartment: yarn ball & sealed ration
+      ctx.fillStyle = '#4d4436';
+      ctx.fillRect(485, 130, 255, 260);
+      ctx.fillStyle = '#4e7aa8';
+      ctx.beginPath(); ctx.arc(560, 230, 38, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e8dfc2';
+      ctx.fillRect(630, 190, 72, 95);
+      ctx.fillStyle = '#24201a';
+      ctx.fillText('YARN + SEALED', 530, 370);
+      vignette(ctx, 0.56);
+    },
+    hotspots: [
+      {
+        id: 'cu_crate_hazard',
+        rect: [215, 130, 240, 260],
+        label: '固態氮塊與碎玻璃隔層',
+        cursor: 'look',
+        click: (g) => g.say('卡魯姆的指南說得沒錯——這半邊塞滿碎玻璃與冒白煙的固態氮塊，直接伸手進去肯定受傷。'),
+      },
+      {
+        id: 'cu_crate_safe',
+        rect: [485, 130, 255, 260],
+        label: '安全物資隔層（毛線球與口糧）',
+        cursor: 'take',
+        click: (g) => {
+          if (g.s.flags.l1_vault_crate_loot) return g.say('安全隔層已經搜刮乾淨了。');
+          g.flag('l1_vault_crate_loot');
+          g.give('yarn');
+          g.give('almond');
+          g.say('你小心避開碎玻璃，取出一個藍色「紗線球」和一瓶密封「杏仁水」！');
+        },
+      },
+    ],
+  },
+
+  l1_hub_doors: {
+    title: '異層閾界走廊・出入口近距離觀測',
+    draw(ctx, t) {
+      ctx.fillStyle = '#121518';
+      ctx.fillRect(0, 0, W, H);
+      // 4 iconic portals: glass (22), frozen steel (159), pure white wood (998.2), Mach+ TV (201)
+      const portals = [
+        [80, '#5a8090', '玻璃門\nLv.22'],
+        [290, '#7ca2b4', '結冰鐵門\nLv.159'],
+        [500, '#e6e4dc', '純白木門\nLv.998.2'],
+        [710, '#2c2f34', 'Mach+ TV\nLv.201'],
+      ];
+      portals.forEach(([x, col, label], i) => {
+        ctx.fillStyle = col;
+        ctx.fillRect(x, 100, 170, 310);
+        ctx.strokeStyle = '#22262a'; ctx.lineWidth = 4;
+        ctx.strokeRect(x, 100, 170, 310);
+        if (i === 3) {
+          ctx.fillStyle = Math.sin(t * 9) > 0 ? '#d8649e' : '#64d8c8';
+          ctx.fillRect(x + 22, 130, 126, 95);
+        }
+        ctx.fillStyle = i === 2 ? '#222' : '#eef2f4';
+        ctx.font = 'bold 13px ui-monospace, monospace';
+        const [a, b] = label.split('\n');
+        ctx.fillText(a, x + 20, 442);
+        ctx.fillText(b, x + 20, 462);
+      });
+      vignette(ctx, 0.58);
+    },
+    hotspots: [
+      {
+        id: 'cu_portals_inspect',
+        rect: [80, 100, 800, 360],
+        label: '檢視各閾界門與 Mach+ 電視',
+        cursor: 'look',
+        click: (g) => g.say('這裡聚集著通往後室其他層級的危險閾界：玻璃門通往 Level 22、結冰鐵門通往 Level 159、純白木門通往 Level 998.2、插著 Mach+ 錄影帶的電視會把人吸入 Level 201「美學」——沒準備好千萬別踏進去。'),
+      },
+    ],
+  },
 };
 
 

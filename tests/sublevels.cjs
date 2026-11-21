@@ -165,7 +165,7 @@ const { chromium } = require('playwright');
     await hit('back'); await hit('back'); await hit('forward');
     check((await state()).scene === 'l01_core', 'the cooled section leads to the observation deck');
     await shot('sub-07-core');
-    await hit('window'); await closeDoc(); await hit('console'); await closeDoc();
+    await hit('window'); await hit('cu_core_center'); await closeDoc(); await closeCloseup('l01_core_window'); await hit('console'); await closeDoc();
     await hit('back'); await hit('back'); await waitClock(doorOpenNow);
     check((await state()).scene === 'l01_airlock', 'the airlock stays open when another section was cut');
     await hit('back'); check((await state()).scene === 'l0_colonnade', 'station has a return route to Level 0');

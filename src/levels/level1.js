@@ -6,6 +6,8 @@ import { BACK, FORWARD, PAL, flickery } from './common.js';
 import { CHALK } from './level0.js';
 import { drawExitSign, drawPipes, gauge } from './level2.js';
 import { drawBag, drawBlanket } from './sublevel-kit.js';
+import { LEVEL1_WINGS } from './level1-wings.js';
+import { LEVEL1_WIKI } from './level1-wiki.js';
 
 // ---------- LEVEL 1 ----------
 const l1Base = { floorTex: 'concrete', wallTex: 'concrete', baseboard: false, flick: flickery };
@@ -66,8 +68,9 @@ const ARRIVAL_SPOTS = [
 
 const l1Arrive = {
   ...l1Base, hw: 2.4, depth: 10, fogEnd: 7.5, pal: PAL.l1, lights: [2, 4.5, 7], flickerLights: [1],
-  openings: [{ side: -1, z1: 3.4, z2: 4.6, top: -0.6 }],
+  openings: [{ side: -1, z1: 3.4, z2: 4.6, top: -0.6 }, { side: 1, z1: 5.2, z2: 6.6, top: -0.65 }],
 };
+const aquilaDoorL1 = wallQuad(2.4, -0.65, 1, 5.2, 6.6);
 const crate1 = { x1: 0.9, x2: 1.5, y1: 0.45, y2: 1, z1: 2.2, z2: 2.8, color: '#8a6a42', edge: true };
 const pillars1 = [
   { x1: -0.9, x2: -0.5, y1: -1, y2: 1, z1: 5.5, z2: 5.9, color: '#6c6e6a' },
@@ -85,6 +88,7 @@ const crateBg = [
 const n2Quad = faceQuad(0.9, 0.05, 1.25, 0.4, 2.999);
 const exitDoorL1 = wallQuad(-2.4, -0.6, 1, 4, 5);
 const exitSignL1 = wallQuad(-2.4, -0.8, -0.66, 4.2, 4.8);
+const dockDoorL1 = wallQuad(2.4, -0.65, 1, 3.3, 4.4);
 
 const l1Corridor = { hw: 1, depth: 6, fogEnd: 9, pal: PAL.corridor, floorTex: 'concrete', baseboard: false, lights: [1.6, 3.6], backDoor: { x1: -0.35, x2: 0.35, top: -0.5 } };
 const officeDoor = wallQuad(-1, -0.6, 1, 2.6, 3.4);
@@ -97,6 +101,7 @@ const lockbox = { x1: -0.2, x2: 0.2, y1: 0.14, y2: 0.35, z1: 2.55, z2: 2.85, col
 const calendar = faceQuad(0.55, -0.6, 1.0, -0.1, 3.999);
 
 const l1Deep = { ...l1Base, hw: 1.6, depth: 9, fogEnd: 7, pal: PAL.deep, lights: [2, 4.5, 7], flickerLights: [2] };
+const pumpDoorL1 = wallQuad(-1.6, -0.55, 1, 3.6, 4.8);
 
 // ---------- LEVEL 1: the wider Habitable Zone ----------
 // Fog-filled parking halls, an abandoned M.E.G. outpost, the Garden and the never-finished construction
@@ -142,7 +147,12 @@ const opTable = { x1: 0.5, x2: 1.6, y1: 0.4, y2: 1, z1: 2.2, z2: 2.9, color: '#4
 const radioBox = { x1: 0.65, x2: 1.05, y1: 0.2, y2: 0.4, z1: 2.35, z2: 2.6, color: '#2e3530', edge: true };
 const logQuad = faceQuad(1.15, 0.33, 1.5, 0.4, 2.299);
 const mapQuad = wallQuad(-2.0, -0.6, -0.05, 2.2, 3.4);
+const burnedDoor = faceQuad(-0.75, -0.65, 0.05, 1, 5.998);
 const gardenDoor = wallQuad(2.0, -0.6, 1, 4.2, 5.2);
+const gardenRect = (() => {
+  const [x, y, w, h] = bounds(gardenDoor, 4);
+  return [x, y, w, Math.min(h, boxRect(opTable)[1] - y)];
+})();
 
 // the Garden: lingering is how it takes you
 const l1Garden = { ...l1Base, hw: 2.2, depth: 9, fogEnd: 6.5, pal: PAL1.garden, lights: [2.0, 5.0], flickerLights: [1] };
@@ -152,6 +162,7 @@ const vines = Array.from({ length: 22 }, (_, i) => {
 });
 const plantMan = { x: 1.1, z: 3.4 };
 const vineBag = { x1: -1.2, x2: -0.7, y1: 0.72, y2: 1, z1: 2.5, z2: 2.9, color: '#5b4a34', edge: true };
+const greenhouseDoor = faceQuad(-0.45, -0.65, 0.45, 1, 8.99);
 
 // corridor rooms off the safer corridors
 const l1Corridor2 = { hw: 1, depth: 8, fogEnd: 9, pal: PAL.corridor, floorTex: 'concrete', baseboard: false, lights: [1.6, 4.4], flickerLights: [1], flick: flickery, backDoor: { x1: -0.35, x2: 0.35, top: -0.5 } };
@@ -170,6 +181,7 @@ const brickWall = faceQuad(-1.2, -0.4, 1.2, 1, 5.5);
 const workers = [[-0.9, 4.6], [0.5, 4.9], [1.3, 3.6]];
 const cart = { x1: -1.8, x2: -1.2, y1: 0.55, y2: 1, z1: 2.3, z2: 3.0, color: '#6a5a3a', edge: true };
 const clipQuad = faceQuad(-1.7, 0.4, -1.4, 0.54, 2.299);
+const scaffoldDoor = wallQuad(2.0, -0.6, 1, 2.2, 3.0);
 
 function drawWorker(ctx, x, z, t, i) {
   const f = P(x, 1, z), top = P(x, -0.5, z), w = 0.3 * 480 / z;
@@ -214,6 +226,7 @@ export const LEVEL1_SCENES = {
     hotspots: [
       FORWARD('l1_crates', '倉庫深處', [420, 215, 120, 120]),
       { id: 'fog', rect: bounds(wallQuad(-2.4, -0.6, 1, 3.4, 4.6), 4), label: '起霧的出口', cursor: 'go', click: (g) => g.go('l1_fog') },
+      { id: 'aquila', rect: bounds(aquilaDoorL1, 4), label: '右側巨柱長廊（天鷹段）', cursor: 'go', click: (g) => g.go('l1_aquila') },
       {
         id: 'puddle', rect: [P(-0.6, 1, 2.6)[0] - 110, P(-0.6, 1, 2.6)[1] - 14, 220, 28], label: '地上的積水', cursor: 'look',
         click: (g) => {
@@ -239,6 +252,9 @@ export const LEVEL1_SCENES = {
       poly(ctx, exitDoorL1, shade(R, '#8a8f93', 4.5));
       ctx.strokeStyle = shade(R, '#3a3d40', 4.5); ctx.lineWidth = 2; poly(ctx, exitDoorL1); ctx.stroke();
       seg(ctx, P(-2.4, 0.15, 4.1), P(-2.4, 0.15, 4.9), shade(R, '#c8ccd0', 4.5), 3);
+      poly(ctx, dockDoorL1, '#0b0d0e');
+      poly(ctx, wallQuad(2.4, -0.65, 0.05, 3.3, 4.4), shade(R, '#686e74', 3.8));
+      ctx.strokeStyle = shade(R, '#b8962a', 3.8); ctx.lineWidth = 2; poly(ctx, dockDoorL1); ctx.stroke();
       box(ctx, R, crateStack);
       paper(ctx, R, n2Quad, 3, '#e6dcc0');
       box(ctx, R, s.flags.crate_open ? { ...crateOpen, top: '#1a140c' } : crateOpen);
@@ -248,6 +264,7 @@ export const LEVEL1_SCENES = {
       BACK('l1_arrive'),
       FORWARD('l1_deep', '繼續往裡走', [420, 205, 120, 110]),
       { id: 'exitdoor', rect: bounds([...exitDoorL1, ...exitSignL1], 4), label: '亮著綠燈的門', cursor: 'go', click: (g) => g.go('l1_corridor') },
+      { id: 'dock', rect: bounds(dockDoorL1, 4), label: '通往裝卸月台的鐵捲門', cursor: 'go', click: (g) => g.go('l1_dock') },
       { id: 'note', rect: bounds(n2Quad, 8), label: '紙箱上的字', cursor: 'look', click: (g) => g.read('n2') },
       {
         id: 'crate', rect: boxRect(crateOpen, 6), label: '沒釘牢的木箱', cursor: 'look',
@@ -325,9 +342,12 @@ export const LEVEL1_SCENES = {
     draw(ctx, t, s, R) {
       drawPipes(ctx, R, 2);
       [[-1.6, -0.1, 2.4], [-1.6, -0.1, 3.2], [1.6, -0.2, 3.6]].forEach(([x, y, z], i) => gauge(ctx, R, x, y, z, t, i));
+      poly(ctx, pumpDoorL1, shade(R, '#3b4240', 4.2));
+      ctx.strokeStyle = shade(R, '#7a8a82', 4.2); ctx.lineWidth = 2; poly(ctx, pumpDoorL1); ctx.stroke();
     },
     hotspots: [
       BACK('l1_crates'),
+      { id: 'pump', rect: bounds(pumpDoorL1, 6), label: '往下的鐵梯（幫浦室）', cursor: 'go', click: (g) => g.go('l1_pump') },
       {
         ...FORWARD('l2_pipes', '朝管線越來越多的方向走'),
         click: (g) => g.go('l2_pipes', { msg: '你不確定是從哪一步開始的——水泥牆變成了磚牆，管線爬滿四周，空氣熱得發燙。這裡已經是另一層了。' }),
@@ -365,6 +385,7 @@ export const LEVEL1_SCENES = {
     },
     hotspots: [
       { ...BACK('l1_arrive', '退回倉庫入口'), click: (g) => { g.s.fogNav = null; g.go('l1_arrive'); } },
+      { id: 'ramp_up', rect: [680, 465, 240, 65], label: '往停車場上層坡道', cursor: 'go', click: (g) => { g.s.fogNav = null; g.go('l1_garage_upper'); } },
       ...FOG_DIRS.map((d) => ({ id: `fog_${d}`, rect: FOG_RECT[d], label: { left: '往左前方走', ahead: '往前走', right: '往右前方走' }[d], cursor: 'go', click: (g) => fogStep(g, d) })),
     ],
   },
@@ -376,24 +397,27 @@ export const LEVEL1_SCENES = {
       if (first) g.say('門後是一間用貨架和木箱堵住窗口的房間。行軍床、無線電、一張貼在牆上的地圖。沒有人。毯子還是攤開的，像是有人剛起身。');
     },
     draw(ctx, t, s, R) {
+      poly(ctx, burnedDoor, shade(R, '#282624', 6));
+      ctx.strokeStyle = shade(R, '#58544e', 6); ctx.lineWidth = 2; poly(ctx, burnedDoor); ctx.stroke();
       poly(ctx, cage, shade(R, '#2a2824', 6));
       ctx.strokeStyle = shade(R, '#8a8a80', 6); ctx.lineWidth = 1;
       const b = bounds(cage);
       for (let x = b[0]; x < b[0] + b[2]; x += 7) seg(ctx, [x, b[1]], [x, b[1] + b[3]], ctx.strokeStyle, 1);
       for (let y = b[1]; y < b[1] + b[3]; y += 7) seg(ctx, [b[0], y], [b[0] + b[2], y], ctx.strokeStyle, 1);
       if (!s.flags.cage_open) { const lk = P(0.35, 0.2, 5.99); ctx.fillStyle = '#b8a040'; ctx.fillRect(lk[0] - 3, lk[1] - 4, 7, 8); }
-      paper(ctx, R, mapQuad, 2.8, '#d8ceb0');
-      for (const c of cots.slice().reverse()) box(ctx, R, c);
-      box(ctx, R, opTable); box(ctx, R, radioBox);
-      paper(ctx, R, logQuad, 2.3, '#e8dfc4');
       if (s.flags.garden_open) poly(ctx, gardenDoor, '#070906');
       else {
         poly(ctx, gardenDoor, shade(R, '#4a4c50', 3.9));
         for (let i = 0; i < 4; i++) seg(ctx, P(2.0, -0.4 + i * 0.4, 4.15), P(2.0, -0.2 + i * 0.4, 5.25), shade(R, '#7a5a34', 4.7), 6);
       }
+      paper(ctx, R, mapQuad, 2.8, '#d8ceb0');
+      for (const c of cots.slice().reverse()) box(ctx, R, c);
+      box(ctx, R, opTable); box(ctx, R, radioBox);
+      paper(ctx, R, logQuad, 2.3, '#e8dfc4');
     },
     hotspots: [
       { ...BACK('l1_fog', '回到霧裡'), click: (g) => g.go('l1_fog', { msg: '你一走出門，紅燈就在背後亮了一下，像是在送你。' }) },
+      { id: 'burned', rect: bounds(burnedDoor, 6), label: '燻黑的北側門', cursor: 'go', click: (g) => g.go('l1_burned_hall') },
       {
         id: 'cage', rect: bounds(cage, 4), label: '物資籠', cursor: 'look',
         click: (g) => {
@@ -410,6 +434,16 @@ export const LEVEL1_SCENES = {
         },
       },
       {
+        id: 'garden', rect: gardenRect, label: '釘死的門', cursor: 'go',
+        click: (g) => {
+          if (!g.s.flags.garden_open) {
+            g.flag('garden_open'); g.sfx('open');
+            return g.say('門上用木板釘著一行字：「東邊。別開。」你一塊一塊撬開木板。門縫裡飄出一股潮濕的泥土味，還有花香。');
+          }
+          g.go('l1_garden');
+        },
+      },
+      {
         id: 'radio', rect: boxRect(radioBox, 10), label: '無線電', cursor: 'look',
         click: (g) => {
           g.sfx('static');
@@ -420,16 +454,6 @@ export const LEVEL1_SCENES = {
       { id: 'log', rect: bounds(logQuad, 12), label: '值班日誌', cursor: 'look', click: (g) => g.read('n_log') },
       { id: 'map', rect: bounds(mapQuad, 6), label: '牆上的地圖', cursor: 'look', click: (g) => g.read('n_map') },
       { id: 'cot', rect: boxRect(cots[0], 4), label: '行軍床', cursor: 'look', click: (g) => g.say('毯子還有一點溫度。……也可能只是你的手太冷了。') },
-      {
-        id: 'garden', rect: bounds(gardenDoor, 4), label: '釘死的門', cursor: 'go',
-        click: (g) => {
-          if (!g.s.flags.garden_open) {
-            g.flag('garden_open'); g.sfx('open');
-            return g.say('門上用木板釘著一行字：「東邊。別開。」你一塊一塊撬開木板。門縫裡飄出一股潮濕的泥土味，還有花香。');
-          }
-          g.go('l1_garden');
-        },
-      },
     ],
   },
 
@@ -460,12 +484,15 @@ export const LEVEL1_SCENES = {
       ctx.fillStyle = shade(R, '#c8a0b8', plantMan.z);
       for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(f[0] - w * 0.3 + i * w * 0.15, f[1] - w * 1.9 - (i % 2) * 5, 3, 0, Math.PI * 2); ctx.fill(); }
       drawBag(ctx, R, vineBag, { stripe: '#98a880' });
+      poly(ctx, greenhouseDoor, shade(R, '#263624', 8.9));
+      ctx.strokeStyle = shade(R, '#56744c', 8.9); ctx.lineWidth = 2; poly(ctx, greenhouseDoor); ctx.stroke();
       if (!s.flags.vines_cut) {
         for (let i = 0; i < 6; i++) seg(ctx, P(-1.25 + i * 0.1, 0.65, 2.5), P(-1.3 + i * 0.12, 1, 2.9), shade(R, '#3f6a32', 2.6), 3);
       }
     },
     hotspots: [
       BACK('l1_outpost', '退回前哨站'),
+      { id: 'greenhouse', rect: bounds(greenhouseDoor, 10), label: '深處的溫室玻璃門', cursor: 'go', click: (g) => g.go('l1_greenhouse') },
       {
         id: 'man', rect: [P(plantMan.x, 1, plantMan.z)[0] - 40, P(plantMan.x, 1, plantMan.z)[1] - 110, 80, 115], label: '坐在藤蔓裡的人', cursor: 'look',
         click: (g) => {
@@ -609,12 +636,15 @@ export const LEVEL1_SCENES = {
       // a gap in the bricks: yellow wallpaper behind
       poly(ctx, faceQuad(-0.2, 0.3, 0.2, 0.55, 5.49), shade(R, '#c8b35e', 5.5, 1.3));
       box(ctx, R, cart);
+      poly(ctx, scaffoldDoor, shade(R, '#3e382e', 2.6));
+      ctx.strokeStyle = shade(R, '#8a7a5a', 2.6); ctx.lineWidth = 2; poly(ctx, scaffoldDoor); ctx.stroke();
       if (!s.flags.shears) seg(ctx, P(-1.6, 0.5, 2.5), P(-1.35, 0.52, 2.7), '#b0b4b8', 3);
       paper(ctx, R, clipQuad, 2.3, '#e8e0c8');
     },
     drawOver(ctx, t) { for (const [i, [x, z]] of workers.entries()) drawWorker(ctx, x, z, t, i); },
     hotspots: [
       BACK('l1_corridor2'),
+      { id: 'scaffold', rect: bounds(scaffoldDoor, 6), label: '通往工地鷹架區', cursor: 'go', click: (g) => g.go('l1_works_scaffold') },
       { id: 'workers', rect: [P(-0.9, 1, 4.6)[0] - 30, 170, 300, 150], label: '工人', cursor: 'look', click: (g) => g.say('你走近一個工人。他的工作服上縫著「後室重新裝修公司」。他沒有臉——不是被擋住，是那裡本來就什麼都沒有。他繼續砌牆。') },
       { id: 'gap', rect: bounds(faceQuad(-0.2, 0.3, 0.2, 0.55, 5.49), 14), label: '磚縫', cursor: 'look', click: (g) => { if (!g.s.flags.gap_seen) { g.flag('gap_seen'); g.sanity(-4); } g.closeup('l1_works_gap', { msg: '磚牆最後一塊空缺後面，是黃色的壁紙。你聽見熟悉的嗡嗡聲。一個工人走過來，把最後一塊磚塞了進去。' }); } },
       {
@@ -624,4 +654,6 @@ export const LEVEL1_SCENES = {
       { id: 'clip', rect: bounds(clipQuad, 10), label: '推車上的施工單', cursor: 'look', click: (g) => g.read('n_work') },
     ],
   },
+  ...LEVEL1_WINGS,
+  ...LEVEL1_WIKI,
 };
