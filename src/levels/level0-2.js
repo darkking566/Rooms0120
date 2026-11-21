@@ -1,7 +1,7 @@
 // Level 0.2 "Remodeled Mess" (PandaShark71004, CC BY-SA 3.0). Puzzles, scene text and J.H. notes are original.
 import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from '../render.js';
 import { rand } from '../rng.js';
-import { back, clockOf, glow, hit, once, outline, pal, room, txt } from './sublevel-kit.js';
+import { back, clockOf, drawBag, drawBucket, drawRolls, drawSofa, glow, hit, once, outline, pal, room, txt } from './sublevel-kit.js';
 
 // ================= Level 0.2 "Remodeled Mess" =================
 // A remodelled stretch of Level 0: dry carpet, fresh paint, working outlets, even a restroom.
@@ -13,7 +13,10 @@ const shaky = (t) => (Math.sin(t * 13.1) + Math.sin(t * 7.3 + 1) + Math.sin(t * 
 const freshHallR = room(fresh, { hw: 1.6, depth: 6, fogEnd: 14, tiles: true, floorTex: 'carpet', lights: [1.8, 3.6, 5.4] });
 const wcR = room(pal('#e6ecee', '#f4f6f6', '#c8d0d2', '#1c2224', '#f4fbff'), { hw: 1.2, depth: 3.5, fogEnd: 12, tiles: true, floorTex: 'concrete', lights: [1.9] });
 const officeR = room(pal('#e4dcc0', '#f2eedc', '#8e8a7a', '#26241c', '#fff8e6'), { hw: 1.6, depth: 4.5, fogEnd: 12, tiles: true, floorTex: 'carpet', lights: [2.2] });
+const showroomR = room(pal('#f0e8cf', '#faf6e8', '#b8ae8a', '#2d291c', '#fffdf0'), { hw: 1.7, depth: 5.2, fogEnd: 14, tiles: true, floorTex: 'carpet', lights: [1.9, 4.0] });
+const supplyR = room(pal('#ded6b8', '#ece6cf', '#989074', '#242016', '#fff6dc'), { hw: 1.5, depth: 4.8, fogEnd: 12, tiles: true, floorTex: 'concrete', lights: [2.2] });
 const frameR = room(frame, { hw: 1.6, depth: 5, fogEnd: 9, floorTex: 'concrete', baseboard: false, lights: [1.8], flickerLights: [0], flick: shaky });
+const atticR = room(pal('#6f583c', '#261e14', '#56432c', '#080604', '#ffd89a'), { hw: 1.5, depth: 5.2, fogEnd: 8.5, floorTex: 'concrete', baseboard: false, lights: [2.0], flickerLights: [0], flick: shaky });
 const joistR = room(frame, { hw: 1.6, depth: 6, fogEnd: 9, floorTex: 'concrete', baseboard: false, lights: [4.8], flickerLights: [0], flick: shaky });
 const exitR = room(frame, { hw: 1.6, depth: 4, fogEnd: 10, floorTex: 'concrete', baseboard: false, lights: [2.0], flick: shaky });
 
@@ -23,7 +26,7 @@ const l02Left = (s) => Math.max(0, Math.ceil((s.flags.l02_until || 0) - clockOf(
 
 // Everything resets when you leave: the next visit finds the rooms as good as new.
 function restoreL02(g) {
-  for (const k of ['l02_collapsed', 'l02_mask', 'l02_sink', 'l02_towel', 'l02_until', 'l02_crack']) g.flag(k, false);
+  for (const k of ['l02_collapsed', 'l02_mask', 'l02_sink', 'l02_towel', 'l02_until', 'l02_crack', 'l02_braced']) g.flag(k, false);
 }
 function collapse(g, msg) {
   g.flag('l02_collapsed'); g.flag('l02_seen');
@@ -77,11 +80,22 @@ function level0Door(ctx, R, z, t) {
 
 // remodelled hall
 const wcDoor = wallQuad(-1.6, -0.5, 1, 2.2, 3.0);
+const showroomDoor = wallQuad(1.6, -0.42, 1, 2.55, 3.25);
 const officeDoor = faceQuad(-0.5, -0.5, 0.5, 1, 5.999);
 const router = wallQuad(1.6, -0.55, -0.42, 2.0, 2.4);
 const wetSign = wallQuad(-1.6, -0.2, 0.2, 3.6, 4.2);
 const hallLamp = { x: 1.15, z: 3.6 };
 const hallOutlet = wallQuad(1.6, 0.5, 0.66, 3.75, 3.95);
+// showroom
+const showSofa = { x1: -1.45, x2: -0.45, y1: 0.44, y2: 0.96, z1: 2.3, z2: 3.4, color: '#d8ceb2', top: '#e8e0c8', edge: true };
+const showTv = { x1: 0.55, x2: 1.4, y1: 0.22, y2: 0.96, z1: 2.4, z2: 3.2, color: '#64543e', top: '#7a684e', edge: true };
+const showBrochure = wallQuad(-1.68, -0.22, 0.22, 3.6, 4.35);
+const supplyDoor = faceQuad(-0.42, -0.5, 0.42, 1, 5.199);
+// material supply room
+const wallpaperStack = { x1: -1.32, x2: -0.52, y1: 0.25, y2: 1, z1: 2.2, z2: 3.1, color: '#d2c690', top: '#e2d8a8', edge: true };
+const paintCans = { x1: -0.2, x2: 0.48, y1: 0.64, y2: 1, z1: 3.0, z2: 3.6, color: '#e6e4dc', top: '#f5f3ec', edge: true };
+const supplyLocker = { x1: 0.72, x2: 1.38, y1: -0.35, y2: 1, z1: 2.6, z2: 3.3, color: '#687680', top: '#7c8c96', edge: true };
+const shiftBoard = wallQuad(-1.48, -0.58, -0.14, 3.3, 4.1);
 // restroom
 const sink = { x1: -1.2, x2: -0.75, y1: 0.12, y2: 0.28, z1: 1.9, z2: 2.5, color: '#f2f4f4', edge: true };
 const mirror = wallQuad(-1.2, -0.62, 0.02, 1.9, 2.5);
@@ -98,6 +112,12 @@ const blueprint = faceQuad(-0.2, -0.55, 1.0, 0.15, 4.499);
 const tape2B = { x1: -0.85, x2: -0.6, y1: 0.93, y2: 1, z1: 2.3, z2: 2.5, color: '#1e1e20', edge: true };
 const voids = [wallQuad(-1.6, -0.6, 0.3, 2.0, 2.6), wallQuad(1.6, -0.9, 0.1, 3.0, 3.8), faceQuad(0.6, -0.8, 1.2, -0.2, 4.999)];
 const brokenDesk = { x1: -1.3, x2: -0.3, y1: 0.62, y2: 0.72, z1: 3.2, z2: 3.8, color: '#7a6040', edge: true };
+const atticHatch = faceQuad(-0.42, -0.82, 0.28, 0.35, 4.999);
+// unfinished attic
+const atticBrace = wallQuad(-1.5, -0.55, 0.8, 2.1, 2.85);
+const atticNote = wallQuad(1.5, -0.28, 0.18, 2.4, 3.3);
+const atticPouch = { x1: 0.48, x2: 1.0, y1: 0.68, y2: 1, z1: 3.0, z2: 3.55, color: '#7d4a26', top: '#945a30', edge: true };
+const atticVoid = faceQuad(-0.65, -0.78, 0.55, 0.15, 5.199);
 // caved-in hall
 const JOIST = { left: -0.6, right: 0.6 };
 const joistRect = { left: [315, 325, 120, 95], right: [525, 325, 120, 95] };
@@ -114,6 +134,10 @@ export const L02_SCENES = {
       outline(ctx, wcDoor, shade(R, '#9a9482', 2.6), 2);
       const sg = P(-1.6, -0.3, 2.6); ctx.fillStyle = shade(R, '#3a6ab0', 2.6); ctx.fillRect(sg[0] - 9, sg[1] - 7, 18, 14);
       txt(ctx, 'WC', sg[0], sg[1] + 4, '#fff', 9);
+      poly(ctx, showroomDoor, shade(R, '#d8d2be', 2.9));
+      outline(ctx, showroomDoor, shade(R, '#9a9380', 2.9), 2);
+      const sr = P(1.6, -0.22, 2.9); ctx.fillStyle = shade(R, '#4b6e4e', 2.9); ctx.fillRect(sr[0] - 20, sr[1] - 8, 40, 15);
+      txt(ctx, '樣品間', sr[0], sr[1] + 3, '#fff', 9);
       paper(ctx, R, wetSign, 3.9, '#f4f0e0');
       const ws = P(-1.6, 0, 3.9); txt(ctx, '油漆未乾', ws[0], ws[1] + 4, shade(R, '#b83a2a', 3.9), 10);
       poly(ctx, router, shade(R, '#f6f6f2', 2.2));
@@ -138,6 +162,7 @@ export const L02_SCENES = {
     hotspots: [
       { ...back('l0_dry', '回到乾燥的走廊'), click: (g) => { restoreL02(g); g.go('l0_dry'); } },
       hit('wc', bounds(wcDoor, 4), '洗手間', (g) => g.go('l02_wc', { msg: '你推開洗手間的門。白色磁磚亮得刺眼，空氣裡有芳香劑的味道。' }), 'go'),
+      hit('to_showroom', bounds(showroomDoor, 4), '「翻新樣品間」的門', (g) => g.go('l02_showroom', { msg: '你推開右側那扇簇新的門。裡面擺成了一間明亮過頭的樣品客廳。' }), 'go'),
       hit('router', bounds(router, 10), '路由器', (g) => {
         g.say('路由器的燈在閃。WiFi 名稱是「BRC_GUEST」，訊號滿格，不用密碼。可是不管打開哪個網站，都只會跳出同一行字：「真正的整潔來自於裝潢」。');
         if (once(g, 'l02_wifi')) g.sanity(3);
@@ -148,6 +173,80 @@ export const L02_SCENES = {
         if (g.s.flags.screwdriver) return collapse(g, '你一踏進辦公室，地板就猛地一沉。上次的事又要重演了——天花板的板子一片片掉下來，牆壁朝外倒，露出後面的木頭骨架。');
         g.go('l02_office');
       }, 'go'),
+    ],
+  },
+
+  l02_showroom: {
+    level: 0.2, title: '翻新樣品間', room: showroomR, safe: true, quiet: 0.15,
+    viewMsg: '觀景窗裡，沙發、電視櫃和書架全都沒有背面——它們只是一塊塊立在木條上的紙板殼。',
+    enter(g, { first }) {
+      if (first) g.say('一間嶄新得不太真實的展示客廳：米白布面沙發、木紋電視櫃、牆上掛著導覽手冊。正對面還有一道通往後台的「材料室」門。');
+    },
+    draw(ctx, t, s, R) {
+      drawSofa(ctx, R, showSofa);
+      box(ctx, R, showTv);
+      const tb = boxRect(showTv);
+      ctx.fillStyle = '#18242e'; ctx.fillRect(tb[0] + 10, tb[1] - 46, tb[2] - 20, 44);
+      ctx.strokeStyle = '#384652'; ctx.lineWidth = 2; ctx.strokeRect(tb[0] + 10, tb[1] - 46, tb[2] - 20, 44);
+      const barColors = ['#e6e6dc', '#e8d24c', '#5bc4d8', '#68c878', '#d468c0', '#d44c44'];
+      const bw = (tb[2] - 28) / barColors.length;
+      barColors.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(tb[0] + 14 + i * bw, tb[1] - 42, bw, 22); });
+      txt(ctx, 'BRC A880', tb[0] + tb[2] * 0.5, tb[1] - 8, '#cde2f2', 9);
+      paper(ctx, R, showBrochure, 3.95, '#f6f2e2');
+      const bp = P(-1.68, -0.02, 3.95); txt(ctx, '導覽', bp[0], bp[1] + 4, shade(R, '#2e5478', 3.95), 9);
+      poly(ctx, supplyDoor, shade(R, '#c8bfa4', 5.2));
+      outline(ctx, supplyDoor, shade(R, '#8c846e', 5.2), 2);
+      paper(ctx, R, faceQuad(-0.24, -0.32, 0.24, -0.1, 5.198), 5.2, '#ffffff');
+      const sp = P(0, -0.2, 5.2); txt(ctx, '裝修材料室', sp[0], sp[1] + 3, shade(R, '#333', 5.2), 8);
+    },
+    hotspots: [
+      back('l02_room', '回到翻新走廊'),
+      hit('sofa', boxRect(showSofa, 8), '展示沙發', (g) => {
+        if (once(g, 'l02_sofa_rest')) {
+          g.sanity(4);
+          return g.say('你坐下去歇了半分鐘。表層布墊軟綿綿的，可稍微用力一壓，底下竟發出空洞的厚紙板聲——這張沙發是空的。');
+        }
+        g.say('空心的樣品沙發，坐久了反而覺得背後發毛。');
+      }),
+      hit('tv', [boxRect(showTv)[0], boxRect(showTv)[1] - 50, boxRect(showTv)[2], boxRect(showTv)[3] + 50], '模型電視與電視櫃', (g) => {
+        g.say('電視螢幕反覆閃著彩色測試條和一行標語：「後室重新裝修公司・A880-1 示範屋・請勿移動家具」。伸手摸機身背面——根本沒有插頭，只有一塊釘死的木夾板。');
+      }),
+      hit('brochure', bounds(showBrochure, 8), '樣品屋導覽手冊', (g) => g.read('n02_brochure')),
+      hit('to_supply', bounds(supplyDoor, 8), '推開「裝修材料室」的門', (g) => g.go('l02_supply', { msg: '後門一推開，清新的芳香劑味立刻混進了濃重的漿糊與油漆氣味。' }), 'go'),
+    ],
+  },
+
+  l02_supply: {
+    level: 0.2, title: '裝修材料室', room: supplyR, safe: true, quiet: 0.18,
+    viewMsg: '觀景窗裡，成排的新壁紙卷在捲軸內側透出暗黃色——原來新牆只是蓋在舊 Level 0 上的一層貼皮。',
+    enter(g, { first }) {
+      if (first) g.say('樣品間背後的儲藏庫：靠牆堆著高高的米白壁紙卷、密封油漆桶，右側立著一排施工組員的鐵皮置物櫃。');
+    },
+    draw(ctx, t, s, R) {
+      drawRolls(ctx, R, wallpaperStack);
+      drawBucket(ctx, R, paintCans, { band: '#d4483a' });
+      box(ctx, R, supplyLocker);
+      const lb = boxRect(supplyLocker);
+      for (let i = 0; i < 3; i++) seg(ctx, [lb[0] + 12, lb[1] + 18 + i * 8], [lb[0] + lb[2] - 12, lb[1] + 18 + i * 8], '#3b454c', 2);
+      txt(ctx, '102-CX', lb[0] + lb[2] * 0.5, lb[1] + lb[3] * 0.52, '#d6e2ea', 9);
+      paper(ctx, R, shiftBoard, 3.7, '#f2ecd6');
+      const sb = P(-1.48, -0.36, 3.7); txt(ctx, '排班表', sb[0], sb[1] + 4, shade(R, '#333', 3.7), 9);
+    },
+    hotspots: [
+      back('l02_showroom', '退回翻新樣品間'),
+      hit('wallpaper', boxRect(wallpaperStack, 8), '成疊的壁紙卷', (g) => {
+        g.closeup('l02_wallpaper_cu', { msg: '外層印著乾淨清爽的米白色紋理，可把捲芯撥開一看，背面竟然印著跟 Level 0 一模一樣的發黃老壁紙。兩面原本就是同一卷紙。' });
+      }),
+      hit('paint_cans', boxRect(paintCans, 8), '密封的油漆桶', (g) => {
+        g.say('桶蓋扣得很死，標籤寫著「快乾消音塗層・色號 0.2-A」。貼近桶縫聞了一下，油漆香底下居然還是潮濕地毯的霉味。');
+      }),
+      hit('shift_sheet', bounds(shiftBoard, 10), '102-CX 施工班排班表', (g) => g.read('n02_shift')),
+      hit('locker', boxRect(supplyLocker, 8), '施工組員置物櫃', (g) => {
+        if (once(g, 'l02_supply_almond')) {
+          return g.give('almond', '置物櫃沒有上鎖。你在乾淨的備用工服底下摸到一瓶沒拆封的杏仁水。');
+        }
+        g.say('櫃子裡只剩疊得整整齊齊的空白工服，沒有別的東西了。');
+      }, 'take'),
     ],
   },
 
@@ -176,8 +275,8 @@ export const L02_SCENES = {
     hotspots: [
       back('l02_room', '回到走廊'),
       hit('mirror', bounds(mirror, 4), '鏡子', (g) => {
-        g.say('鏡子裡的你很狼狽。你身後的牆在鏡子裡只蓋到一半：油漆、石膏板，然後是一根根光禿禿的木條。你回頭——牆好好的。');
         if (once(g, 'l02_mirror')) g.sanity(-2);
+        g.closeup('l02_mirror', { msg: '鏡子裡的你很狼狽。你身後的牆在鏡子裡只蓋到一半：油漆、石膏板，然後是一根根光禿禿的木條。你回頭——牆好好的。' });
       }),
       { ...hit('sink', boxRect(sink, 10), '洗手台', (g) => {
         if (g.s.flags.l02_sink) return g.say('水龍頭只滴下幾滴就停了。');
@@ -220,7 +319,7 @@ export const L02_SCENES = {
       back('l02_room', '回到走廊'),
       hit('clipboard', bounds(clipQuad, 14), '一疊板夾', (g) => g.read('n02_clip')),
       hit('hat', [P(...hatAt)[0] - 24, P(...hatAt)[1] - 22, 48, 28], '安全帽', (g) => g.say('黃色的安全帽，側面印著「102-CX」。內襯還是溫的，好像有人剛摘下來。')),
-      hit('blueprint', bounds(blueprint, 6), '藍圖', (g) => g.say('藍圖標題寫著「A880-1：Level 0・A 級重塑」。格子一格接一格，一直畫到紙的邊緣外面。中間有一小塊被紅筆圈起來，旁邊寫著：「先從這裡開始」。那一小塊，就是你站著的地方。')),
+      hit('blueprint', bounds(blueprint, 6), '藍圖', (g) => g.closeup('l02_blueprint', { msg: '藍圖標題寫著「A880-1：Level 0・A 級重塑」。格子一格接一格，一直畫到紙的邊緣外面。中間有一小塊被紅筆圈起來，旁邊寫著：「先從這裡開始」。那一小塊，就是你站著的地方。' })),
       {
         ...hit('toolbox', boxRect(toolboxB, 8), '紅色工具箱', (g) => {
           g.flag('screwdriver'); g.give('screwdriver');
@@ -238,6 +337,11 @@ export const L02_SCENES = {
     draw(ctx, t, s, R) {
       studs(ctx, R);
       for (const q of voids) poly(ctx, q, '#000');
+      poly(ctx, atticHatch, '#14100a');
+      outline(ctx, atticHatch, shade(R, '#b89866', 4.9), 2);
+      const ah = bounds(atticHatch);
+      for (let i = 0; i < 4; i++) seg(ctx, [ah[0] + 12, ah[1] + 22 + i * 24], [ah[0] + ah[2] - 12, ah[1] + 22 + i * 24], shade(R, '#9e7e4e', 4.9), 3);
+      txt(ctx, '閣樓', ah[0] + ah[2] * 0.5, ah[1] + 14, '#e6d2a8', 9);
       box(ctx, R, brokenDesk);
       seg(ctx, P(-1.25, 0.72, 3.3), P(-1.3, 1, 3.4), shade(R, '#5a4430', 3.3), 3);
       if (!s.flags.tape2) cassette(ctx, R, tape2B);
@@ -245,8 +349,56 @@ export const L02_SCENES = {
     },
     hotspots: [
       { ...back('l02_joists', '轉身往外跑'), click: (g) => g.go('l02_joists') },
-      hit('void', bounds(voids[1], 4), '牆上的破洞', (g) => { g.sanity(-2); g.say('你往破洞外看。外面不是黑暗，也不是別的房間，是「什麼都沒有」。你的眼睛找不到任何可以對焦的東西。'); }),
+      hit('to_attic', bounds(atticHatch, 6), '爬上未完工的閣樓梯口', (g) => g.go('l02_attic', { msg: '你抓著搖晃的木梯爬進屋頂夾層——頭頂的屋架還沒封板，整棟房子都在嘎吱作響！' }), 'go'),
+      hit('void', bounds(voids[1], 4), '牆上的破洞', (g) => { g.sanity(-2); g.closeup('l02_void', { msg: '你往破洞外看。外面不是黑暗，也不是別的房間，是「什麼都沒有」。你的眼睛找不到任何可以對焦的東西。' }); }),
       { ...hit('tape2', boxRect(tape2B, 14), '木屑裡的錄影帶', (g) => { g.flag('tape2'); g.give('tape2', '木屑堆裡躺著一卷錄影帶，標籤上寫著「#2」。'); }, 'take'), when: (s) => !s.flags.tape2 },
+    ],
+  },
+
+  l02_attic: {
+    level: 0.2, title: '未完工閣樓', room: atticR, quiet: 0.32, hazard: collapseLabel, update: collapseTick,
+    viewMsg: '觀景窗穿透沒有封板的屋頂望出去，無邊的虛無裡漂著一排排一模一樣的樣品屋骨架。',
+    enter(g, { first }) {
+      if (first) g.say('屋頂木架直接暴露在一片純黑虛無之下，幾塊臨時墊板橫跨在樑柱間。左側有一根鬆脫的木斜撐，右側橫樑上刻滿了字。');
+    },
+    draw(ctx, t, s, R) {
+      studs(ctx, R);
+      poly(ctx, atticVoid, '#000');
+      outline(ctx, atticVoid, shade(R, '#8c7048', 5.1), 2);
+      // Diagonal temporary timber brace on left wall
+      const brColor = s.flags.l02_braced ? '#d6b478' : '#967648';
+      poly(ctx, atticBrace, 'rgba(20,14,8,0.35)');
+      seg(ctx, P(-1.5, 0.78, 2.15), P(-1.5, -0.5, 2.8), brColor, 7);
+      const bp = P(-1.5, 0.12, 2.45);
+      txt(ctx, s.flags.l02_braced ? '已撐緊' : '臨時斜撐', bp[0] + 10, bp[1], s.flags.l02_braced ? '#e8f0b8' : '#f0d8a8', 9);
+      paper(ctx, R, atticNote, 2.85, '#e8dcc0');
+      const np = P(1.5, -0.05, 2.85); txt(ctx, 'J.H.', np[0], np[1] + 4, '#2a2216', 9);
+      drawBag(ctx, R, atticPouch, { stripe: '#c8b078' });
+      const sway = Math.sin(t * 4.5) * 18;
+      seg(ctx, [480, 0], [480 + sway, 92], '#443828', 2);
+      glow(ctx, 480 + sway, 98, 38, '#ffd480', 0.45);
+      dust(ctx, t, 28, s.flags.l02_mask ? 0.35 : 0.58);
+    },
+    hotspots: [
+      { ...back('l02_frame', '沿木梯退回骨架裡'), click: (g) => g.go('l02_frame') },
+      hit('brace', bounds(atticBrace, 8), '鬆動的臨時斜撐', (g) => {
+        if (g.s.flags.l02_braced) return g.say('木斜撐已經頂緊了，勉強多替整棟屋架撐住了一會兒。');
+        g.flag('l02_braced');
+        g.flag('l02_until', (g.s.flags.l02_until || clockOf(g.s)) + 12);
+        g.sfx('thud');
+        g.say('你用肩膀把那根鬆脫的木斜撐硬頂進卡槽——屋架劇烈的震動頓時緩了一拍，倒塌時間多掙了十來秒！');
+      }),
+      hit('attic_note', bounds(atticNote, 10), 'J.H. 刻在橫樑上的筆記', (g) => g.read('n02_attic')),
+      hit('rafters', bounds(atticVoid, 6), '沒有封板的屋頂缺口', (g) => {
+        g.sanity(-2);
+        g.say('你透過屋架缺口往外看：漆黑的「什麼都沒有」裡似乎懸浮著好幾個同樣未完工的木屋框，全都在無聲地慢慢解體。');
+      }),
+      hit('pouch', boxRect(atticPouch, 8), '掛在樑上的帆布工具包', (g) => {
+        if (once(g, 'l02_attic_bar')) {
+          return g.give('bar', '你在帆布包夾層裡翻出一條施工人員遺落的能量棒。得趕快下去了！');
+        }
+        g.say('帆布包裡只剩幾顆生鏽鐵釘和滿袋木屑。');
+      }, 'take'),
     ],
   },
 

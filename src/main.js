@@ -5,6 +5,7 @@ import { ITEMS, drawIcon } from './items.js';
 import { NOTES } from './notes.js';
 import { Sound } from './audio.js';
 import { drawScare } from './scares.js';
+import { CLOSEUPS } from './closeups.js';
 import { WHISPERS, GHOST_LOOT } from './flavor.js';
 import { rand, pick, seedRandom, setRandom } from './rng.js';
 import { migrate, SAVE_VERSION } from './save.js';
@@ -35,6 +36,8 @@ let sceneT = 0, surgeT = 0;
 let docAfter = null;
 let scareKind = 'smiler';
 let modal = null;
+let closeup = null;
+let lastHitRect = null;
 let msgTimer = null;
 let ended = false;
 // while moving between scenes, messages are collected and shown together
@@ -52,12 +55,19 @@ const load = (k) => migrate(store.get(k), fresh());
 const valid = (s) => !!s && !!SCENES[s.scene];
 const save = () => { if (playing && !ended) store.set(SAVE_KEY, S); };
 
+function closeCloseup(instant = false) {
+  if (!closeup) return;
+  if (instant) { closeup = null; hover = null; return; }
+  if (!closeup.closing) { closeup.closing = true; hover = null; sound.sfx('step'); }
+}
+
 // ---------- the API that scenes and items talk to ----------
 const g = {
   get s() { return S; },
   go(id, { free = false, msg = null } = {}) {
     const sc = SCENES[id];
     if (!sc || ended) return;
+    closeup = null;
     const prevLevel = SCENES[S.scene].level;
     fade = 1;
     sound.sfx('step');
@@ -87,7 +97,7 @@ const g = {
         sound.sfx('surge'); surgeT = 1.6; g.sanity(-2);
         g.say('嗡嗡聲忽然暴漲，像有人把音量轉到最大。你摀住耳朵，直到它慢慢退下去。');
       }
-      if (sc.level !== prevLevel) store.set(CP_KEY, S);
+      if (sc.level !== prevLevel && !LEVELS[sc.level].noCheckpoint) store.set(CP_KEY, S);
       follower(sc, id, free);
       if (S.sanity > 0 && S.sanity < 50 && !msg && rand() < 0.4) g.say(pick(WHISPERS));
     } finally {
@@ -159,8 +169,19 @@ const g = {
   checkpoint() { store.set(CP_KEY, S); },
   keypad(code, ok) { openKeypad(code, ok); },
   dials(cfg) { openDials(cfg); },
+  closeup(id, { rect = null, msg = null, hotspots = null } = {}) {
+    if (!CLOSEUPS[id] || ended || scareT > 0) return;
+    const r = rect || lastHitRect;
+    const fx = r ? r[0] + r[2] / 2 : W / 2;
+    const fy = r ? r[1] + r[3] / 2 : H / 2;
+    closeup = { id, fx, fy, anim: 0, closing: false, t: 0, hotspots };
+    hover = null;
+    sound.sfx('step');
+    if (msg) g.say(msg);
+  },
   scare(back, msg = '黑暗裡有東西在笑。你連滾帶爬地逃了回來。', dmg = 25, kind = null) {
     if (scareT > 0 || ended) return;
+    closeup = null;
     scareT = 1.1;
     scareBack = back;
     scareMsg = msg;
@@ -177,6 +198,7 @@ const g = {
   end(kind) {
     if (ended) return;
     ended = true;
+    closeup = null;
     closeModal();
     sound.setHum(null);
     if (COMPLETIONS.has(kind)) { store.del(SAVE_KEY); store.del(CP_KEY); }
@@ -223,6 +245,14 @@ const isDark = (sc) => (typeof sc.dark === 'function' ? sc.dark(S) : !!sc.dark) 
 const smilerOn = (sc) => !!sc.smiler && sc.smiler.present(S);
 const staring = (sc) => smilerOn(sc) && sc.smiler.mode === 'stare';
 function visible() {
+  if (closeup) {
+    if (closeup.closing) return [];
+    const cu = CLOSEUPS[closeup.id];
+    if (!cu || cu.locked) return [];
+    const hs = [...(cu.hotspots || []), ...(closeup.hotspots || [])].filter((h) => !h.when || h.when(S));
+    hs.push({ id: 'closeup_back', rect: [280, 466, 400, 74], label: '退後', cursor: 'back', click: () => closeCloseup() });
+    return hs;
+  }
   const sc = SCENES[S.scene];
   const hs = sc.hotspots.filter((h) => !h.when || h.when(S));
   if (S.ghost && S.ghost.scene === S.scene) {
@@ -280,18 +310,27 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
   const sc = SCENES[S.scene];
-  if (staring(sc) && h.id !== 'smiler') {
+  if (!closeup && staring(sc) && h.id !== 'smiler') {
     g.scare(sc.smiler.back, '你一慌，轉身就跑——那個笑容瞬間追了上來。');
     return;
   }
+  lastHitRect = h.rect;
   h.click(g);
   updateHud();
   save();
 });
 
+cv.addEventListener('contextmenu', (e) => {
+  if (playing && !modal && closeup && !closeup.closing && !CLOSEUPS[closeup.id]?.locked) {
+    e.preventDefault();
+    closeCloseup();
+  }
+});
+
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (modal) closeModal();
+    else if (closeup && !closeup.closing && !CLOSEUPS[closeup.id]?.locked) closeCloseup();
     else if (selected) { selected = null; renderInv(); }
   }
   if ((e.key === 'f' || e.key === 'F') && playing && !modal && g.has('torch')) g.setLight(!S.light);
@@ -473,6 +512,7 @@ function startGame(state) {
   const relocated = S.relocated;
   delete S.relocated;
   ended = false;
+  closeup = null;
   selected = null;
   playing = true;
   fade = 1;
@@ -552,7 +592,19 @@ function frame(now) {
   const sc = SCENES[S.scene];
   if (playing) S.clock += dt;
 
-  const active = playing && !modal && scareT <= 0 && !ended;
+  const active = playing && !modal && !closeup && scareT <= 0 && !ended;
+  if (playing && !modal && scareT <= 0 && !ended && closeup) {
+    if (closeup.closing) {
+      closeup.anim = Math.max(0, closeup.anim - dt * 3.8);
+      if (closeup.anim <= 0) closeup = null;
+    } else {
+      closeup.anim = Math.min(1, closeup.anim + dt * 2.8);
+      if (closeup.anim >= 1) {
+        closeup.t += dt;
+        CLOSEUPS[closeup.id]?.update?.(g, dt, closeup.t);
+      }
+    }
+  }
   if (active && S.sanity > 0) sc.update?.(g, dt);
   if (active && S.flicker) {
     const f = S.flicker;
@@ -596,40 +648,81 @@ function frame(now) {
   }
 
   const stress = 1 - S.sanity / 100;
+  const cuEase = closeup ? closeup.anim * closeup.anim * (3 - 2 * closeup.anim) : 0;
   ctx.save();
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
   if (surgeT > 0) { surgeT = Math.max(0, surgeT - dt); ctx.translate((Math.random() - 0.5) * surgeT * 6, (Math.random() - 0.5) * surgeT * 6); }
   if (stress > 0.6) ctx.translate(Math.sin(t * 2.1) * (stress - 0.6) * 10, Math.cos(t * 1.7) * (stress - 0.6) * 6);
-  // a per-frame copy, so per-frame tweaks (and the renderer's R.lum) never leak into the shared room definitions
-  const R = { ...roomOf(sc) };
-  const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
-  if (stutter) R.bright = (R.bright ?? 1) * (Math.random() < 0.5 ? 0.25 : 1);
-  drawRoom(ctx, R, t);
-  sc.draw?.(ctx, t, S, R);
-  if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t, S.view && sc.nightshot ? 0.55 : 0.97);
-  sc.drawOver?.(ctx, t, S, R);
-  if (S.ghost && S.ghost.scene === S.scene) box(ctx, R, GHOST_CRATE);
-  // the follower, standing in the fog; the viewfinder shows it closer than it looks
-  if (sc.level === 1 && sc.hall && (S.dread || 0) >= 2) {
-    const d = (S.dread || 0) + (S.view ? 2 : 0);
-    const z = Math.max(2.4, 10 - d * 0.95), f = P(0.35, 1, z), top = P(0.35, -0.75, z);
-    drawFigure(ctx, f[0], f[1], f[1] - top[1], Math.min(0.85, 0.25 + d * 0.08));
+  // Draw room (zoomed toward the clicked hotspot during close-up transition)
+  if (!closeup || cuEase < 0.995) {
+    ctx.save();
+    if (closeup && cuEase > 0) {
+      const zScale = 1 + cuEase * 1.15;
+      ctx.translate(closeup.fx, closeup.fy);
+      ctx.scale(zScale, zScale);
+      ctx.translate(-closeup.fx, -closeup.fy);
+    }
+    // a per-frame copy, so per-frame tweaks (and the renderer's R.lum) never leak into the shared room definitions
+    const R = { ...roomOf(sc) };
+    const stutter = S.flicker && S.flicker.delay > 0 && sc.flickerable;
+    if (stutter) R.bright = (R.bright ?? 1) * (Math.random() < 0.5 ? 0.25 : 1);
+    drawRoom(ctx, R, t);
+    sc.draw?.(ctx, t, S, R);
+    if (isDark(sc)) drawDark(ctx, mouse.x, mouse.y, S.light, t, S.view && sc.nightshot ? 0.55 : 0.97);
+    sc.drawOver?.(ctx, t, S, R);
+    if (S.ghost && S.ghost.scene === S.scene) box(ctx, R, GHOST_CRATE);
+    // the follower, standing in the fog; the viewfinder shows it closer than it looks
+    if (sc.level === 1 && sc.hall && (S.dread || 0) >= 2) {
+      const d = (S.dread || 0) + (S.view ? 2 : 0);
+      const z = Math.max(2.4, 10 - d * 0.95), f = P(0.35, 1, z), top = P(0.35, -0.75, z);
+      drawFigure(ctx, f[0], f[1], f[1] - top[1], Math.min(0.85, 0.25 + d * 0.08));
+    }
+    if (S.view) sc.drawView?.(ctx, t, S, R);
+    if (smilerOn(sc)) {
+      const approach = Math.max(lightT / 1.3, panicT / 2.5);
+      drawSmilers(ctx, sc.smiler, 0.9, t, approach);
+      if (sc.smiler.mode === 'stare' && stare > 0 && !S.light) {
+        const r = smilerRect(sc.smiler);
+        ctx.strokeStyle = 'rgba(240,240,230,0.6)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(r[0] + r[2] / 2, r[1] + r[3] / 2, 46, -Math.PI / 2, -Math.PI / 2 + stare * Math.PI * 2); ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
-  if (S.view) sc.drawView?.(ctx, t, S, R);
-  if (smilerOn(sc)) {
-    const approach = Math.max(lightT / 1.3, panicT / 2.5);
-    drawSmilers(ctx, sc.smiler, 0.9, t, approach);
-    if (sc.smiler.mode === 'stare' && stare > 0 && !S.light) {
-      const r = smilerRect(sc.smiler);
-      ctx.strokeStyle = 'rgba(240,240,230,0.6)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(r[0] + r[2] / 2, r[1] + r[3] / 2, 46, -Math.PI / 2, -Math.PI / 2 + stare * Math.PI * 2); ctx.stroke();
+  // Draw Close-up CG layer ("走過去湊近看")
+  if (closeup && cuEase > 0) {
+    const cu = CLOSEUPS[closeup.id];
+    if (cu) {
+      ctx.save();
+      ctx.globalAlpha = cuEase;
+      const inScale = 1.06 - cuEase * 0.06;
+      const bx = Math.sin(t * 1.1) * 2.2 * cuEase;
+      const by = Math.cos(t * 0.85) * 1.8 * cuEase;
+      ctx.translate(W / 2 + bx, H / 2 + by);
+      ctx.scale(inScale, inScale);
+      ctx.translate(-W / 2, -H / 2);
+      cu.draw(ctx, t, S, closeup.t);
+      if (S.view) cu.drawView?.(ctx, t, S, closeup.t);
+      ctx.restore();
     }
   }
   ctx.restore();
 
   if (playing && !modal) {
-    if (visible().some((h) => h.id === 'back')) {
+    if (closeup && !closeup.closing && !CLOSEUPS[closeup.id]?.locked && cuEase > 0.65) {
+      const hi = hover?.id === 'closeup_back';
+      ctx.save();
+      ctx.fillStyle = hi ? 'rgba(18,18,16,0.78)' : 'rgba(12,12,10,0.52)';
+      ctx.strokeStyle = hi ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(380, 480, 200, 42, 21); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = hi ? '#fff' : 'rgba(240,240,235,0.82)';
+      ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('⌄  退後（Esc）', W / 2, 506);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    } else if (!closeup && visible().some((h) => h.id === 'back')) {
       ctx.save();
       ctx.globalAlpha = hover?.id === 'back' ? 0.85 : 0.3;
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
@@ -679,6 +772,8 @@ window.__rooms = {
   migrate: (s) => migrate(s, fresh()),
   get state() { return S; },
   get modal() { return modal; },
+  get closeup() { return closeup ? closeup.id : null; },
+  closeCloseup: () => closeCloseup(true),
   get ended() { return ended; },
   get scaring() { return scareT > 0; },
   hotspots: () => visible().map((h) => ({ id: h.id, rect: h.rect, label: h.label })),

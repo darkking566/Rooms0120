@@ -3,6 +3,7 @@
 import { H, P, W, bottle, bounds, box, boxRect, faceQuad, paper, pipe, poly, seg, shade, wallQuad } from '../render.js';
 import { SCENES } from '../scenes.js';
 import { BACK, FORWARD, PAL, flickery, hum } from './common.js';
+import { drawBarrel, drawBoiler } from './sublevel-kit.js';
 
 // ---------- LEVEL 2 ----------
 const l2Base = { floorTex: 'concrete', wallTex: 'concrete', baseboard: false, pal: PAL.l2 };
@@ -271,16 +272,14 @@ export const LEVEL2_SCENES = {
       txt(ctx, '3 別靠近窗戶', b0[0], b0[1] + 32, shade(R, '#d8dccf', 5), 11);
       box(ctx, R, campTable); paper(ctx, R, register, 2.5, '#e6dcc0');
       if (!s.flags.l2_wrench) box(ctx, R, l2Toolbox);
-      box(ctx, R, barrel);
-      const bt = P(-0.33, 0.25, 4.1);
-      txt(ctx, 'A.W.', bt[0], bt[1] + 22, shade(R, '#c9d2d8', 4), 10);
+      drawBarrel(ctx, R, barrel, { label: 'A.W.' });
     },
     hotspots: [
       BACK('l2_pipes', '回到管線通道'),
       { id: 'register', rect: bounds(register, 10), label: '桌上的登記簿', cursor: 'look', click: (g) => g.read('n_reg') },
       {
         id: 'board', rect: bounds(board, 4), label: '黑板', cursor: 'look',
-        click: (g) => g.say('黑板上的字被擦過很多次，又被重新寫上。第三條底下畫了好幾條線。角落有一行很小的字：「2013——狗來了。」'),
+        click: (g) => g.closeup('l2_camp_board', { msg: '黑板上的字被擦過很多次，又被重新寫上。第三條底下畫了好幾條線。角落有一行很小的字：「2013——狗來了。」' }),
       },
       {
         id: 'toolbox', when: (s) => !s.flags.l2_wrench, rect: boxRect(l2Toolbox, 8), label: '紅色工具箱', cursor: 'take',
@@ -313,7 +312,7 @@ export const LEVEL2_SCENES = {
     },
     draw(ctx, t, s, R) {
       drawPipes(ctx, R, 3);
-      box(ctx, R, boiler);
+      drawBoiler(ctx, R, boiler);
       const k = 0.6 + 0.4 * Math.sin(t * 3);
       ctx.save(); ctx.shadowColor = '#ff5a1a'; ctx.shadowBlur = 25 * k;
       poly(ctx, grate, `rgba(255,${90 + 40 * k | 0},30,${0.7 * k})`); ctx.restore();
@@ -337,9 +336,9 @@ export const LEVEL2_SCENES = {
       {
         id: 'wheel', rect: [P(...wheelC)[0] - 40, P(...wheelC)[1] - 40, 60, 80], label: '漏氣的閥門轉輪', cursor: 'look',
         click: (g) => {
-          if (g.s.flags.l2_steam_off) return g.say('轉輪鎖緊了。管線安靜下來，只剩鍋爐在裡面咕嚕作響。');
+          if (g.s.flags.l2_steam_off) return g.closeup('l2_boiler_wheel', { msg: '轉輪鎖緊了。管線安靜下來，只剩鍋爐在裡面咕嚕作響。' });
           g.sanity(-4); g.sfx('steam');
-          g.say('你伸手去轉——轉輪燙得像烙鐵，而且鏽死了，紋風不動。得找個東西來施力。');
+          g.closeup('l2_boiler_wheel', { msg: '你伸手去轉——轉輪燙得像烙鐵，而且鏽死了，紋風不動。得找個東西來施力。' });
         },
         use: {
           wrench: (g) => {
@@ -487,7 +486,7 @@ export const LEVEL2_SCENES = {
       BACK('l2_rail', '退回鐵道'),
       {
         id: 'window', rect: bounds(windowQuad, 14), label: '盡頭的窗戶', cursor: 'go',
-        click: (g) => g.scare('l2_rail', '你越走越近。窗外的光越來越像一張臉——它一直在等你走近。你轉身就逃，背後的玻璃發出被指甲刮過的聲音。', 15, 'figure'),
+        click: (g) => g.closeup('l2_narrow_window', { msg: '你朝著盡頭的光亮走去……' }),
       },
       { id: 'door', rect: bounds(monitorDoor, 4), label: '漆著「監控」的鐵門', cursor: 'go', click: (g) => g.go('l2_monitor') },
       {
@@ -560,8 +559,8 @@ export const LEVEL2_SCENES = {
       {
         id: 'screens', when: (s) => !s.flags.term_open, rect: bounds(screens.flat(), 4), label: '整面牆的螢幕', cursor: 'look',
         click: (g) => {
-          g.say('每一間房間都是空的。只有最後一個螢幕不一樣：畫面裡有一個人，背對著鏡頭，坐在一張桌子前面。他抬起手——你也抬起了手。');
           if (!g.s.flags.l2_screens) { g.flag('l2_screens'); g.sanity(-6); }
+          g.closeup('l2_monitor_screens', { msg: '每一間房間都是空的。只有最後一個螢幕不一樣：畫面裡有一個人，背對著鏡頭，坐在一張桌子前面。他抬起手——你也抬起了手。' });
         },
       },
       {

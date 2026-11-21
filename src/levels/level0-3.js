@@ -1,7 +1,7 @@
 // Level 0.3 "Ice Rooms" (CursedSliver, CC BY-SA 3.0). Puzzles, scene text and J.H. notes are original.
 import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from '../render.js';
 import { pick } from '../rng.js';
-import { back, clockOf, glow, hit, once, outline, pal, room, txt } from './sublevel-kit.js';
+import { back, clockOf, drawRugRoll, drawTent, glow, hit, once, outline, pal, room, txt } from './sublevel-kit.js';
 
 // =====================================================================
 // LEVEL 0.3 — Ice Rooms
@@ -91,10 +91,15 @@ function worker(ctx, x, y, h, a = 0.8, name = '', turned = false) {
 function coldTick(g, dt) {
   const f = g.s.flags;
   if (f.l03_done) return;
-  f.l03_cold = (f.l03_cold || 0) + dt * (f.l03_sealed ? 0.5 : 1);
+  const rate = (f.l03_sealed ? 0.5 : 1) * (f.l03_valve_shut ? 0.6 : 1);
+  f.l03_cold = (f.l03_cold || 0) + dt * rate;
   if (f.l03_cold >= 2.5) { f.l03_cold -= 2.5; g.sanity(-1); }
 }
-const coldLabel = (s) => s.flags.l03_sealed ? '冷霧減弱了・仍然很冷' : '寒氣刺骨・冷霧不斷從通風口湧出';
+const coldLabel = (s) => (s.flags.l03_sealed && s.flags.l03_valve_shut
+  ? '冷霧幾乎停了・只剩殘餘的寒意'
+  : s.flags.l03_sealed || s.flags.l03_valve_shut
+    ? '冷霧減弱了・仍然很冷'
+    : '寒氣刺骨・冷霧不斷從通風口湧出');
 
 // entry: a yellow room gone white
 const iceEntryR = room(ice, { hw: 1.2, depth: 6, stripes: true, floorTex: 'carpet', tiles: true, lights: [1.8, 3.8] });
@@ -102,7 +107,21 @@ const entryBlock = { x1: 0.3, x2: 1.2, y1: -0.65, y2: 1, z1: 3.2, z2: 4.6 };
 const ceilVent = [P(-0.35, -1, 2.2), P(0.35, -1, 2.2), P(0.35, -1, 2.8), P(-0.35, -1, 2.8)];
 
 // 104-CX's work site
-const campR = room(ice, { hw: 1.5, depth: 5.5, stripes: true, tiles: true, lights: [1.8, 3.6], openings: [{ side: -1, z1: 3.5, z2: 4.5, top: -0.6 }] });
+const campR = room(ice, {
+  hw: 1.5, depth: 5.5, stripes: true, tiles: true, lights: [1.8, 3.6],
+  openings: [{ side: -1, z1: 3.5, z2: 4.5, top: -0.6 }, { side: 1, z1: 3.6, z2: 4.7, top: -0.6 }],
+});
+const storageDoor = wallQuad(1.5, -0.6, 1, 3.6, 4.7);
+const storageR = room(ice, { hw: 1.45, depth: 6, wallTex: 'concrete', floorTex: 'concrete', lights: [1.9, 4.2], baseboard: false });
+const storShelf = { x1: -1.45, x2: -0.82, y1: -0.35, y2: 1, z1: 2.0, z2: 3.4, color: '#5d6b70', top: '#78888e', edge: true };
+const storThermosBlock = { x1: 0.58, x2: 1.32, y1: 0.25, y2: 1, z1: 2.4, z2: 3.1 };
+const storListQuad = wallQuad(-0.81, -0.22, 0.16, 2.2, 2.75);
+const ductwayR = room(ice, { hw: 1.25, depth: 7, wallTex: 'concrete', floorTex: 'concrete', lights: [1.8, 4.4], baseboard: false });
+const ductValve = wallQuad(1.25, -0.28, 0.28, 2.3, 3.1);
+const dormR = room(ice, { hw: 1.6, depth: 5.5, stripes: true, tiles: true, lights: [1.9, 3.8] });
+const dormTent = { x1: -1.35, x2: -0.25, y1: -0.1, y2: 1, z1: 2.5, z2: 4.3, color: '#a86428', top: '#c47c38', edge: true };
+const dormPackBox = { x1: 0.55, x2: 1.25, y1: 0.58, y2: 1, z1: 2.3, z2: 2.9, color: '#7a4b2a', top: '#945d36', edge: true };
+const dormNoteQuad = wallQuad(1.6, -0.26, 0.16, 2.0, 2.6);
 const iceWall = faceQuad(-0.65, -0.75, 0.65, 1, 5.5);
 const rugRoll = { x1: -1.45, x2: -0.75, y1: 0.68, y2: 1, z1: 2.0, z2: 2.4, color: '#8a3a2a', top: '#a5503a' };
 const heaterBox = { x1: 0.8, x2: 1.35, y1: 0.45, y2: 1, z1: 2.3, z2: 2.8, color: '#c8641e', top: '#d8783a', edge: true };
@@ -158,10 +177,10 @@ export const L03_SCENES = {
       frostOverlay(ctx, t, s);
     },
     hotspots: [
-      back('l0_hall', '循著霜走回走廊', '你循著地上的霜往回走。暖一點的、帶灰塵味的空氣，從來沒這麼好聞過。'),
+      back('l0_draft', '循著霜走回漏風轉角', '你循著地上的霜往回走。暖一點的、帶灰塵味的空氣，從來沒這麼好聞過。'),
       hit('forward', [400, 205, 150, 140], '往深處走', (g) => g.go('l03_camp'), 'go'),
-      hit('block', boxRect(entryBlock, 4), '角落的冰塊', (g) => g.say('冰塊裡站著一個人，穿著橘色的工作背心，背對著你。冰太厚了，看不清臉。')),
-      hit('vent', bounds(ceilVent, 6), '天花板上的格柵', (g) => g.say('天花板上的格柵在吐冷霧。你盯著它看的時候，它好像往旁邊挪了一點。')),
+      hit('block', boxRect(entryBlock, 4), '角落的冰塊', (g) => g.closeup('l03_block', { msg: '冰塊裡站著一個人，穿著橘色的工作背心，背對著你。冰太厚了，看不清臉。' })),
+      hit('vent', bounds(ceilVent, 6), '天花板上的格柵', (g) => g.closeup('l03_ceil_vent', { msg: '天花板上的格柵在吐冷霧。你盯著它看的時候，它好像往旁邊挪了一點。' })),
     ],
   },
 
@@ -181,7 +200,7 @@ export const L03_SCENES = {
         const iw = P(0, 0.2, 5.5); worker(ctx, iw[0] - 20, P(0, 1, 5.5)[1], 110, 0.35); worker(ctx, iw[0] + 26, P(0, 1, 5.5)[1], 105, 0.3);
         for (let i = 0; i < 6; i++) seg(ctx, P(-0.6 + i * 0.22, -0.7, 5.5), P(-0.5 + i * 0.2, 0.2 + (i % 3) * 0.2, 5.5), 'rgba(255,255,255,0.4)', 1);
       } else { poly(ctx, iceWall, '#0e1a20'); glow(ctx, 480, 300, 60, 'rgba(255,200,120,0.4)'); }
-      if (!s.flags.l03_wool) box(ctx, R, rugRoll);
+      if (!s.flags.l03_wool) drawRugRoll(ctx, R, rugRoll);
       box(ctx, R, heaterBox);
       const hg = faceQuad(0.88, 0.55, 1.27, 0.9, 2.3); poly(ctx, hg, '#2a1a10');
       const warm = s.flags.l03_sealed;
@@ -197,12 +216,16 @@ export const L03_SCENES = {
       poly(ctx, radioQ, shade(R, '#2a2e30', 2.1));
       const rl = bounds(radioQ); ctx.fillStyle = Math.sin(t * 4) > 0.7 ? '#ff6a2a' : '#4a1a0a'; ctx.fillRect(rl[0] + 3, rl[1] + 3, 3, 3);
       paper(ctx, R, clipboard, 2.9, '#efe9d8');
-      for (const [o, label] of [[campR.openings[0], '通風機房']]) { const c = P(-1.5, -0.72, (o.z1 + o.z2) / 2); txt(ctx, label, c[0] + 4, c[1], shade(R, '#405058', o.z1), 11); }
+      for (const [o, label] of [[campR.openings[0], '通風機房'], [campR.openings[1], '凍庫材料間']]) {
+        const c = P(o.side * 1.5, -0.72, (o.z1 + o.z2) / 2);
+        txt(ctx, label, c[0] - o.side * 4, c[1], shade(R, '#405058', o.z1), 11);
+      }
       frostOverlay(ctx, t, s, warm ? 0.5 : 1);
     },
     hotspots: [
       back('l03_entry', '回到結霜的房間'),
       hit('vents', bounds(wallQuad(-1.5, -0.6, 1, 3.5, 4.5)), '通風機房', (g) => g.go('l03_vents'), 'go'),
+      hit('storage', [630, 215, 54, 88], '凍庫材料間', (g) => g.go('l03_storage'), 'go'),
       hit('clipboard', bounds(clipboard, 6), '夾在牆上的郵件', (g) => g.read('n03_mail')),
       hit('radio', bounds(radioQ, 6), '對講機', (g) => {
         g.sfx('static');
@@ -360,8 +383,129 @@ export const L03_SCENES = {
       }),
       hit('exit', bounds(warmExit, 4), '房間的門', (g) => {
         g.flag('l03_done'); g.flag('l03_thawed');
-        g.go('l0_hall', { msg: '門外是那條長長的走廊。你回頭時，門已經變回一面黃色的牆。格柵不再吹冷風了，地毯上的霜化成了水漬。' });
+        g.go('l0_draft', { msg: '門外是那條漏風轉角。你回頭時，門已經變回一面黃色的牆。格柵不再吹冷風了，地毯上的霜化成了水漬。' });
       }, 'go'),
+    ],
+  },
+
+  l03_storage: {
+    level: '0.3', title: '凍庫材料間', room: storageR, hazard: coldLabel, update: coldTick,
+    viewMsg: '觀景窗裡，冷白霜氣正從前面那道結冰風管廊一路倒灌進材料架。',
+    enter(g, { first }) {
+      if (first) g.say('104-CX 存放重建建材的狹長倉庫。架子上堆著凍裂的隔熱棉與壁紙捲，右邊一塊冰柱裡封著一只不鏽鋼保溫壺。');
+    },
+    draw(ctx, t, s, R) {
+      icicles(ctx, R, 6, 1.5);
+      box(ctx, R, storShelf);
+      paper(ctx, R, storListQuad, 2.4, '#e6e4d8');
+      if (!s.flags.l03_thermos) {
+        const tp = P(0.95, 0.72, 2.7);
+        ctx.fillStyle = '#c4ccd2'; ctx.fillRect(tp[0] - 10, tp[1] - 28, 20, 36);
+        ctx.fillStyle = '#2d4d68'; ctx.fillRect(tp[0] - 8, tp[1] - 34, 16, 6);
+      }
+      iceBox(ctx, R, storThermosBlock, s.flags.l03_thermos ? 0.2 : 0.58);
+      poly(ctx, faceQuad(-0.4, -0.58, 0.4, 1, 5.99), '#132028');
+      outline(ctx, faceQuad(-0.4, -0.58, 0.4, 1, 5.99), '#a8cad8', 2);
+      frostOverlay(ctx, t, s);
+    },
+    hotspots: [
+      back('l03_camp', '回到 104-CX 施工站'),
+      hit('forward', bounds(faceQuad(-0.4, -0.58, 0.4, 1, 5.99), 10), '走進結冰風管廊', (g) => g.go('l03_ductway'), 'go'),
+      hit('stor_list', bounds(storListQuad, 10), '架子邊的材料調撥清單', (g) => g.read('n03_storage')),
+      {
+        ...hit('thermos', boxRect(storThermosBlock, 6), '凍在冰柱裡的保溫壺', (g) => {
+          if (g.s.flags.l03_thermos) return g.say('冰柱已經化開，裡面空空的。');
+          g.say('冰柱硬得像鋼板，裡頭的不鏽鋼保溫壺怎麼敲都拿不出來。得用噴槍把冰融開。');
+        }),
+        use: {
+          blowtorch(g) {
+            if (!once(g, 'l03_thermos')) return;
+            g.sfx('steam');
+            g.give('almond', '噴槍融開了冰柱。保溫壺裡裝著還沒完全結冰的杏仁水——你倒進備用瓶收了起來。');
+          },
+        },
+      },
+    ],
+  },
+
+  l03_ductway: {
+    level: '0.3', title: '結冰風管廊', room: ductwayR, hazard: coldLabel, update: coldTick,
+    viewMsg: '觀景窗裡，右側風管節流閥的葉片正劇烈震動，把整層冷風壓往施工站方向。',
+    enter(g, { first }) {
+      if (first) g.say('粗大的銀白冷氣風管沿著牆壁和天花板延伸，腳下結著打滑的透明冰面。右側風管上裝著一顆被白霜凍死的節流閥。');
+    },
+    draw(ctx, t, s, R) {
+      icicles(ctx, R, 7, 1.9);
+      poly(ctx, [P(-1.25, 1, 1.2), P(1.25, 1, 1.2), P(1.25, 1, 7), P(-1.25, 1, 7)], 'rgba(215,240,255,0.28)');
+      for (const y of [-0.72, -0.45]) seg(ctx, P(-1.2, y, 1.2), P(-1.2, y, 7), '#8ba0aa', 8);
+      for (const y of [-0.72, -0.45]) seg(ctx, P(1.2, y, 1.2), P(1.2, y, 7), '#8ba0aa', 8);
+      poly(ctx, ductValve, s.flags.l03_valve_shut ? '#2d6850' : '#4a606c');
+      outline(ctx, ductValve, s.flags.l03_valve_shut ? '#8af0be' : '#d6f0ff', 2);
+      const vc = P(1.25, 0, 2.7);
+      ctx.strokeStyle = s.flags.l03_valve_shut ? '#8af0be' : '#f0d878'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(vc[0] - 12, vc[1], 18, 0, Math.PI * 2); ctx.stroke();
+      if (!s.flags.l03_valve_shut) fogJet(ctx, vc[0] - 18, vc[1], -1, 0.25, t, 1.2);
+      poly(ctx, faceQuad(-0.42, -0.58, 0.42, 1, 6.99), '#1b262c');
+      outline(ctx, faceQuad(-0.42, -0.58, 0.42, 1, 6.99), '#d4a062', 2);
+      frostOverlay(ctx, t, s, s.flags.l03_valve_shut ? 0.45 : 1.1);
+    },
+    hotspots: [
+      back('l03_storage', '退回凍庫材料間'),
+      hit('forward', bounds(faceQuad(-0.42, -0.58, 0.42, 1, 6.99), 10), '走進盡頭透著微橘光的門洞', (g) => g.go('l03_dorm'), 'go'),
+      {
+        ...hit('valve', bounds(ductValve, 10), '被白霜凍死的冷風節流閥', (g) => {
+          if (g.s.flags.l03_valve_shut) return g.closeup('l03_valve_cu', { msg: '節流閥已經鎖死在關閉位置，風管裡的嘯叫聲小了大半。' });
+          g.sfx('clank'); g.sanity(-2);
+          g.closeup('l03_valve_cu', { msg: '閥輪被厚厚的冰殼卡死，徒手轉不動。如果有噴槍把冰烤化，或用工具敲開就好了。' });
+        }),
+        use: {
+          blowtorch(g) {
+            if (!once(g, 'l03_valve_shut')) return;
+            g.sfx('steam');
+            g.say('你用噴槍烤裂閥輪上的冰殼，用力把節流閥轉到底——整條走廊呼嘯的冷風瞬間弱了下來！');
+          },
+          rod(g) {
+            if (!once(g, 'l03_valve_shut')) return;
+            g.sfx('clank');
+            g.say('你用金屬吊桿敲碎閥軸上的冰層，卡住輪輻硬是把節流閥扳到關閉位置！呼嘯的冷風頓時小了大半。');
+          },
+        },
+      },
+    ],
+  },
+
+  l03_dorm: {
+    level: '0.3', title: '104-CX 臨時營帳', room: dormR, hazard: coldLabel, update: coldTick,
+    viewMsg: '觀景窗裡，橘色帳篷外圍著四道穿反光背心的身影，低著頭一動也不動。',
+    enter(g, { first }) {
+      if (first) g.say('施工隊在冰室深處搭起橘色保溫帳篷，旁邊鋪著空蕩蕩的睡袋。帳篷口掛著一盞熄掉的露營燈，角落擺著未拆封的暖暖包箱。');
+    },
+    draw(ctx, t, s, R) {
+      icicles(ctx, R, 5.5, 2.1);
+      drawTent(ctx, R, dormTent, { warm: s.flags.l03_dorm_warm });
+      box(ctx, R, dormPackBox);
+      paper(ctx, R, dormNoteQuad, 2.3, '#ece6d4');
+      if (s.flags.l03_dorm_warm) {
+        const lp = P(-0.8, 0.55, 2.45);
+        glow(ctx, lp[0], lp[1], 140, '#ffaa4a', 0.36);
+      }
+      frostOverlay(ctx, t, s, s.flags.l03_dorm_warm ? 0.45 : 0.9);
+    },
+    drawView(ctx) {
+      for (const [x, z] of [[-0.1, 3.4], [0.35, 3.8], [0.75, 4.1], [-0.4, 4.6]]) {
+        const p = P(x, 1, z);
+        worker(ctx, p[0], p[1], 110, 0.35, '', true);
+      }
+    },
+    hotspots: [
+      back('l03_ductway', '退回結冰風管廊'),
+      hit('dorm_note', bounds(dormNoteQuad, 10), '牆上的未發草稿', (g) => g.read('n03_dorm')),
+      hit('warm_pack', boxRect(dormPackBox, 8), '露營燈旁的熱能暖暖包箱', (g) => {
+        if (!once(g, 'l03_dorm_warm')) return g.say('暖暖包已經拆完，橘色露營燈還穩穩亮著。別在這裡待太久。');
+        g.sanity(14); g.sfx('click');
+        g.say('你打開露營燈，撕開兩包熱能暖暖包塞進外套口袋。凍僵的手指終於恢復了一點知覺。（清醒度 +14）');
+      }),
+      hit('tent', boxRect(dormTent, 6), '橘色保溫帳篷', (g) => g.say('帳篷裡塞著四個睡袋，其中兩個空著，另外兩個裡頭只留著結滿白霜的工作背心。')),
     ],
   },
 };

@@ -48,8 +48,8 @@ Wiki 內容會隨改寫而變動；引用前請再核對一次原頁面。
 
 | 子層級 | 原文怎麼進去 | 遊戲的做法 |
 | --- | --- | --- |
-| [0.1 天頂站](https://backrooms-wiki-cn.wikidot.com/level-0-1) | 「只須直接走入相應的區域即可」，但 Level 0 太大，幾乎不可能遇到；B.N.T.G. 掌握一種可靠的方法。出口：返回 Level 0，或隨機切出到 Level 1。 | 柱子房間右牆的門洞 → `l0_annex`：跟著 B.N.T.G. 噴漆箭頭連走四次，走錯一次就從頭找 |
-| [0.3 冰室](https://backrooms-wiki-cn.wikidot.com/level-0-3) | 沒有寫入口。外觀幾乎和 Level 0 一樣，只是到處都是冰；通風口不停吹冷氣。 | 第一條走廊天花板旁的冷風格柵 → 循地毯上的霜走 |
+| [0.1 天頂站](https://backrooms-wiki-cn.wikidot.com/level-0-1) | 「只須直接走入相應的區域即可」，但 Level 0 太大，幾乎不可能遇到；B.N.T.G. 掌握一種可靠的方法。出口：返回 Level 0，或隨機切出到 Level 1。 | 柱子房間右側 → `l0_colonnade`（長柱列過道）右牆的門洞 → `l0_annex`：跟著 B.N.T.G. 噴漆箭頭連走四次，走錯一次就從頭找 |
+| [0.3 冰室](https://backrooms-wiki-cn.wikidot.com/level-0-3) | 沒有寫入口。外觀幾乎和 Level 0 一樣，只是到處都是冰；通風口不停吹冷氣。 | 走廊右側 → `l0_atrium`（靜謐的黃色大廳）右側 → `l0_draft`（漏風轉角）天花板旁的冷風格柵 → 循地毯上的霜走 |
 | [0.5 淵閉療舍](https://backrooms-wiki-cn.wikidot.com/level-0-5) | 敘述者在 Level 0 的熄燈區被熟悉的嗡鳴聲引導，「找到一段樓梯往下走」。第 9 天找到金屬格柵樓梯通往 Level 1。 | 停電區走對第一步後，腳邊出現往下的台階 |
 | [0.7 憶域](https://backrooms-wiki-cn.wikidot.com/level-0-7) | 隱藏區塊（「恢復」資料）寫了入口：一直穿過 Level 0，直到環境變得更陳舊；也可能因切出而進入。出口：轉身走回 Level 0。出口都被像「無訊號」畫面的物質封住；無遮蔽入睡會被移到別的區段。 | 褪色的房間（本作 Level 0 最舊的地方）右牆的門洞，回程也走回這裡 |
 

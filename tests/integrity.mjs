@@ -9,6 +9,7 @@ import { ITEMS } from '../src/items.js';
 import { NOTES } from '../src/notes.js';
 import { ENDINGS, COMPLETIONS } from '../src/endings.js';
 import { SCARES } from '../src/scares.js';
+import { CLOSEUPS } from '../src/closeups.js';
 import { GHOST_LOOT } from '../src/flavor.js';
 import { migrate, SCENE_ALIASES, FALLBACK_SCENE, SAVE_VERSION, MIGRATIONS } from '../src/save.js';
 
@@ -42,6 +43,7 @@ refs('notes read', /\bread\('([\w.]+)'/g, NOTES);
 refs('endings', /\bend\('(\w+)'/g, ENDINGS);
 refs('trap endings', /\bend: '(\w+)'/g, ENDINGS);
 refs('scare kinds', /\bscare\([^;]*?,\s*\d+,\s*'(\w+)'\)/g, SCARES);
+refs('closeup targets', /\bcloseup\('(\w+)'/g, CLOSEUPS);
 check([...COMPLETIONS].every((k) => ENDINGS[k]), 'every ending that finishes the game exists');
 check(GHOST_LOOT.every((id) => ITEMS[id]), 'supply crates only hold real items');
 

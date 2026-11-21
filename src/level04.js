@@ -11,8 +11,11 @@ export const L04_LEVELS = {
 
 const wormPal = pal('#1e1028', '#12081a', '#160b20', '#09040e', '#b978e8');
 const outerPal = pal('#4c5056', '#32363c', '#3c3f44', '#181a1e', '#b4bcc8');
+const subwayPal = pal('#383d42', '#23262a', '#2c3035', '#101215', '#9ab4c2');
 const weiPal = pal('#5a5e64', '#40454c', '#45484e', '#1c1f24', '#d8dfe8');
+const redHallPal = pal('#5c2e30', '#381b1d', '#3e2324', '#170a0b', '#f2b8a0');
 const innerPal = pal('#788692', '#647684', '#56626c', '#263038', '#e6f6ff');
+const gatePal = pal('#6d8394', '#566a7a', '#4a5b68', '#1d2b36', '#d8f3ff');
 const wolfPal = pal('#585452', '#4c4648', '#3e3a38', '#221c1d', '#c4a89e');
 const crimsonWolfPal = pal('#6e242a', '#5c141a', '#422224', '#2a0c10', '#e67c78');
 
@@ -21,8 +24,11 @@ const outerRoom = room(outerPal, {
   hw: 1.8, depth: 8.5, fogEnd: 13, open: true, floorTex: 'concrete', lights: [],
   flick: (t) => (Math.sin(t * 9.1) + Math.sin(t * 21.3) > 1.2 ? 0.58 : 0.94),
 });
+const subwayRoom = room(subwayPal, { hw: 1.7, depth: 8, fogEnd: 11, floorTex: 'concrete', lights: [2.0, 4.8], flickerLights: [1] });
 const weiRoom = room(weiPal, { hw: 2.0, depth: 9, fogEnd: 15, open: true, floorTex: 'concrete', lights: [] });
+const redHallRoom = room(redHallPal, { hw: 1.6, depth: 7, fogEnd: 12, floorTex: 'concrete', lights: [1.9, 4.4] });
 const innerRoom = room(innerPal, { hw: 1.8, depth: 8.5, fogEnd: 16, open: true, floorTex: 'concrete', bright: 1.08, lights: [] });
+const gateRoom = room(gatePal, { hw: 1.5, depth: 7, fogEnd: 14, floorTex: 'concrete', lights: [1.8, 4.5], bright: 1.06 });
 const wolfRoomOf = (s) => room(s.flags.l04_red_sky ? crimsonWolfPal : wolfPal, {
   hw: 2.2, depth: 9.5, fogEnd: 14, open: true, floorTex: 'carpet', baseboard: false, lights: [],
 });
@@ -33,16 +39,36 @@ const veilQuad = faceQuad(-0.55, -0.75, 0.55, 0.85, 5.5);
 const outerBox = { x1: -1.45, x2: -0.95, y1: 0.68, y2: 1, z1: 2.6, z2: 3.1, color: '#50565c', top: '#646c74', edge: true };
 const outerToWei = faceQuad(-0.42, -0.42, 0.42, 0.95, 8.499);
 const outerToWolf = wallQuad(1.8, -0.45, 0.95, 3.0, 4.3);
+const outerToSubway = wallQuad(-1.8, -0.56, 0.44, 4.6, 6.2);
+
+const subCar = { x1: -1.7, x2: -0.78, y1: -0.45, y2: 0.96, z1: 2.0, z2: 6.2, color: '#455059', top: '#586670', edge: true };
+const subBoard = faceQuad(-0.45, -0.76, 0.45, -0.44, 4.8);
+const subBench = { x1: 0.12, x2: 0.78, y1: 0.68, y2: 1, z1: 2.5, z2: 3.3, color: '#4e555c', top: '#646d76', edge: true };
+const subNoteQuad = wallQuad(-0.77, 0.12, 0.42, 2.3, 2.75);
+const subToInner = faceQuad(-0.36, -0.42, 0.36, 0.98, 7.99);
+const subToOuter = wallQuad(1.7, -0.45, 0.95, 2.2, 3.4);
 
 const weiHunterDoor = wallQuad(-2.0, -0.55, 1, 2.5, 3.8);
+const weiToRedhall = wallQuad(-2.0, -0.48, 0.95, 4.7, 6.3);
 const weiCrate = { x1: 0.85, x2: 1.45, y1: 0.52, y2: 1, z1: 2.5, z2: 3.2, color: '#5c4b3a', top: '#735e4a', edge: true };
 const weiToInner = faceQuad(-0.38, -0.48, 0.38, 0.98, 8.999);
 const weiToOuter = wallQuad(2.0, -0.45, 0.95, 2.2, 3.3);
+
+const rhMapQuad = faceQuad(-0.95, -0.68, 0.2, 0.18, 6.95);
+const rhMonitor = { x1: 0.45, x2: 1.25, y1: -0.15, y2: 0.55, z1: 4.8, z2: 5.5, color: '#2b3036', top: '#3c434b', edge: true };
+const rhLedger = { x1: -0.95, x2: -0.2, y1: 0.56, y2: 1, z1: 2.3, z2: 2.9, color: '#5b3a2e', top: '#72493a', edge: true };
+const rhToWei = wallQuad(1.6, -0.48, 0.96, 2.2, 3.4);
 
 const innerDomeBarrier = faceQuad(-0.9, -0.75, 0.9, 0.25, 7.2);
 const innerPioneerQuad = wallQuad(-1.8, -0.4, 0.65, 2.4, 3.6);
 const innerStayQuad = faceQuad(-0.48, 0.35, 0.48, 0.88, 4.2);
 const innerToWei = wallQuad(1.8, -0.45, 0.95, 2.2, 3.3);
+const innerToGate = wallQuad(-1.8, -0.42, 0.95, 4.4, 6.0);
+const innerToSubway = wallQuad(1.8, -0.42, 0.95, 4.3, 5.8);
+
+const gateShieldQuad = faceQuad(-1.15, -0.82, 1.15, 0.72, 6.95);
+const gateTerminal = { x1: -1.42, x2: -0.84, y1: 0.22, y2: 1, z1: 2.5, z2: 3.1, color: '#394854', top: '#4e6374', edge: true };
+const gateToInner = wallQuad(1.5, -0.45, 0.96, 2.2, 3.4);
 
 const wolfSupplyCrate = { x1: -1.15, x2: -0.55, y1: 0.54, y2: 1, z1: 2.8, z2: 3.4, color: '#615447', top: '#786958', edge: true };
 const wolfSilhouetteRect = [410, 185, 140, 175];
@@ -219,6 +245,7 @@ export const L04_SCENES = {
       const ob = boxRect(outerBox);
       ctx.fillStyle = '#c4962e'; ctx.fillRect(ob[0] + 6, ob[1] + 18, ob[2] - 12, 5);
       poly(ctx, wallQuad(1.82, -0.68, 1, 2.5, 5.0), '#2d3136');
+      drawArchSign(ctx, outerToSubway, '#181c20', '#586470', '◀ 地下環線站');
       drawArchSign(ctx, outerToWei, '#1b1f24', '#555d66', '中環・尉遲大道');
       drawArchSign(ctx, outerToWolf, '#262321', '#5f5650', '城外・狼領 ▶');
     },
@@ -229,8 +256,45 @@ export const L04_SCENES = {
         }
         g.say('鐵盒已經徹底搜空了。');
       }),
+      hit('to_subway', bounds(outerToSubway, 8), '下樓進入停擺的環線車站', (g) => g.go('l04_subway'), 'go'),
       hit('to_wei', bounds(outerToWei, 8), '沿環線前往中環・尉遲大道', (g) => g.go('l04_wei'), 'go'),
       hit('to_wolf', bounds(outerToWolf, 8), '走出市區前往「狼領」', (g) => g.go('l04_wolf'), 'go'),
+    ],
+  },
+
+  l04_subway: {
+    level: '0.4', title: '停擺環線站', room: subwayRoom, quiet: 0.35,
+    viewMsg: '觀景窗裡，電子看板上那道破折號每隔幾秒閃一下——底下的維修通道筆直連向電力最強的內環。',
+    hazard: (s) => ((s.flags.l04_fission_rem || 0) > 0 ? '地面傳來悶響：城外正發生層裂變，但地下月台穩如磐石' : null),
+    enter(g, { first }) {
+      if (first) g.say('外環底下的老舊環線月台。一列無聲的舊車廂停在軌道旁，門半開著，電子時刻表永遠停在「下一班：—」。');
+    },
+    update: l04Update,
+    draw(ctx, t, s, R) {
+      box(ctx, R, subCar);
+      const carWin = wallQuad(-0.77, -0.26, 0.14, 2.3, 5.4);
+      poly(ctx, carWin, '#1a2026');
+      outline(ctx, carWin, '#6e7e8c', 1.5);
+      paper(ctx, R, subNoteQuad, 2.5, '#e2ddd0');
+      poly(ctx, subBoard, '#13171b');
+      outline(ctx, subBoard, '#5e6b78', 2);
+      txt(ctx, '環線列車・下一班：—', 480, CY(subBoard) + 4, (t * 1.4 | 0) % 2 ? '#e6b85c' : '#806834', 11);
+      box(ctx, R, subBench);
+      drawArchSign(ctx, subToInner, '#1e2c36', '#6688a0', '內環維修通道');
+      drawArchSign(ctx, subToOuter, '#22262b', '#5a626b', '回外環街道 ▶');
+    },
+    hotspots: [
+      hit('subway_note', bounds(subNoteQuad, 10), '車廂門邊的流浪者筆記', (g) => g.read('n04_subway')),
+      hit('subway_bench', boxRect(subBench, 8), '月台長椅（躲避震盪）', (g) => {
+        if (!g.s.flags.l04_red_sky) return g.say('你在冰冷的長椅上坐了一會兒。鐵軌死寂無聲——等城外「層裂變」降臨時，這裡會是穩住心神的好地方。');
+        if (once(g, 'l04_sub_rest')) {
+          g.sanity(12);
+          return g.say('你靠在地下月台的長椅上，聽著地表遠處的層裂變悶響慢慢散去。封閉的水泥牆隔開了那片死紅天色。（清醒度 +12）');
+        }
+        g.say('你又坐了一會兒，呼吸平穩了不少，但這裡依然沒有下一班車。');
+      }),
+      hit('to_inner', bounds(subToInner, 8), '沿維修通道前往內環・鐵穹區外', (g) => g.go('l04_inner', { msg: '你穿過潮濕的地下維修通道，推開鐵門——眼前豁然亮起鐵穹區穩定的冷白燈光。' }), 'go'),
+      hit('to_outer', bounds(subToOuter, 8), '走上樓梯回到外環街道', (g) => g.go('l04_outer'), 'go'),
     ],
   },
 
@@ -261,11 +325,13 @@ export const L04_SCENES = {
       qtxt(ctx, '紅殿・獵手公會', weiHunterDoor, 0.04, -0.14, 0.96, -0.02, '#f2d8d8', 11);
       box(ctx, R, weiCrate);
       poly(ctx, wallQuad(2.02, -0.62, 1, 1.9, 3.6), '#30343a');
+      drawArchSign(ctx, weiToRedhall, '#3a1618', '#9e4e52', '◀ 進紅殿大廳');
       drawArchSign(ctx, weiToInner, '#2d465a', '#6e94ad', '內環・鐵穹區');
       drawArchSign(ctx, weiToOuter, '#24272c', '#585e64', '◀ 回外環街道');
     },
     hotspots: [
       hit('talk_hunter', bounds(weiHunterDoor, 8), '紅殿門前的獵手公會成員', (g) => g.read('n04_hunter')),
+      hit('to_redhall', bounds(weiToRedhall, 8), '推開紅殿側門進入公會大廳', (g) => g.go('l04_redhall'), 'go'),
       hit('wei_supply', boxRect(weiCrate, 8), '交付木箱旁', (g) => {
         if (once(g, 'l04_sup_wei')) {
           return g.give('can', '送往 Tower 的待清點木箱邊掉出了一只沒人撿走的桃子罐頭。');
@@ -274,6 +340,55 @@ export const L04_SCENES = {
       }),
       hit('to_inner', bounds(weiToInner, 8), '前往內環・鐵穹區外', (g) => g.go('l04_inner'), 'go'),
       hit('to_outer', bounds(weiToOuter, 8), '退回外環街道', (g) => g.go('l04_outer'), 'go'),
+    ],
+  },
+
+  l04_redhall: {
+    level: '0.4', title: '紅殿大廳', room: redHallRoom, quiet: 0.4,
+    viewMsg: '觀景窗裡，牆上測繪圖所有往外延伸的路線盡頭，全被人用紅筆用力打上了叉。',
+    hazard: (s) => ((s.flags.l04_fission_rem || 0) > 0 ? '監測儀警報閃爍：層裂變正在城外進行中' : null),
+    enter(g, { first }) {
+      if (first) g.say('獵手公會總部「紅殿」內部。牆上掛著二十一公里尉遲大道與外環的測繪圖，角落一台老式監測儀正滴答倒數著下一次「層裂變」。');
+    },
+    update: l04Update,
+    draw(ctx, t, s, R) {
+      poly(ctx, rhMapQuad, '#2b2420');
+      outline(ctx, rhMapQuad, '#a8645c', 2);
+      const mb = bounds(rhMapQuad);
+      ctx.strokeStyle = 'rgba(220,165,120,0.45)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(mb[0] + mb[2] / 2, mb[1] + mb[3] / 2, 34, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(mb[0] + mb[2] / 2, mb[1] + mb[3] / 2, 18, 0, Math.PI * 2); ctx.stroke();
+      txt(ctx, '碾城測繪圖', mb[0] + mb[2] / 2, mb[1] + 18, '#f0d4cc', 10);
+      box(ctx, R, rhMonitor);
+      const monB = boxRect(rhMonitor);
+      const rem = (s.flags.l04_fission_rem || 0) > 0 ? 0 : Math.max(0, Math.ceil(90 - (s.flags.l04_fission_t || 0)));
+      txt(ctx, rem === 0 ? '裂變中' : `${rem}s`, monB[0] + monB[2] / 2, monB[1] + monB[3] / 2 + 4, rem === 0 ? '#ff6454' : '#7ef2a6', 12);
+      box(ctx, R, rhLedger);
+      drawArchSign(ctx, rhToWei, '#2a1a1c', '#9e4e52', '回尉遲大道 ▶');
+    },
+    drawView(ctx) {
+      const mb = bounds(rhMapQuad);
+      ctx.save(); ctx.strokeStyle = 'rgba(255,80,70,0.85)'; ctx.lineWidth = 2;
+      for (const [dx, dy] of [[24, 30], [mb[2] - 26, 36], [28, mb[3] - 24], [mb[2] - 28, mb[3] - 26]]) {
+        const x = mb[0] + dx, y = mb[1] + dy;
+        ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke();
+      }
+      ctx.restore();
+    },
+    hotspots: [
+      hit('fission_monitor', boxRect(rhMonitor, 10), '層裂變週期監測儀', (g) => {
+        g.sfx('beep');
+        if ((g.s.flags.l04_fission_rem || 0) > 0) {
+          return g.closeup('l04_fission_mon', { msg: '監測儀紅燈急閃：城外「狼領」正處於層裂變劇變中！現在出城會看到剛洗牌完的新地貌。' });
+        }
+        const rem = Math.max(1, Math.ceil(90 - (g.s.flags.l04_fission_t || 0)));
+        g.closeup('l04_fission_mon', { msg: `綠色液晶顯示：距離下一次「層裂變」約剩 ${rem} 秒。累計觀測次數：${g.s.flags.l04_fission_count || 0}。` });
+      }),
+      hit('tower_ledger', boxRect(rhLedger, 10), '桌上的「Tower」物資交付清冊', (g) => g.read('n04_tower')),
+      hit('tactical_map', bounds(rhMapQuad, 8), '牆上的碾城測繪圖', (g) => {
+        g.say('圖上用等高線畫著內環鐵穹、中環尉遲大道與外環街道，最外圈只草草標了兩個字：「狼領」。沒有任何一條線畫得出去。');
+      }),
+      hit('to_wei', bounds(rhToWei, 8), '走出紅殿回到尉遲大道', (g) => g.go('l04_wei'), 'go'),
     ],
   },
 
@@ -316,6 +431,8 @@ export const L04_SCENES = {
       ctx.strokeStyle = '#8fa4b8'; ctx.lineWidth = 1.5; poly(ctx, innerStayQuad); ctx.stroke();
       txt(ctx, '在這裡待下去', 480, CY(innerStayQuad) + 4, '#d4e2ee', 12);
       poly(ctx, wallQuad(1.82, -0.6, 1, 1.9, 3.6), '#30363c');
+      drawArchSign(ctx, innerToGate, '#29485e', '#88c6e8', '◀ 鐵穹檢疫廊');
+      drawArchSign(ctx, innerToSubway, '#1d2830', '#5e7688', '維修通道 ▶');
       drawArchSign(ctx, innerToWei, '#2a2e33', '#606870', '回尉遲大道 ▶');
     },
     hotspots: [
@@ -323,8 +440,62 @@ export const L04_SCENES = {
         g.flag('l04_confirmed_deadend', true);
         g.read('n04_pioneer');
       }),
+      hit('to_dome_gate', bounds(innerToGate, 8), '沿光幕走向鐵穹檢疫廊', (g) => g.go('l04_dome_gate'), 'go'),
+      hit('to_subway', bounds(innerToSubway, 8), '走進通往外環車站的維修通道', (g) => g.go('l04_subway'), 'go'),
       hit('stay_here', bounds(innerStayQuad, 8), '在這裡待下去', (g) => g.end('dead_end'), 'go'),
       hit('to_wei', bounds(innerToWei, 8), '返回中環・尉遲大道', (g) => g.go('l04_wei'), 'go'),
+    ],
+  },
+
+  l04_dome_gate: {
+    level: '0.4', title: '鐵穹檢疫廊', room: gateRoom, quiet: 0.5,
+    viewMsg: '觀景窗裡，穹頂光幕內側是均勻飽滿的藍白電網，外側卻像被抽乾一樣迅速黯淡。',
+    hazard: (s) => ((s.flags.l04_fission_rem || 0) > 0 ? '天色泛紅：光幕自動拉高防護功率' : null),
+    enter(g, { first }) {
+      if (first) g.say('緊貼穹頂能量屏的潔白檢疫長廊。空氣乾淨得沒有一點灰塵，角落擺著先驅勢力早已停用的外部廣播終端。');
+    },
+    update: l04Update,
+    draw(ctx, t, s, R) {
+      glow(ctx, 480, 220, 190, '#72d4ff', 0.32);
+      poly(ctx, gateShieldQuad, 'rgba(130, 215, 255, 0.28)');
+      const sb = bounds(gateShieldQuad);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(185, 240, 255, 0.45)'; ctx.lineWidth = 1.2;
+      for (let gx = sb[0] + 20; gx < sb[0] + sb[2] - 10; gx += 26) seg(ctx, [gx, sb[1]], [gx, sb[1] + sb[3]], ctx.strokeStyle, 1);
+      const scanY = sb[1] + ((t * 54) % sb[3]);
+      seg(ctx, [sb[0], scanY], [sb[0] + sb[2], scanY], 'rgba(220, 250, 255, 0.72)', 2);
+      ctx.restore();
+      outline(ctx, gateShieldQuad, '#a8e4ff', 2);
+      box(ctx, R, gateTerminal);
+      const tb = boxRect(gateTerminal);
+      ctx.fillStyle = '#152530'; ctx.fillRect(tb[0] + 10, tb[1] + 12, tb[2] - 20, 32);
+      txt(ctx, 'NO REPLY', tb[0] + tb[2] / 2, tb[1] + 32, '#7ce0ff', 9);
+      drawArchSign(ctx, gateToInner, '#263440', '#7ca4be', '回鐵穹區外 ▶');
+    },
+    drawView(ctx, t) {
+      const sb = bounds(gateShieldQuad);
+      ctx.save(); ctx.strokeStyle = 'rgba(200,255,220,0.65)'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = sb[0]; x <= sb[0] + sb[2]; x += 12) {
+        const y = sb[1] + sb[3] / 2 + Math.sin(x * 0.05 + t * 4) * 18;
+        if (x === sb[0]) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    },
+    hotspots: [
+      hit('broadcast_log', boxRect(gateTerminal, 10), '先驅外部廣播封存終端', (g) => {
+        g.sfx('beep');
+        g.read('n04_broadcast');
+      }),
+      hit('shield_scan', bounds(gateShieldQuad, 6), '近距離檢視穹頂光幕', (g) => {
+        g.closeup('l04_shield', {
+          msg: g.s.view
+            ? '觀景窗讀出清晰的反彈波形：這層光幕不只能擋住外來者，也把整座城跟外界的所有訊號徹底隔絕了。'
+            : '貼近光幕能感到微微發熱的靜電。光幕後面是燈火通明的內環高樓，卻沒有任何一扇對你敞開的門。',
+        });
+      }),
+      hit('to_inner', bounds(gateToInner, 8), '退回鐵穹區外', (g) => g.go('l04_inner'), 'go'),
     ],
   },
 
@@ -370,7 +541,7 @@ export const L04_SCENES = {
       }, 'look', { when: (s) => l04WolfVariant(s) === 0 }),
       hit('wolf_silhouette', wolfSilhouetteRect, '遠處霧裡的陌生剪影', (g) => {
         g.sanity(-3);
-        g.say('那個裂變後才出現在城外荒原上的剪影沒有回頭，空氣卻沉得讓人太陽穴隱隱作痛。');
+        g.closeup('l04_wolf_sil', { msg: '那個裂變後才出現在城外荒原上的剪影沒有回頭，空氣卻沉得讓人太陽穴隱隱作痛。' });
       }, 'look', { when: (s) => l04WolfVariant(s) === 1 }),
       hit('to_outer', bounds(wolfToOuter, 8), '回到外環街道', (g) => g.go('l04_outer'), 'go'),
     ],

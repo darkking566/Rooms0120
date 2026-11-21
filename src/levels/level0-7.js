@@ -3,7 +3,7 @@
 import { P, bounds, box, boxRect, drawSmiler, faceQuad, poly, seg, shade, wallQuad } from '../render.js';
 import { pick, rand } from '../rng.js';
 import { yellow } from './level0-1.js';
-import { back, darkness, glow, hit, once, outline, pal, room, tvStatic, txt } from './sublevel-kit.js';
+import { back, darkness, drawBag, drawJar, glow, hit, once, outline, pal, room, tvStatic, txt } from './sublevel-kit.js';
 
 // =====================================================================
 // LEVEL 0.7 — The Reminiscence District
@@ -108,9 +108,24 @@ const bulbsR = room(old, { hw: 1.2, depth: 8, stripes: false, floorTex: 'carpet'
 const peelQ = wallQuad(-1.2, -0.3, 0.3, 2.4, 3.0);
 const rucksack = { x1: -1.0, x2: -0.45, y1: 0.62, y2: 1, z1: 2.2, z2: 2.6, color: '#5b5a3a', top: '#6e6d48', edge: true };
 const riftQ = wallQuad(1.2, -0.62, 1, 3.4, 4.4);
-const hallR = room(gilt, { hw: 1.4, depth: 8, lights: [], baseboard: true, fogEnd: 10, flick: candleFlick, openings: [{ side: 1, z1: 3.4, z2: 4.4, top: -0.55 }] });
+const parlorDoor = wallQuad(-1.2, -0.58, 0.55, 4.5, 5.7);
+const parlorR = room(pal('#9d7c3f', '#523e1d', '#4c381a', '#160f06', '#ffcb75'), { hw: 1.4, depth: 6, lights: [], fogEnd: 9, flick: candleFlick });
+const gramophoneBox = { x1: 0.45, x2: 1.05, y1: 0.46, y2: 1, z1: 2.3, z2: 2.9, color: '#5c3c22', top: '#734c2b', edge: true };
+const parlorNote = wallQuad(-1.4, -0.22, 0.16, 2.0, 2.6);
+const hallR = room(gilt, {
+  hw: 1.4, depth: 8, lights: [], baseboard: true, fogEnd: 10, flick: candleFlick,
+  openings: [{ side: 1, z1: 3.4, z2: 4.4, top: -0.55 }, { side: -1, z1: 4.7, z2: 6.0, top: -0.55 }],
+});
 const tapestry = wallQuad(-1.4, -0.75, 0.45, 1.9, 3.3);
+const libDoor = wallQuad(-1.4, -0.55, 1, 4.7, 6.0);
+const libraryR = room(pal('#7c5e2c', '#261a0c', '#3d2c14', '#0d0803', '#ffd480'), { hw: 1.5, depth: 6, lights: [], fogEnd: 9, flick: candleFlick });
+const libLectern = { x1: -0.42, x2: 0.42, y1: 0.32, y2: 1, z1: 2.6, z2: 3.2, color: '#583b1c', top: '#734e26', edge: true };
+const libShelf = { x1: 0.92, x2: 1.5, y1: -0.55, y2: 1, z1: 2.0, z2: 3.4, color: '#4c3218', top: '#634220', edge: true };
 const voiceDoor = wallQuad(1.4, -0.55, 1, 3.4, 4.4);
+const bathDoor = wallQuad(2.6, -0.55, 1, 3.0, 4.3);
+const bathR = room(marble, { hw: 1.9, depth: 7, lights: [], baseboard: true, fogEnd: 11 });
+const bathJar = { x1: -1.25, x2: -0.82, y1: 0.56, y2: 1, z1: 2.3, z2: 2.75, color: '#b87648', top: '#cc8a5a', edge: true };
+const bathTablet = wallQuad(1.9, -0.35, 0.25, 2.2, 3.1);
 const castleR = room(keep, {
   hw: 1.2, depth: 6, lights: [], baseboard: false, fogEnd: 7,
   openings: [{ side: -1, z1: 2.1, z2: 3.0, top: -0.45 }, { side: 1, z1: 2.5, z2: 3.4, top: -0.45 }],
@@ -209,7 +224,7 @@ export const L07_SCENES = {
     hotspots: [
       back('l0_faded', '朝更現代的燈光走，回到 Level 0', '你一直朝比較新的燈光走。日光燈管、米色壁紙……最後是那間褪了色的房間。'),
       hit('forward', [420, 210, 120, 120], '往燈光比較舊的地方走', (g) => g.go('l07_bulbs'), 'go'),
-      hit('static', bounds(staticDoor, 4), '塞滿雜訊的門口', (g) => { g.sanity(-3); g.sfx('static'); g.say('你的手一碰到那層條紋就被彈了回來，指尖麻了好久。本該是出口的地方，全被這種東西封住了。'); }),
+      hit('static', bounds(staticDoor, 4), '塞滿雜訊的門口', (g) => { g.sanity(-3); g.sfx('static'); g.closeup('l07_static', { msg: '你的手一碰到那層條紋就被彈了回來，指尖麻了好久。本該是出口的地方，全被這種東西封住了。' }); }),
       { ...hit('outlet', bounds(outletQ, 12), '牆上的插座', (g) => {
         g.flag('l07_outlet'); g.give('outlet', '你用指甲把米色的塑膠面板摳了下來。再往裡走，就再也看不到這種東西了。');
       }, 'take'), when: (s) => !s.flags.l07_outlet },
@@ -228,14 +243,14 @@ export const L07_SCENES = {
       for (const z of [5.2, 6.6]) for (const sd of [-1, 1]) candle(ctx, R, sd * 1.15, -0.25, z, t);
       poly(ctx, peelQ, shade(R, '#8a6a30', 2.7));
       const pq = bounds(peelQ); ctx.fillStyle = shade(R, '#d8c890', 2.7); ctx.beginPath(); ctx.moveTo(pq[0] + pq[2], pq[1]); ctx.lineTo(pq[0] + pq[2] * 1.6, pq[1] + pq[3] * 0.4); ctx.lineTo(pq[0] + pq[2], pq[1] + pq[3] * 0.6); ctx.fill();
-      if (!s.flags.l07_pack) box(ctx, R, rucksack);
-      else box(ctx, R, { ...rucksack, y1: 0.8 });
-      const nt = P(-0.72, 0.62, 2.2); txt(ctx, 'N.T.G.', nt[0], nt[1] + 14, shade(R, '#d8d0a0', 2.2), 9);
+      drawBag(ctx, R, s.flags.l07_pack ? { ...rucksack, y1: 0.8 } : rucksack, { stripe: '#d8d0a0', label: 'N.T.G.' });
       if (s.flags.l07_rift) { tvStatic(ctx, riftQ, t, true); glow(ctx, bounds(riftQ)[0], bounds(riftQ)[1] + 60, 70, 'rgba(200,200,255,0.3)'); }
+      poly(ctx, parlorDoor, '#181006'); outline(ctx, parlorDoor, shade(R, '#b89448', 5), 2);
     },
     hotspots: [
       back('l07_modern', '往日光燈的方向走'),
       hit('forward', [420, 200, 120, 130], '往蠟燭更多的地方走', (g) => g.go('l07_hall'), 'go'),
+      hit('parlor', bounds(parlorDoor, 4), '左側透出煤氣燈火光的客廳門', (g) => g.go('l07_parlor'), 'go'),
       hit('peel', bounds(peelQ, 6), '翹起來的牆紙', (g) => { g.sanity(-6); g.say('你撕下一角牆紙。顏料的粉末沾在手指上，聞起來是甜的。你手一抖，想起了以前在哪裡讀過：鉛也是甜的。'); }),
       hit('candle', [550, 225, 60, 45], '牆上的蠟燭', (g) => { g.sanity(-5); g.sfx('steam'); g.say('你湊近一根蠟燭，火苗「呼」地竄上了牆紙——又自己熄了，像有什麼東西把它掐掉。這一層不喜歡火燒到別的地方。'); }),
       { ...hit('pack', boxRect(rucksack, 8), 'N.T.G. 的背包', (g) => {
@@ -280,6 +295,7 @@ export const L07_SCENES = {
         seg(ctx, [cx - 8, cy + 18], [cx + 10, cy + 6], '#c8a050', 2);
       }
       for (const z of [2.2, 4.9, 6.4]) candle(ctx, R, 1.35, -0.2, z, t, 0.8);
+      poly(ctx, libDoor, '#120b04'); outline(ctx, libDoor, shade(R, '#c8a050', 5.2), 2);
       const vd = bounds(voiceDoor); ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(vd[0] + 2, vd[1] + 2, vd[2] - 4, vd[3] - 4);
     },
     drawView(ctx, t) {
@@ -294,7 +310,8 @@ export const L07_SCENES = {
     hotspots: [
       back('l07_bulbs', '往燈泡的方向走'),
       hit('forward', [420, 200, 120, 140], '繼續往深處走', (g) => { g.flag('l07_castle_n', 0); g.go('l07_castle'); }, 'go'),
-      hit('tapestry', bounds(tapestry, 4), '掛毯', (g) => g.say('掛毯上繡著幾個咧著嘴笑的東西，在拉小提琴、吹號角、彈魯特琴。繡工很細，連牙齒都一顆一顆繡了出來。它們看起來很快樂。')),
+      hit('library', bounds(libDoor, 4), '左側木框拱門（藏書閣）', (g) => g.go('l07_library'), 'go'),
+      hit('tapestry', bounds(tapestry, 4), '掛毯', (g) => g.closeup('l07_tapestry', { msg: '掛毯上繡著幾個咧著嘴笑的東西，在拉小提琴、吹號角、彈魯特琴。繡工很細，連牙齒都一顆一顆繡了出來。它們看起來很快樂。' })),
       hit('voice', bounds(voiceDoor, 4), '回應門口的呼喊', (g) => g.scare('l07_hall', '你朝門口走了兩步，喊了一聲「我在這裡」。門裡的東西不再說話了。它四肢著地衝了出來——你轉身就跑，背後的聲音一直在學你剛才那一聲。', 18, 'figure')),
     ],
   },
@@ -371,11 +388,13 @@ export const L07_SCENES = {
       ctx.restore();
       poly(ctx, planeQ, shade(R, '#7a6a4a', 3.2)); outline(ctx, planeQ, shade(R, '#4a3a20', 3.2), 2);
       const prop = P(-0.95, 0.92, 2.9); seg(ctx, [prop[0] - 30, prop[1] - 20], [prop[0] + 26, prop[1] + 16], shade(R, '#5a4020', 2.9), 5);
+      poly(ctx, bathDoor, '#1e1912'); outline(ctx, bathDoor, shade(R, '#d8cfb2', 3.5), 2);
     },
     hotspots: [
       back('l07_castle', '退回石廊'),
       hit('forward', [445, 245, 70, 70], '穿過雕像旁邊的門', (g) => g.go('l07_egypt', { msg: '大理石變成了砂岩。走廊開始彎，一直彎，牆上全是刻痕。嗡嗡聲變了——變成很多很多翅膀在振動。' }), 'go'),
-      hit('statue', [545, 175, 75, 145], '舉著方盒的雕像', (g) => g.say('一尊穿長袍的男人雕像，舉著一個方方正正的東西貼在右眼前，像在拍攝什麼。雕像的臉被磨平了。底座上刻著一行拉丁字母，你只認得最後四個：0120。')),
+      hit('bath', bounds(bathDoor, 6), '右側柱間的浴池拱門', (g) => g.go('l07_bath'), 'go'),
+      hit('statue', [545, 175, 75, 145], '舉著方盒的雕像', (g) => g.closeup('l07_statue', { msg: '一尊穿長袍的男人雕像，舉著一個方方正正的東西貼在右眼前，像在拍攝什麼。雕像的臉被磨平了。底座上刻著一行拉丁字母，你只認得最後四個：0120。' })),
       hit('idol', [395, 170, 55, 125], '咧嘴的巨像', (g) => g.say('一尊沒有五官、只有一張大嘴的巨像。嘴角咧到耳根。雕刻的人顯然見過它本人。')),
       hit('plane', bounds(planeQ, 8), '雙翼飛機的殘骸', (g) => g.read('n07_plane')),
     ],
@@ -412,6 +431,87 @@ export const L07_SCENES = {
       }, 'take'),
       hit('alcove', bounds(alcove, 4), '在壁龕裡躺下', (g) => { g.flag('l07_eyes', 0); sleepHere(g); }),
       hit('deeper', bounds(deepQ, 4), '走進黑暗', (g) => { g.flag('l07_eyes', 0); g.scare('l07_rome', '你往黑暗裡走了一步。那對眼睛一眨不眨地等著你走第二步——你沒有走，你在跑。', 20, 'growler'); }),
+    ],
+  },
+
+  l07_parlor: {
+    level: '0.7', title: '1890 年・煤氣燈客廳', room: parlorR,
+    viewMsg: '觀景窗拉近壁紙花紋——那些看似繁複的捲草線條，全都是細密交錯的黃色走廊平面圖。',
+    enter(g, { first }) {
+      if (first) g.say('嘶嘶作響的黃銅煤氣燈照亮一間十九世紀末的小客廳。木桌上擺著老式留聲機，沒有唱片卻還留著搖把。');
+    },
+    draw(ctx, t, s, R) {
+      damask(ctx, R, 1.4, 6, '#7a5824');
+      for (const z of [2.2, 4.2]) for (const sd of [-1, 1]) candle(ctx, R, sd * 1.32, -0.3, z, t, 1.0);
+      box(ctx, R, gramophoneBox);
+      const gp = P(0.75, 0.46, 2.55);
+      ctx.fillStyle = '#c8a042';
+      ctx.beginPath(); ctx.moveTo(gp[0], gp[1] - 8); ctx.lineTo(gp[0] - 28, gp[1] - 46); ctx.lineTo(gp[0] + 12, gp[1] - 46); ctx.closePath(); ctx.fill();
+      poly(ctx, parlorNote, '#e8dcc0'); outline(ctx, parlorNote, '#6e5830', 1.5);
+    },
+    hotspots: [
+      back('l07_bulbs', '回到白熾燈泡走廊'),
+      hit('parlor_note', bounds(parlorNote, 10), '牆上的 1894 年日記頁', (g) => g.read('n07_parlor')),
+      hit('gramophone', boxRect(gramophoneBox, 10), '沒有唱片的老式留聲機', (g) => {
+        g.sfx('click');
+        if (once(g, 'l07_gramo')) {
+          g.sanity(8);
+          return g.say('你轉動搖把。銅喇叭裡沒有沙沙聲，反而流出一段極輕、略微走調的鋼琴旋律——像從馬尼拉房間牆裡傳來的。（清醒度 +8）');
+        }
+        g.say('搖把空轉了兩圈，銅喇叭只剩一點微弱的餘韻。');
+      }),
+    ],
+  },
+
+  l07_library: {
+    level: '0.7', title: '文藝復興藏書閣', room: libraryR,
+    viewMsg: '觀景窗掃過整排古書——每一本空白書脊上都壓著同一個燙金編號：01/20。',
+    enter(g, { first }) {
+      if (first) g.say('兩側高聳的胡桃木書架一直頂進黑暗裡，中央木講台攤著一份發黃的羊皮紙手稿，空氣裡滿是乾草與羊皮味。');
+    },
+    draw(ctx, t, s, R) {
+      for (const z of [2.0, 4.0]) candle(ctx, R, -1.35, -0.25, z, t, 0.9);
+      box(ctx, R, libShelf);
+      for (let i = 0; i < 4; i++) seg(ctx, P(0.92, -0.35 + i * 0.34, 2.0), P(0.92, -0.35 + i * 0.34, 3.4), '#2d1c0c', 2);
+      box(ctx, R, libLectern);
+      poly(ctx, faceQuad(-0.3, 0.24, 0.3, 0.34, 2.6), '#ede2c4');
+    },
+    hotspots: [
+      back('l07_hall', '退回維多利亞大廳'),
+      hit('lectern', boxRect(libLectern, 10), '講台上的羊皮紙手稿', (g) => g.read('n07_library')),
+      hit('bookshelf', boxRect(libShelf, 8), '高聳的胡桃木書架', (g) => {
+        if (!once(g, 'l07_lib_bar')) return g.say('整排書全都是空白的羊皮紙，翻開來什麼也沒有。');
+        g.give('bar', '你在兩本空書的夾層裡摸出一條現代包裝的能量棒——不知道是哪位誤入此處的探險者留下的。');
+      }, 'take'),
+    ],
+  },
+
+  l07_bath: {
+    level: '0.7', title: '古羅馬浴池遺址', room: bathR,
+    viewMsg: '觀景窗裡，乾涸浴池底部的馬賽克拼出一張咧到耳根的笑臉。',
+    enter(g, { first }) {
+      if (first) g.say('宏偉的大理石浴池早已乾涸，微溫的白霧貼著池底飄散。左邊石台放著一只紅陶罐，右牆嵌著刻滿拉丁文的石板。');
+    },
+    draw(ctx, t, s, R) {
+      poly(ctx, [P(-1.1, 1, 2.2), P(1.1, 1, 2.2), P(1.1, 1, 5.8), P(-1.1, 1, 5.8)], '#8e8670');
+      outline(ctx, [P(-1.1, 1, 2.2), P(1.1, 1, 2.2), P(1.1, 1, 5.8), P(-1.1, 1, 5.8)], '#d8cfb2', 3);
+      drawJar(ctx, R, bathJar);
+      poly(ctx, bathTablet, '#cfc6aa'); outline(ctx, bathTablet, '#7e7660', 2);
+      const tb = bounds(bathTablet);
+      txt(ctx, '0120', tb[0] + tb[2] / 2, tb[1] + tb[3] / 2, '#4e4634', 11);
+    },
+    hotspots: [
+      back('l07_rome', '回到羅馬大理石廳'),
+      hit('mosaic', [365, 345, 275, 95], '乾涸浴池底部的馬賽克', (g) => g.closeup('l07_mosaic', {
+        msg: g.s.view
+          ? '觀景窗裡，池底密密麻麻的大理石方塊竟拼成一張咧到耳根的發光笑臉！'
+          : '乾涸的大理石池底鑲著細密的古羅馬幾何馬賽克，被微溫的水霧半掩著。',
+      })),
+      hit('tablet', bounds(bathTablet, 8), '右牆的石板譯文', (g) => g.read('n07_bath')),
+      hit('jar', boxRect(bathJar, 10), '石台上的紅陶罐', (g) => {
+        if (!once(g, 'l07_bath_water')) return g.say('紅陶罐裡只剩一點乾燥的石灰粉。');
+        g.give('almond', '紅陶罐裡竟藏著一瓶密封完好的現代杏仁水——看來早就有其他旅人來過這裡。');
+      }, 'take'),
     ],
   },
 };

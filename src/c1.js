@@ -7,7 +7,7 @@
 
 import { H, P, W, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from './render.js';
 import { rand } from './rng.js';
-import { back, glow, hit, once, outline, pal, qpt, qsub, qtxt, room, txt } from './levels/sublevel-kit.js';
+import { back, drawFountain, drawRock, glow, hit, once, outline, pal, qpt, qsub, qtxt, room, txt } from './levels/sublevel-kit.js';
 
 export const C1_LEVELS = {
   'C1': { name: 'LEVEL C-1', sub: '偏路', drain: 1.2, thirst: 0.8, hunger: 0.8 },
@@ -267,8 +267,18 @@ function hallTarget(s, slot) {
 
 const c1BenchNote = faceQuad(-1.15, 0.85, -0.78, 0.96, 2.35);
 const c1BenchAhead = faceQuad(-0.36, -0.55, 0.36, 1, 7.499);
+const c1BenchAtriumDoor = wallQuad(1.5, -0.58, 0.36, 2.2, 3.1);
 
 const c1MirrorWall = faceQuad(-0.92, -0.72, 0.92, 0.92, 7.48);
+const c1MirrorGalleryDoor = wallQuad(-1.5, -0.55, 0.88, 2.0, 3.0);
+
+const c1AtriumBasin = { x1: -0.68, x2: 0.68, y1: 0.68, y2: 1, z1: 2.3, z2: 3.3, color: '#e6edf2', top: '#f7fafc', edge: true };
+const c1AtriumPlaque = wallQuad(-1.5, -0.22, 0.16, 2.1, 2.75);
+const c1AtriumAhead = faceQuad(-0.36, -0.55, 0.36, 1, 7.499);
+const c1StairNote = wallQuad(-1.5, -0.2, 0.18, 2.2, 2.85);
+const c1StairAhead = faceQuad(0.32, -0.55, 0.96, 1, 7.499);
+const c1GalleryFrame = faceQuad(-0.55, -0.52, 0.55, 0.25, 7.48);
+const c1GalleryDoor = wallQuad(1.5, -0.55, 0.95, 2.4, 3.4);
 
 const c1DoorMain = faceQuad(-0.42, -0.58, 0.42, 1, 6.499);
 const c1DoorPlaque = faceQuad(-0.18, -0.18, 0.18, -0.02, 6.498);
@@ -295,9 +305,9 @@ export const C1_SCENES = {
     },
     drawOver: c1DrawOver,
     hotspots: [
-      back('l0_dry', '爬回紙箱', '你彎腰鑽進身後那個放大了的紙箱內側，重新落回乾燥走廊的黃色地毯上。'),
-      hit('window', bounds(c1EntryWin, 8), '白框窗', (g) => g.say('玻璃擦得像不存在一樣。外面只有一片均勻、刺眼的冷白色。')),
-      hit('bench', bounds([P(0.68, 0.45, 3.6), P(1.35, 1, 4.8)], 8), '白色長椅', (g) => g.say('椅子乾淨得反光。你伸手摸了一下，指腹沒有沾到半點微塵。')),
+      back('l0_storage', '爬回紙箱', '你彎腰鑽進身後那個放大了的紙箱內側，重新落回堆滿空箱的隔間地毯上。'),
+      hit('window', bounds(c1EntryWin, 8), '白框窗', (g) => g.closeup('c1_window', { msg: '玻璃擦得像不存在一樣。外面只有一片均勻、刺眼的冷白色。' })),
+      hit('bench', bounds([P(0.68, 0.45, 3.6), P(1.35, 1, 4.8)], 8), '白色長椅', (g) => g.closeup('c1_bench', { msg: '椅子乾淨得反光。你伸手摸了一下，指腹沒有沾到半點微塵。' })),
       hit('ahead', bounds(c1EntryDoor, 10), '盡頭的白門', (g) => c1Advance(g, 'c1_hall', '你推開這扇過於乾淨的房門，走進兩側延伸的白牆之間。'), 'go'),
     ],
   },
@@ -352,6 +362,7 @@ export const C1_SCENES = {
         drawWhiteBench(ctx, R, z, z + 0.75, 0.65, 1.32);
       }
       paper(ctx, R, c1BenchNote, 2.35, '#edf1f5');
+      drawWhiteDoor(ctx, c1BenchAtriumDoor);
       drawWhiteDoor(ctx, c1BenchAhead);
     },
     drawOver: c1DrawOver,
@@ -365,6 +376,7 @@ export const C1_SCENES = {
         g.say('再坐下去，這種過頭的潔白反而讓人心慌。');
       }),
       hit('note_clean', bounds(c1BenchNote, 10), '長椅下的記號', (g) => g.read('n_c1_clean')),
+      hit('side_atrium', bounds(c1BenchAtriumDoor, 8), '右側的白門（往中庭）', (g) => c1Advance(g, 'c1_atrium', '你推開右側那扇無縫白門，走進一座高挑得沒有半道陰影的冷白中庭。'), 'go'),
       hit('ahead', bounds(c1BenchAhead, 10), '繼續往前走', (g) => c1Advance(g, 'c1_hall', '你站起身穿過盡頭的白門，格局又換了一輪。'), 'go'),
     ],
   },
@@ -383,6 +395,7 @@ export const C1_SCENES = {
         poly(ctx, mw, '#dbe7ef');
         ctx.strokeStyle = '#bcc8d2'; ctx.lineWidth = 2.5; poly(ctx, mw); ctx.stroke();
       }
+      drawWhiteDoor(ctx, c1MirrorGalleryDoor);
       const mb = bounds(c1MirrorWall);
       const mg = ctx.createLinearGradient(mb[0], mb[1], mb[0] + mb[2], mb[1] + mb[3]);
       mg.addColorStop(0, '#dde9f0');
@@ -411,6 +424,7 @@ export const C1_SCENES = {
     drawOver: c1DrawOver,
     hotspots: [
       back('c1_hall', '回到長廊'),
+      hit('side_gallery', bounds(c1MirrorGalleryDoor, 8), '左牆映出的白門（往空畫廊）', (g) => c1Advance(g, 'c1_gallery', '你推開左牆那扇幾乎與鏡面融為一體的白門，眼前是一條掛滿空畫框的長廳。'), 'go'),
       hit('mirror', bounds(faceQuad(-0.92, -0.72, 0.16, 0.92, 7.48), 10), '整面鏡牆', (g) => {
         if (once(g, 'c1_mirror_spooked')) {
           g.sanity(-3);
@@ -422,6 +436,95 @@ export const C1_SCENES = {
       hit('rift_portal', bounds(faceQuad(0.22, -0.56, 0.74, 0.86, 7.46), 10), '鏡面深處的藍色裂隙', (g) => {
         g.go('c1x_rift', { msg: '懷裡那片龍鱗隱隱發燙。鏡面沒有碎裂，而是像水波般朝兩側讓開，讓你踏進一道冰冷的藍光裂縫。' });
       }, 'go', { when: (s) => s.inv.includes('dragon_scale') }),
+    ],
+  },
+
+  c1_atrium: {
+    level: 'C1', title: '冷白中庭', room: c1Room, quiet: 0.9,
+    viewMsg: '觀景窗裡什麼也沒有。聲音還是來了。',
+    enter(g, { first }) {
+      c1OnEnter(g, first ? '中庭正中擺著一座乾燥潔白的噴水池，池底連一滴水漬都沒有。頭頂的天窗傾瀉著毫無陰影的冷白光。' : null);
+    },
+    update: c1Update,
+    draw(ctx, t, s, R) {
+      drawSpotless(ctx, R);
+      poly(ctx, [P(-0.9, -1, 2.4), P(0.9, -1, 2.4), P(0.9, -1, 5.2), P(-0.9, -1, 5.2)], '#ffffff');
+      drawFountain(ctx, R, c1AtriumBasin, { dry: true });
+      paper(ctx, R, c1AtriumPlaque, 2.4, '#eef3f7');
+      drawWhiteDoor(ctx, c1AtriumAhead);
+    },
+    drawOver: c1DrawOver,
+    hotspots: [
+      back('c1_bench', '回到長椅之間'),
+      hit('atrium_plaque', bounds(c1AtriumPlaque, 10), '牆上的冷白刻字牌', (g) => g.read('n_c1_atrium')),
+      hit('basin', boxRect(c1AtriumBasin, 8), '乾燥的白色噴水池', (g) => g.say('池底連一粒灰塵也沒有。沒有水，也沒有任何能帶走的東西。')),
+      hit('ahead', bounds(c1AtriumAhead, 10), '走進盡頭的白門（往空梯間）', (g) => c1Advance(g, 'c1_stair', '門後是一座乾淨得發亮的白色樓梯間。'), 'go'),
+    ],
+  },
+
+  c1_stair: {
+    level: 'C1', title: '空梯間', room: c1Room, quiet: 0.9,
+    viewMsg: '觀景窗裡什麼也沒有。聲音還是來了。',
+    enter(g, { first }) {
+      c1OnEnter(g, first ? '一座筆直往上的白瓷磚樓梯，頂端直接撞上一整塊封死的天花板；往下的台階也一樣封在平地裡。' : null);
+    },
+    update: c1Update,
+    draw(ctx, t, s, R) {
+      drawSpotless(ctx, R);
+      for (let i = 7; i >= 0; i--) {
+        box(ctx, R, { x1: -0.95, x2: -0.05, y1: 1 - (i + 1) * 0.22, y2: 1, z1: 2.3 + i * 0.34, z2: 2.64 + i * 0.34, color: '#edf2f6', top: '#ffffff', edge: true });
+      }
+      paper(ctx, R, c1StairNote, 2.5, '#eef3f7');
+      drawWhiteDoor(ctx, c1StairAhead);
+    },
+    drawOver: c1DrawOver,
+    hotspots: [
+      back('c1_atrium', '退回冷白中庭'),
+      hit('stair_note', bounds(c1StairNote, 10), '轉角牆上的測量紀錄', (g) => g.read('n_c1_stair')),
+      hit('dead_stairs', [240, 210, 175, 195], '通往封死天花板的白樓梯', (g) => {
+        g.flag('c1_stair_checked');
+        g.say('你往上爬到頂，頭頂是一塊毫無縫隙的平整白板——剛才那聲遠處的重響，彷彿同時從天花板上面和地板底下傳來。');
+      }),
+      hit('ahead', bounds(c1StairAhead, 10), '推開轉角白門（往空畫廊）', (g) => c1Advance(g, 'c1_gallery', '你推開轉角的白門，踏進一條掛滿空白畫框的潔淨長廳。'), 'go'),
+    ],
+  },
+
+  c1_gallery: {
+    level: 'C1', title: '空畫廊', room: c1Room, quiet: 0.9,
+    viewMsg: '觀景窗裡，那幾隻空白畫框浮出了極淡的房間輪廓——全是你剛才走過的走廊。聲音還是來了。',
+    enter(g, { first }) {
+      c1OnEnter(g, first ? '雪白牆面整齊掛著一排空白畫框。沒有畫布、沒有落款，只有冷白燈管在框內投出均勻反光。' : null);
+    },
+    update: c1Update,
+    draw(ctx, t, s, R) {
+      drawSpotless(ctx, R);
+      for (const z of [2.1, 3.8, 5.5]) {
+        const fL = wallQuad(-1.5, -0.45, 0.25, z, z + 1.0);
+        poly(ctx, fL, '#f7fafc'); outline(ctx, fL, '#bcc8d2', 2);
+      }
+      poly(ctx, c1GalleryFrame, '#f8fbfd');
+      outline(ctx, c1GalleryFrame, '#b4c2ce', 3);
+      outline(ctx, qsub(c1GalleryFrame, 0.08, 0.1, 0.92, 0.9), '#d8e2ea', 1.5);
+      drawWhiteDoor(ctx, c1GalleryDoor);
+    },
+    drawView(ctx) {
+      const b = bounds(c1GalleryFrame);
+      ctx.save(); ctx.strokeStyle = 'rgba(120, 160, 185, 0.55)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(b[0] + 18, b[1] + 14, b[2] - 36, b[3] - 28);
+      seg(ctx, [b[0] + 18, b[1] + 14], [b[0] + b[2] * 0.38, b[1] + b[3] * 0.38], ctx.strokeStyle, 1);
+      seg(ctx, [b[0] + b[2] - 18, b[1] + 14], [b[0] + b[2] * 0.62, b[1] + b[3] * 0.38], ctx.strokeStyle, 1);
+      ctx.restore();
+    },
+    drawOver: c1DrawOver,
+    hotspots: [
+      back('c1_mirror', '回到鏡廳'),
+      hit('side_frames', [45, 145, 200, 225], '左牆整排空白畫框', (g) => g.closeup('c1_frame_cu', {
+        msg: g.s.view
+          ? '透過觀景窗湊近白框，框內浮出極細的淡青建築線條——全是你剛才走過的每間冷白房間。'
+          : '白框裡一塵不染，什麼也沒畫，只有冷白燈管的均勻反光。',
+      })),
+      hit('empty_frame', bounds(c1GalleryFrame, 10), '正前方的空白畫框', (g) => g.read('n_c1_gallery')),
+      hit('ahead', bounds(c1GalleryDoor, 8), '推開右側白門回到長廊', (g) => c1Advance(g, 'c1_hall', '你推開右側白門，重新踏入那條一塵不染的無盡長廊。'), 'go'),
     ],
   },
 
@@ -766,7 +869,17 @@ export const C1_SCENES = {
           back('c1e_road', '回到市中心大道'),
           hit('cell_024', bounds(cell024, 8), '收容室 E-024（Sampson Adams 看守）', (g) => {
             if (g.s.flags.c1e_024_done) return g.read('n_c1e_024');
-            g.say('防彈玻璃裡縮著一隻約九十公分、像臃腫綿羊的生物，正啃食角落的雜物。安保 Sampson Adams 示意你拿起錄音筆對準通話孔採訪。');
+            g.closeup('c1e_cell_024', {
+              msg: '防彈玻璃裡縮著一隻約九十公分、像臃腫綿羊的生物，正啃食角落的雜物。安保 Sampson Adams 示意你拿起錄音筆對準通話孔採訪。',
+              hotspots: [{
+                id: 'cu_024_glass', rect: [50, 50, 860, 410], label: 'E-024 觀察窗與通話孔', cursor: 'look',
+                click: (gg) => gg.say('玻璃後面那隻臃腫的綿羊狀生物慢慢咀嚼著碎屑。把錄音筆對準右下角的通話孔試試。'),
+                use: {
+                  recorder: (gg) => { gg.flag('c1e_024_done'); gg.read('n_c1e_024'); },
+                  recorder2: (gg) => { gg.flag('c1e_024_done'); gg.read('n_c1e_024'); },
+                },
+              }],
+            });
           }, 'look', {
             use: {
               recorder: (g) => { g.flag('c1e_024_done'); g.read('n_c1e_024'); },
@@ -774,11 +887,31 @@ export const C1_SCENES = {
             },
           }),
           hit('cell_025', bounds(cell025, 8), '空置收容室 E-025', (g) => {
-            g.say('「E-025」門牌還掛著，鎖扣完好無缺，裡面卻空無一物。值班表只留了一筆：某個夜晚之後，這個個體就憑空消失了。（另註：E-002 所在洞穴位於城外山腳。）');
+            g.closeup('c1e_cell_025', { msg: '「E-025」門牌還掛著，鎖扣完好無缺，裡面卻空無一物。值班表只留了一筆：某個夜晚之後，這個個體就憑空消失了。（另註：E-002 所在洞穴位於城外山腳。）' });
           }),
           hit('cell_013', bounds(cell013, 8), '收容室 E-013（平井蒼生看守）', (g) => {
             if (g.s.flags.c1e_013_done) return g.read('n_c1e_013');
-            g.say('紅髮、腰圍白色短袍的少年模樣坐在焦黑牆角。安保平井蒼生壓低聲音提醒：「它脾氣暴躁、自稱火神祝融，拿出錄音筆時當心。」');
+            g.closeup('c1e_cell_013', {
+              msg: '紅髮、腰圍白色短袍的少年模樣坐在焦黑牆角。安保平井蒼生壓低聲音提醒：「它脾氣暴躁、自稱火神祝融，拿出錄音筆時當心。」',
+              hotspots: [{
+                id: 'cu_013_glass', rect: [50, 50, 860, 410], label: 'E-013 觀察窗與通話孔', cursor: 'look',
+                click: (gg) => gg.say('玻璃發燙，焦黑牆角不斷飄起火星。可以用錄音筆對準通話孔採訪它。'),
+                use: {
+                  recorder: (gg) => {
+                    if (once(gg, 'c1e_013_done')) {
+                      gg.take('recorder');
+                      gg.give('dragon_scale');
+                      gg.sfx('sting');
+                    }
+                    gg.read('n_c1e_013');
+                  },
+                  recorder2: (gg) => {
+                    if (gg.s.flags.c1e_013_done) return gg.read('n_c1e_013');
+                    gg.say('這支是備用的——要是直接湊過去，恐怕也會被它一起燒掉。');
+                  },
+                },
+              }],
+            });
           }, 'look', {
             use: {
               recorder: (g) => {
@@ -830,7 +963,7 @@ export const C1_SCENES = {
             poly(ctx, [[rx, ry], [rx + rw, ry], [rx + rw * 0.45, ry + rh]], '#2b2724');
           }
           if (s.flags.c1e_cave_gone) {
-            box(ctx, R, caveRubbleBox);
+            drawRock(ctx, R, caveRubbleBox, { pile: true });
             poly(ctx, [[305, 360], [390, 295], [470, 325], [565, 290], [655, 365]], '#58544f');
             seg(ctx, [380, 295], [405, 245], '#3d332c', 3);
             seg(ctx, [525, 300], [505, 242], '#3d332c', 3);
@@ -895,7 +1028,7 @@ export const C1_SCENES = {
           }
           box(ctx, R, gardenBench);
           seg(ctx, P(-1.42, 0.42, 2.35), P(-0.78, 0.42, 3.05), '#534638', 4);
-          box(ctx, R, gardenFountain);
+          drawFountain(ctx, R, gardenFountain, { dry: false, t });
           glow(ctx, P(1.12, 0.35, 2.4)[0], P(1.12, 0.35, 2.4)[1], 24, '#a6dbe8', 0.32);
           box(ctx, R, gardenCrate);
         },
@@ -930,11 +1063,15 @@ export const C1_SCENES = {
   // ---------- Report III: 驤亭 (Level C-1.3) ----------
   ...(() => {
     const skyPal = pal('#8ba6b8', '#9ec0d6', '#5e7346', '#a4bac8', '#eaf4fa');
+    const grovePal = pal('#7894a2', '#8eb0c4', '#4f6440', '#92aab8', '#e0eef6');
     const basePal = pal('#5e666e', '#6f7c86', '#4c5448', '#7d8a94', '#dce6ee');
+    const stablesPal = pal('#544c44', '#38322c', '#423c34', '#24201c', '#d8d4c8');
     const eyePal = pal('#222830', '#161a20', '#1a2026', '#0c1014', '#72b8e8');
 
     const meadowRoom = room(skyPal, { hw: 2.2, depth: 9.5, fogEnd: 18, open: true, floorTex: 'carpet', baseboard: false, lights: [] });
+    const groveRoom = room(grovePal, { hw: 2.1, depth: 9.2, fogEnd: 17, open: true, floorTex: 'carpet', baseboard: false, lights: [] });
     const baseRoom = room(basePal, { hw: 2.0, depth: 9, fogEnd: 16, open: true, floorTex: 'concrete', baseboard: false, lights: [] });
+    const stablesRoom = room(stablesPal, { hw: 1.8, depth: 8.2, fogEnd: 13, floorTex: 'concrete', lights: [2.2, 5.4] });
     const eyeRoom = room(eyePal, { hw: 1.6, depth: 7.5, fogEnd: 11, floorTex: 'concrete', lights: [2.2, 5.2] });
 
     let clankWait = 6;
@@ -957,15 +1094,30 @@ export const C1_SCENES = {
     const plainOutskirtsPath = wallQuad(-2.2, -0.25, 0.95, 3.2, 4.8);
 
     const riverWaterRect = [180, 310, 600, 145];
+    const riverGrovePath = faceQuad(0.55, -0.42, 1.55, 0.22, 8.2);
+    const groveStele = { x1: -1.35, x2: -0.78, y1: 0.08, y2: 1, z1: 3.1, z2: 3.6, color: '#58646c', top: '#6e7c85', edge: true };
+    const groveRock = { x1: 0.52, x2: 1.32, y1: 0.48, y2: 1, z1: 2.6, z2: 3.3, color: '#647068', top: '#78867c', edge: true };
+    const groveBranch = [345, 368, 175, 58];
 
     const baseGuardQuad = faceQuad(-1.15, -0.35, -0.65, 0.95, 4.2);
     const baseSteedQuad = faceQuad(0.65, -0.15, 1.35, 0.95, 4.4);
     const baseEyeDoor = faceQuad(-0.35, -0.5, 0.35, 0.98, 8.999);
+    const baseStablesPath = wallQuad(2.0, -0.34, 0.92, 2.35, 3.25);
+
+    const stablesGroomQuad = faceQuad(-1.18, -0.32, -0.62, 0.96, 3.9);
+    const stablesLedgerQuad = wallQuad(-1.8, -0.3, 0.22, 2.2, 3.1);
+    const stablesTackQuad = wallQuad(1.8, -0.32, 0.42, 2.3, 3.3);
+    const stablesStallQuad = faceQuad(0.1, -0.18, 1.15, 0.96, 5.8);
 
     const podBox = { x1: -0.48, x2: 0.48, y1: -0.1, y2: 0.95, z1: 4.1, z2: 5.1, color: '#2b3642', top: '#3c4c5c', edge: true };
     const relayManualQuad = wallQuad(-1.6, -0.35, 0.35, 2.3, 3.3);
     const alphaLogQuad = wallQuad(1.6, -0.35, 0.35, 2.3, 3.3);
     const skeletonQuad = faceQuad(0.7, 0.12, 1.32, 0.92, 3.5);
+    const eyeArchiveDoor = wallQuad(-1.6, -0.48, 0.92, 4.0, 5.4);
+
+    const archiveChartQuad = wallQuad(-1.6, -0.45, 0.38, 2.3, 3.7);
+    const archiveConsole = { x1: -0.42, x2: 0.42, y1: 0.24, y2: 0.98, z1: 3.4, z2: 4.1, color: '#24303c', top: '#344658', edge: true };
+    const archiveCellsQuad = wallQuad(1.6, -0.48, 0.52, 2.4, 3.9);
 
     const outProgenitorRect = [340, 140, 280, 210];
 
@@ -1091,6 +1243,7 @@ export const C1_SCENES = {
           }
           ctx.restore();
           drawGrassField(ctx, 390, 20, 11, 'rgba(54, 82, 38, 0.85)', 36);
+          drawSignPost(ctx, riverGrovePath, '疏林石徑 ▶', '低丘林地', '#465e46', '#94b292');
         },
         hotspots: [
           back('c1x_plain', '回到草原'),
@@ -1103,6 +1256,7 @@ export const C1_SCENES = {
             g.drink(15);
             g.say('你又捧起幾口清澈江水潤潤喉。');
           }),
+          hit('to_grove', bounds(riverGrovePath, 8), '沿石徑走上對岸疏林', (g) => g.go('c1x_grove'), 'go'),
         ],
       },
 
@@ -1151,6 +1305,7 @@ export const C1_SCENES = {
           txt(ctx, '龍鱗駒', sx, sb[1] - 6, '#cbd5de', 10);
           // Entrance to Alpha's Eye dark room
           drawPortalArch(ctx, baseEyeDoor, '#0f1318', '#566470', '暗室・K014');
+          drawSignPost(ctx, baseStablesPath, '龍鱗駒廄舍 ▶', null, '#483f36', '#a8967c');
         },
         hotspots: [
           back('c1x_plain', '回到草原'),
@@ -1160,6 +1315,7 @@ export const C1_SCENES = {
           hit('steed', bounds(baseSteedQuad, 8), '栓在欄邊的龍鱗駒', (g) => {
             g.say('披著細密深鱗的馬獸正安靜低頭。據說尊父當年就是將這支龍裔坐騎與此地合稱「驤亭」——除了伸手感覺到的冰涼鱗甲，這裡什麼也帶不走。');
           }),
+          hit('to_stables', bounds(baseStablesPath, 6), '龍鱗駒廄舍', (g) => g.go('c1x_stables'), 'go'),
           hit('to_eye', bounds(baseEyeDoor, 8), '阿爾法之眼暗室', (g) => g.go('c1x_eye'), 'go'),
         ],
       },
@@ -1191,6 +1347,7 @@ export const C1_SCENES = {
           // Relay manual & Alpha/Ashou log papers
           paper(ctx, R, relayManualQuad, 2.8, '#dce8f2');
           paper(ctx, R, alphaLogQuad, 2.8, '#e8e2d2');
+          drawPortalArch(ctx, eyeArchiveDoor, '#101822', '#4c7292', '觀測廊');
           // Articulated headless serpentine reptile skeleton inside glass vitrine
           const kb = bounds(skeletonQuad);
           poly(ctx, skeletonQuad, '#1d242c');
@@ -1236,7 +1393,10 @@ export const C1_SCENES = {
           hit('alpha_log', bounds(alphaLogQuad, 8), '阿爾法與阿守的紀錄殘段', (g) => g.read('n_c1x_alpha'), 'look', {
             when: (s) => !s.flags.c1x_in_pod,
           }),
-          hit('skeleton', bounds(skeletonQuad, 8), '無頭骨架展示台', (g) => g.say('玻璃櫃裡架著一具中等體型的爬行類骨骼標本，頸椎整齊斷折，唯獨少了整個頭骨。'), 'look', {
+          hit('skeleton', bounds(skeletonQuad, 8), '無頭骨架展示台', (g) => g.closeup('c1x_skeleton', { msg: '玻璃櫃裡架著一具中等體型的爬行類骨骼標本，頸椎整齊斷折，唯獨少了整個頭骨。' }), 'look', {
+            when: (s) => !s.flags.c1x_in_pod,
+          }),
+          hit('to_archive', bounds(eyeArchiveDoor, 6), '箱庭觀測廊', (g) => g.go('c1x_archive'), 'go', {
             when: (s) => !s.flags.c1x_in_pod,
           }),
           hit('pod', boxRect(podBox, 8), '爬進 K014 艙體入夢', (g) => {
@@ -1325,6 +1485,153 @@ export const C1_SCENES = {
               g.sfx('clank');
             }
             g.read('n_c1x_progenitor');
+          }),
+        ],
+      },
+
+      c1x_grove: {
+        level: 'C1.3', title: '疏林石徑', room: groveRoom, quiet: 0.78,
+        viewMsg: '觀景窗掃過稀疏林木與遠方的草原，天空均勻得像一整張淡藍色的幕布，找不到光源的位置。',
+        enter(g, { first }) {
+          if (first) g.say('跨過淺灘走上低丘，草海漸漸讓位給疏落的林木。樹影之間靜得聽不見蟲鳴，只有一塊刻著地誌的青灰石碑和一塊能遠眺基地的青石。');
+        },
+        draw(ctx, t, s, R) {
+          drawGrass(ctx, R, 13);
+          // Sparse slender woodland trunks & soft canopies
+          for (const [tx, tz, th] of [[-1.7, 5.2, 135], [-0.95, 7.2, 110], [0.2, 7.8, 105], [1.45, 5.8, 130], [1.85, 4.3, 150]]) {
+            const base = P(tx, 0.96, tz);
+            seg(ctx, base, [base[0], base[1] - th], '#443c32', Math.max(4, 18 / tz));
+            ctx.fillStyle = 'rgba(58, 84, 52, 0.78)';
+            ctx.beginPath(); ctx.ellipse(base[0], base[1] - th, th * 0.44, th * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+          }
+          box(ctx, R, groveStele);
+          const sp = P(-1.06, 0.45, 3.1); txt(ctx, '地誌碑', sp[0], sp[1], '#d2dde4', 10);
+          drawRock(ctx, R, groveRock);
+          // Dry bleached branch on ground
+          seg(ctx, [368, 405], [492, 386], '#928876', 4);
+          seg(ctx, [430, 395], [468, 376], '#867c6a', 2.5);
+          drawGrassField(ctx, 392, 18, 17, 'rgba(56, 82, 40, 0.8)', 30);
+        },
+        hotspots: [
+          back('c1x_river', '沿淺灘退回江流'),
+          hit('grove_stele', boxRect(groveStele, 8), '疏林邊界石碑', (g) => g.read('n_c1x_grove')),
+          hit('lookout_rock', boxRect(groveRock, 8), '林緣青石', (g) => {
+            if (once(g, 'c1x_grove_rest')) {
+              g.sanity(8);
+              return g.say('你在青石上坐了一會兒，望著遠方低矮的屋簷與交織江流。風很乾爽，沒有任何異常逼近的感覺，繃緊的神經放鬆了些。');
+            }
+            g.say('林間很安靜，遠處草原一片無風無浪。');
+          }),
+          hit('fallen_branch', groveBranch, '地上的枯枝', (g) => {
+            g.say('一段乾透發白的枯枝，一折就碎成粉渣。正如碑文所說，這裡除了清澈江水，幾乎找不到任何可用的物資。');
+          }),
+        ],
+      },
+
+      c1x_stables: {
+        level: 'C1.3', title: '龍鱗駒廄舍', room: stablesRoom, quiet: 0.55,
+        viewMsg: '觀景窗裡，馬廄樑柱上掛著淡淡發紫的瞳石燈，每匹龍鱗駒的鱗片都在藍光下折出冷硬的微光。',
+        enter(g, { first }) {
+          if (first) g.say('基地東翼的木構廄舍。幾匹披著細密深鱗的龍鱗駒在欄內低頭休憩，一名戴著骨面的無面靈正無聲擦拭鞍具。');
+        },
+        draw(ctx, t, s, R) {
+          // Timber rafters and violet 瞳石 lantern glow
+          for (let z = 2.0; z < 8.0; z += 1.6) {
+            seg(ctx, P(-1.8, -0.95, z), P(1.8, -0.95, z), '#3a322a', 4);
+            const lp = P(0, -0.82, z);
+            glow(ctx, lp[0], lp[1], 36, '#9b72f2', 0.24);
+          }
+          // Timber stalls on right/back with resting scaled steed silhouette
+          const sb = bounds(stablesStallQuad);
+          poly(ctx, stablesStallQuad, '#2b2520');
+          for (let i = 0; i < 4; i++) seg(ctx, [sb[0], sb[1] + 24 + i * 24], [sb[0] + sb[2], sb[1] + 24 + i * 24], '#5e4e3e', 3);
+          const hx = sb[0] + sb[2] * 0.52, hy = sb[1] + sb[3] * 0.42;
+          poly(ctx, [[hx - 32, hy + 8], [hx + 24, hy + 6], [hx + 30, hy + 30], [hx - 26, hy + 30]], '#232c34');
+          poly(ctx, [[hx - 28, hy + 10], [hx - 44, hy - 14], [hx - 54, hy - 6], [hx - 38, hy + 18]], '#2e3842');
+          txt(ctx, '龍鱗駒欄', hx, sb[1] + 14, '#cfc6b6', 10);
+          // Faceless Entity-9 groom with bone mask + violet 瞳石 eyes
+          const gb = bounds(stablesGroomQuad);
+          const gx = gb[0] + gb[2] * 0.5, gy = gb[1];
+          poly(ctx, [[gx - 20, gb[1] + gb[3]], [gx - 14, gy + 36], [gx + 14, gy + 36], [gx + 22, gb[1] + gb[3]]], '#24292e');
+          ctx.fillStyle = '#ddd8cc'; ctx.beginPath(); ctx.ellipse(gx, gy + 20, 10, 13, 0, 0, Math.PI * 2); ctx.fill();
+          glow(ctx, gx, gy + 19, 13, '#a87dff', 0.42);
+          ctx.fillStyle = '#8b5cf6'; ctx.fillRect(gx - 5, gy + 17, 3.5, 3.5); ctx.fillRect(gx + 1.5, gy + 17, 3.5, 3.5);
+          // Wall ledger & tack rack
+          paper(ctx, R, stablesLedgerQuad, 2.65, '#e8e0cc');
+          const lp = P(-1.8, -0.04, 2.65); txt(ctx, '名錄', lp[0], lp[1] + 4, '#2a241c', 9);
+          poly(ctx, stablesTackQuad, '#383028');
+          const tb = bounds(stablesTackQuad);
+          for (let i = 0; i < 3; i++) seg(ctx, [tb[0] + 14, tb[1] + 20 + i * 24], [tb[0] + tb[2] - 14, tb[1] + 34 + i * 24], '#686e74', 3);
+        },
+        hotspots: [
+          back('c1x_base', '回到驤亭基地外'),
+          hit('groom', bounds(stablesGroomQuad, 8), '照料馬具的無面靈', (g) => {
+            g.say('骨面下的兩枚紫晶瞳石朝你微微偏了一下，確認你不在龍血威懾的影響範圍內後，便又低頭繼續整理繮繩。整個廄舍安靜得只聽見皮革摩擦的輕響。');
+          }),
+          hit('stables_ledger', bounds(stablesLedgerQuad, 10), '廄舍馴養與名錄殘頁', (g) => g.read('n_c1x_stables')),
+          hit('tack_rack', bounds(stablesTackQuad, 8), '深鐵鞍具架', (g) => {
+            g.say('架上掛著沉重的黑鐵馬鞍和幾片脫落碎裂的細鱗。你口袋裡已經帶著那枚能開裂隙的龍鱗，這些碎甲既沉又無用。');
+          }),
+          hit('stables_stall', bounds(stablesStallQuad, 6), '欄內的龍鱗駒', (g) => {
+            g.say('幾匹龍鱗駒安靜地站在乾草上，微閉著眼。近看才發現牠們頸側的鱗片隨著呼吸輕微開合，散發出像雨前石階般的涼氣。');
+          }),
+        ],
+      },
+
+      c1x_archive: {
+        level: 'C1.3', title: '箱庭觀測廊', room: eyeRoom, quiet: 0.72,
+        viewMsg: '觀景窗對準分支圖牆面時，所有線條外側都浮出像稿紙頁緣一樣的淡灰框線。',
+        enter(g, { first }) {
+          if (first) g.say('阿爾法之眼暗室側翼的觀測廊：左牆釘滿標註著分支曲線的藍圖，中央擺著一台紀錄終端，右牆整齊排列著二十四個編號儲格。');
+        },
+        draw(ctx, t, s, R) {
+          // Left wall branch chart (9 major / 76 minor branches)
+          poly(ctx, archiveChartQuad, '#14202c');
+          ctx.strokeStyle = '#5ba4d6'; ctx.lineWidth = 1.5; poly(ctx, archiveChartQuad); ctx.stroke();
+          const cb = bounds(archiveChartQuad);
+          for (let i = 0; i < 6; i++) {
+            const y = cb[1] + 18 + i * 24;
+            seg(ctx, [cb[0] + 10, cb[1] + cb[3] * 0.5], [cb[0] + cb[2] - 12, y], 'rgba(116, 198, 255, 0.58)', 1.4);
+          }
+          txt(ctx, '9 / 76 分支', cb[0] + cb[2] * 0.5, cb[1] + 14, '#a6dcff', 9);
+          // Center Beta 42-min console
+          box(ctx, R, archiveConsole);
+          const kb = boxRect(archiveConsole);
+          ctx.fillStyle = '#0c1620'; ctx.fillRect(kb[0] + 12, kb[1] + 12, kb[2] - 24, 34);
+          glow(ctx, kb[0] + kb[2] * 0.5, kb[1] + 28, 38, '#58b4ff', 0.25);
+          txt(ctx, 'BETA・42m', kb[0] + kb[2] * 0.5, kb[1] + 33, '#8fd4ff', 10);
+          // Right wall 24 numbered cells rack
+          poly(ctx, archiveCellsQuad, '#182028');
+          ctx.strokeStyle = '#4e687e'; ctx.lineWidth = 1.5; poly(ctx, archiveCellsQuad); ctx.stroke();
+          const rb = bounds(archiveCellsQuad);
+          for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 3; c++) {
+              const cx = rb[0] + 10 + c * ((rb[2] - 20) / 3);
+              const cy = rb[1] + 14 + r * ((rb[3] - 24) / 4);
+              const is24 = r === 3 && c === 2;
+              ctx.fillStyle = is24 ? 'rgba(92, 184, 255, 0.35)' : '#10161c';
+              ctx.fillRect(cx, cy, (rb[2] - 28) / 3, (rb[3] - 34) / 4);
+              ctx.strokeStyle = is24 ? '#7ac8ff' : '#324250';
+              ctx.strokeRect(cx, cy, (rb[2] - 28) / 3, (rb[3] - 34) / 4);
+            }
+          }
+          txt(ctx, '儲格 01-24', rb[0] + rb[2] * 0.5, rb[1] + 12, '#9ec0d8', 9);
+        },
+        hotspots: [
+          back('c1x_eye', '退回阿爾法之眼暗室'),
+          hit('branch_chart', bounds(archiveChartQuad, 8), 'K014 推演分支圖與紀錄', (g) => g.read('n_c1x_branches')),
+          hit('beta_console', boxRect(archiveConsole, 8), 'K014 觀測紀錄終端', (g) => {
+            const done = DREAMS.filter((d) => dreamDone(g.s, d.n)).length;
+            const interf = g.s.flags.c1x_interfere_count || 0;
+            const seen = g.s.flags.c1x_progenitor_seen ? '已目擊郊外談話' : '尚未前往西側郊外';
+            g.say(`螢幕閃出即時紀錄：「儲格 24 推演進度：已完成 ${done}/3 段入夢，干涉次數 ${interf}/3；郊外變數：${seen}。」`);
+          }),
+          hit('cell_rack', bounds(archiveCellsQuad, 8), '二十四號儲格陳列架', (g) => {
+            if (once(g, 'c1x_cells_seen')) {
+              g.sanity(-2);
+              return g.closeup('c1x_cells_cu', { msg: '一至二十三號儲格裡全放著封存完畢的紙卷。你湊近還沒封口的二十四號格——玻璃內側用極細的字跡寫著你剛走進草原時心裡閃過的第一句念頭。' });
+            }
+            g.closeup('c1x_cells_cu', { msg: '二十四號儲格仍亮著淡藍微光，等待最後一次入夢寫入收束結果。' });
           }),
         ],
       },
@@ -1525,8 +1832,8 @@ export const C1_SCENES = {
         },
         hotspots: [
           back('c1s_hull', '走出艦內長廊'),
-          hit('win_l', bounds(hallWinL, 8), '深藍舷窗', (g) => g.say(winHitMsg), 'look', { use: winToolUse }),
-          hit('win_r', bounds(hallWinR, 8), '右側深藍舷窗', (g) => g.say(winHitMsg), 'look', { use: winToolUse }),
+          hit('win_l', bounds(hallWinL, 8), '深藍舷窗', (g) => g.closeup('c1s_porthole', { msg: winHitMsg }), 'look', { use: winToolUse }),
+          hit('win_r', bounds(hallWinR, 8), '右側深藍舷窗', (g) => g.closeup('c1s_porthole', { msg: winHitMsg }), 'look', { use: winToolUse }),
           hit('door_sub0', bounds(hallDoor0, 8), '左牆插入的門框', (g) => {
             const t = subspaceTarget(g.s, 0);
             if (t) g.go(t);
@@ -1575,7 +1882,7 @@ export const C1_SCENES = {
         },
         hotspots: [
           back('c1s_hall', '退回艦內長廊'),
-          hit('trees', bounds(fogTrees, 8), '霧裡的林木與金屬頂棚', (g) => g.say('樹幹上結著船艙冷凝的水珠。這座森林只是硬生生插進走廊裡的外部空間碎片，看不見盡頭。')),
+          hit('trees', bounds(fogTrees, 8), '霧裡的林木與金屬頂棚', (g) => g.closeup('c1s_fog_trees', { msg: '樹幹上結著船艙冷凝的水珠。這座森林只是硬生生插進走廊裡的外部空間碎片，看不見盡頭。' })),
         ],
       },
 

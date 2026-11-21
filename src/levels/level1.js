@@ -5,6 +5,7 @@ import { pick } from '../rng.js';
 import { BACK, FORWARD, PAL, flickery } from './common.js';
 import { CHALK } from './level0.js';
 import { drawExitSign, drawPipes, gauge } from './level2.js';
+import { drawBag, drawBlanket } from './sublevel-kit.js';
 
 // ---------- LEVEL 1 ----------
 const l1Base = { floorTex: 'concrete', wallTex: 'concrete', baseboard: false, flick: flickery };
@@ -24,7 +25,7 @@ function drawArrivalTraces(ctx, t, s, R) {
     ctx.fillStyle = 'rgba(150,170,195,0.3)';
     for (let i = 0; i < 6; i++) { const p = P(-0.1 - i * 0.3 + (i % 2) * 0.12, 1, 1.9 + i * 0.12); ctx.beginPath(); ctx.ellipse(p[0], p[1], 9, 4, 0, 0, Math.PI * 2); ctx.fill(); }
     if (!f.l1_blanket) {
-      box(ctx, R, blanket);
+      drawBlanket(ctx, R, blanket);
       const tg = P(-1.95, 0.86, 2.4); ctx.fillStyle = shade(R, '#efe7cf', 2.4); ctx.fillRect(tg[0] - 8, tg[1] - 3, 16, 6);
     }
   }
@@ -412,8 +413,8 @@ export const LEVEL1_SCENES = {
         id: 'radio', rect: boxRect(radioBox, 10), label: '無線電', cursor: 'look',
         click: (g) => {
           g.sfx('static');
-          g.say('雜訊。然後是一個平板的聲音在念數字：「零、一、二、零。零、一、二、零。」念到第三遍的時候，換成了你的聲音。');
           if (!g.s.flags.radio) { g.flag('radio'); g.sanity(-4); }
+          g.closeup('l1_outpost_radio', { msg: '雜訊。然後是一個平板的聲音在念數字：「零、一、二、零。零、一、二、零。」念到第三遍的時候，換成了你的聲音。' });
         },
       },
       { id: 'log', rect: bounds(logQuad, 12), label: '值班日誌', cursor: 'look', click: (g) => g.read('n_log') },
@@ -458,7 +459,7 @@ export const LEVEL1_SCENES = {
       ctx.beginPath(); ctx.arc(f[0], f[1] - w * 1.65, w * 0.32, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = shade(R, '#c8a0b8', plantMan.z);
       for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(f[0] - w * 0.3 + i * w * 0.15, f[1] - w * 1.9 - (i % 2) * 5, 3, 0, Math.PI * 2); ctx.fill(); }
-      box(ctx, R, vineBag);
+      drawBag(ctx, R, vineBag, { stripe: '#98a880' });
       if (!s.flags.vines_cut) {
         for (let i = 0; i < 6; i++) seg(ctx, P(-1.25 + i * 0.1, 0.65, 2.5), P(-1.3 + i * 0.12, 1, 2.9), shade(R, '#3f6a32', 2.6), 3);
       }
@@ -468,8 +469,8 @@ export const LEVEL1_SCENES = {
       {
         id: 'man', rect: [P(plantMan.x, 1, plantMan.z)[0] - 40, P(plantMan.x, 1, plantMan.z)[1] - 110, 80, 115], label: '坐在藤蔓裡的人', cursor: 'look',
         click: (g) => {
-          g.say('一個人背靠著柱子坐著，藤蔓從他的袖口和領口長出來。他的嘴角掛著一朵小白花，胸口還在很慢、很慢地起伏。');
           if (!g.s.flags.plant_man) { g.flag('plant_man'); g.sanity(-6); }
+          g.closeup('l1_garden_man', { msg: '一個人背靠著柱子坐著，藤蔓從他的袖口和領口長出來。他的嘴角掛著一朵小白花，胸口還在很慢、很慢地起伏。' });
         },
       },
       {
@@ -539,7 +540,7 @@ export const LEVEL1_SCENES = {
         id: 'sheet', when: (s) => !s.flags.sheet, rect: boxRect(beds[0], 4), label: '床單底下的人形', cursor: 'look',
         click: (g) => {
           g.flag('sheet'); g.sanity(-6); g.sfx('sting');
-          g.say('你掀開床單。底下沒有人——只有一件外套，擺成一個人躺著的樣子。……和你身上穿的那件一模一樣，連扣子掉了的位置都一樣。');
+          g.closeup('l1_infirmary_sheet', { msg: '你掀開床單。底下沒有人——只有一件外套，擺成一個人躺著的樣子。……和你身上穿的那件一模一樣，連扣子掉了的位置都一樣。' });
         },
       },
       {
@@ -615,7 +616,7 @@ export const LEVEL1_SCENES = {
     hotspots: [
       BACK('l1_corridor2'),
       { id: 'workers', rect: [P(-0.9, 1, 4.6)[0] - 30, 170, 300, 150], label: '工人', cursor: 'look', click: (g) => g.say('你走近一個工人。他的工作服上縫著「後室重新裝修公司」。他沒有臉——不是被擋住，是那裡本來就什麼都沒有。他繼續砌牆。') },
-      { id: 'gap', rect: bounds(faceQuad(-0.2, 0.3, 0.2, 0.55, 5.49), 14), label: '磚縫', cursor: 'look', click: (g) => { g.say('磚牆最後一塊空缺後面，是黃色的壁紙。你聽見熟悉的嗡嗡聲。一個工人走過來，把最後一塊磚塞了進去。'); if (!g.s.flags.gap_seen) { g.flag('gap_seen'); g.sanity(-4); } } },
+      { id: 'gap', rect: bounds(faceQuad(-0.2, 0.3, 0.2, 0.55, 5.49), 14), label: '磚縫', cursor: 'look', click: (g) => { if (!g.s.flags.gap_seen) { g.flag('gap_seen'); g.sanity(-4); } g.closeup('l1_works_gap', { msg: '磚牆最後一塊空缺後面，是黃色的壁紙。你聽見熟悉的嗡嗡聲。一個工人走過來，把最後一塊磚塞了進去。' }); } },
       {
         id: 'shears', when: (s) => !s.flags.shears, rect: boxRect(cart, 8), label: '推車上的修枝剪', cursor: 'take',
         click: (g) => { g.flag('shears'); g.give('shears', '推車上放著一把修枝剪。你拿走它的時候，所有的敲打聲同時停了一拍。'); },

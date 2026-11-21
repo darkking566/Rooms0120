@@ -59,6 +59,14 @@ export const ITEMS = {
         g.flag('c1s_plague', false);
         return g.say('你喝下杏仁水。冰甜的液體順著喉嚨下去，原本燒得發昏的高熱與疫疾慢慢退開了。');
       }
+      if (g.s.scene.startsWith('l001_')) {
+        g.flag('l001_calmed');
+        return g.say('你喝下杏仁水。微甜的液體暫時壓住了日光燈的嗡鳴與悶熱，被剝奪的五感慢慢清晰起來。');
+      }
+      if (g.s.scene.startsWith('dull_')) {
+        g.sanity(-25);
+        return g.say('你喝下杏仁水。喉嚨雖然潤了一點，但「黯室」裡死寂引發的幻覺毫無減退——杏仁水對這裡沒有用。');
+      }
       g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。');
     },
   },
@@ -67,6 +75,14 @@ export const ITEMS = {
     self: (g) => {
       g.take('almond_wet'); g.sanity(-12); g.drink(-10); g.sfx('drink');
       g.say('又鹹又苦，還帶著一股藥水味——這根本不是杏仁水，是從地毯裡滲進去的東西。喝完反而更渴了。');
+    },
+  },
+  cashew: {
+    name: '腰果水', desc: '標籤磨掉了一半，只剩「…ASHEW」。這一層的水，喝下去才知道是什麼。',
+    self: (g) => {
+      g.take('cashew'); g.drink(15); g.sfx('drink');
+      g.sanity(-15);
+      g.say('你喝下去。味道又甜又苦，喉嚨像被砂紙磨過。這不是杏仁水。胃在往上翻，腦袋裡嗡嗡作響。');
     },
   },
   bar: {
@@ -110,6 +126,7 @@ export const ITEMS = {
   recorder: { name: '錄音筆', desc: '三方聯合哨站發給訪客的小型錄音筆。在 ACMA 收容室或現場或許用得上。' },
   recorder2: { name: '備用錄音筆', desc: '從三合研究院領出的第二支錄音筆，外殼還貼著檢修標籤。' },
   dragon_scale: { name: '龍鱗', desc: '深黑泛紅的堅硬鱗片，握在手心像剛熄滅的煤炭一樣隱隱發燙。' },
+  extinguisher: { name: '乾粉滅火器', desc: '在 Level 0.1「險區」雜物隔間撿到的乾粉滅火器，能暫時壓制驟燃區的局部火勢。' },
 };
 
 export function drawIcon(ctx, id, s = 56) {
@@ -297,6 +314,17 @@ export function drawIcon(ctx, id, s = 56) {
       ctx.strokeStyle = '#b43b2a'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#732124';
       ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(5, 6); ctx.lineTo(0, 12); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+      break;
+    case 'extinguisher':
+      ctx.fillStyle = '#c4281c';
+      ctx.beginPath(); ctx.roundRect(-10, -10, 20, 30, 5); ctx.fill();
+      ctx.fillStyle = '#e8e2d0';
+      ctx.fillRect(-8, -2, 16, 10);
+      ctx.fillStyle = '#222428';
+      ctx.fillRect(-4, -18, 8, 8);
+      ctx.fillRect(4, -17, 10, 4);
+      ctx.strokeStyle = '#1a1c20'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-4, -14); ctx.quadraticCurveTo(-16, -12, -14, 6); ctx.stroke();
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);

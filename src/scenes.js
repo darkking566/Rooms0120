@@ -14,6 +14,12 @@ export { smilerRect, drawSmilers } from './levels/common.js';
 export const LEVELS = {
   // drain: sanity per step; thirst / hunger: how fast water and food run out per step
   0: { name: 'LEVEL 0', sub: '門檻', drain: 1, thirst: 1.5, hunger: 1 },
+  '0-blackout': { name: 'BLACKOUT ZONE', sub: '停電區', drain: 1.2, thirst: 1.5, hunger: 1, noCheckpoint: true },
+  '0-red': { name: 'RED ROOMS', sub: '紅房間', drain: 1.5, thirst: 1.8, hunger: 1.2, noCheckpoint: true },
+  '0-torment': { name: 'THE TORMENT', sub: '痛楚', drain: 1.8, thirst: 1.5, hunger: 1, noCheckpoint: true },
+  '0-arches': { name: 'THE ARCHES', sub: '拱門回廊', drain: 0.5, thirst: 1.2, hunger: 1 },
+  '0-holes': { name: 'THE HOLES', sub: '坑洞區', drain: 1.4, thirst: 1.6, hunger: 1, noCheckpoint: true },
+  '0-ceiling': { name: 'CRAWLSPACE', sub: '天花板夾層', drain: 0.8, thirst: 1.3, hunger: 1 },
   1: { name: 'LEVEL 1', sub: '宜居地帶', drain: 1.5, thirst: 2, hunger: 1.2 },
   2: { name: 'LEVEL 2', sub: '廢棄維修通道', drain: 2, thirst: 2.5, hunger: 1.5 },
   0.2: { name: 'LEVEL 0.2', sub: '重新裝修的爛攤子', drain: 1, thirst: 1.5, hunger: 1 },

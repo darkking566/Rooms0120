@@ -37,6 +37,14 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
     await page.waitForTimeout(120);
   }
   const closeDoc = async () => { await page.click('#docClose'); };
+  const closeCloseup = async (expected = null) => {
+    const cu = await page.evaluate(() => window.__rooms.closeup);
+    if (expected) check(cu === expected, `close-up "${expected}" opened`);
+    if (cu) {
+      await hit('closeup_back');
+      await until(() => !window.__rooms.closeup);
+    }
+  };
   // wait for game state instead of sleeping for a fixed time
   const until = (fn, arg, timeout = 20000) => page.waitForFunction(fn, arg, { timeout, polling: 50 }).then(() => true, () => false);
   const waitScene = (id) => until((i) => window.__rooms.state.scene === i && !window.__rooms.scaring && !window.__rooms.ended, id);
@@ -107,11 +115,13 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await shot('08-l0_manila');
   for (let i = 0; i < 5; i++) await hit('jh');
   check((await flags()).met_jh && await has('almond'), 'talked to the figure in the Manila Room and got clean almond water');
+  await closeCloseup('l0_manila_jh');
   await hit('note'); await closeDoc();
   await hit('back'); check(await scene() === 'l0_low', 'leaving the Manila Room puts you back in the low room');
   await hit('back'); await hit('forward'); check(await scene() === 'l0_hall', 'hallway'); await shot('09-l0_hall');
   await hit('wetroom'); check(await scene() === 'l0_wet', 'soaked room off the hallway'); await shot('10-l0_wet');
   await hit('tile'); check(!(await has('camcorder')), 'sagging ceiling tile is out of reach by hand');
+  await closeCloseup('l0_wet_tile');
   await hit('note'); await closeDoc();
   await slot('rod'); await hit('tile');
   check(await has('camcorder') && await has('rod'), 'poking the tile with the rod drops the camcorder (the rod is kept)');
@@ -146,7 +156,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await slot('key'); await hit('door'); await hit('door'); check(await scene() === 'l0_archive', 'the key opens the archive behind the arches');
   await shot('17-l0_archive');
   await hit('drawers'); await closeDoc(); await hit('card'); await closeDoc();
-  await hit('drawer0120'); await hit('chalk'); check(await has('chalk'), 'took the chalk from the archive desk');
+  await hit('drawer0120'); await closeCloseup('l0_drawer0120'); await hit('chalk'); check(await has('chalk'), 'took the chalk from the archive desk');
   await hit('back'); await hit('back'); await hit('back'); await hit('back');
   await slot('chalk'); await hit('note'); check((await flags()).wrote_start, 'wrote on the wall next to the first note');
   await hit('forward');
@@ -175,7 +185,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   { await page.evaluate(() => { window.__rooms.state.thirst = 40; });
     await slot('almond'); await slot('almond');
     check(await page.evaluate(() => window.__rooms.state.thirst) > 40, 'almond water restores 水分'); }
-  await hit('tally'); await hit('locker'); check(await page.isVisible('#keypad'), 'locker keypad opens');
+  await hit('tally'); await closeCloseup('l0_tally'); await hit('locker'); check(await page.isVisible('#keypad'), 'locker keypad opens');
   for (const k of ['1', '2', 'ok']) await page.click(`#kpKeys button[data-k="${k}"]`);
   check(!(await has('tape')), 'the naked-eye tally count (12) is wrong');
   for (const k of ['2', '3', 'ok']) await page.click(`#kpKeys button[data-k="${k}"]`);
@@ -238,7 +248,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await light(), 'flashlight is on');
   await hit('back'); await hit('forward'); check(await scene() === 'l1_corridor2', 'deeper into the corridors'); await shot('28-l1_corridor2');
   await hit('infirmary'); check(await scene() === 'l1_infirmary', 'infirmary'); await shot('29-l1_infirmary');
-  await hit('sheet'); await hit('chart'); await closeDoc();
+  await hit('sheet'); await closeCloseup('l1_infirmary_sheet'); await hit('chart'); await closeDoc();
   await hit('cabinet'); check(await has('pills'), 'found sedatives in the medicine cabinet');
   { const s0 = await sanity(); await slot('pills'); await slot('pills'); check(await sanity() > s0 || s0 === 100, 'a sedative restores sanity'); }
   await hit('back'); await hit('padded'); check(await scene() === 'l1_padded', 'the padded room; the door slams behind you'); await shot('30-l1_padded');
@@ -249,7 +259,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   await hit('latch'); check(await scene() === 'l1_corridor2', 'the viewfinder shows the hidden latch and lets you out');
   await page.click('#btnView');
   await hit('forward'); check(await scene() === 'l1_works', 'the construction sector at the end of the corridors'); await shot('31-l1_works');
-  await hit('clip'); await closeDoc(); await hit('gap');
+  await hit('clip'); await closeDoc(); await hit('gap'); await closeCloseup('l1_works_gap');
   await hit('shears'); check(await has('shears'), 'took the shears from the workers\' cart');
   await hit('back'); await hit('back'); await hit('back'); await hit('back');
   check(await scene() === 'l1_arrive', 'back at the warehouse entrance');
@@ -259,11 +269,11 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await page.evaluate(() => window.__rooms.state.fogNav.step) === 0, 'walking away from the red light brings you back to the start');
   for (let i = 0; i < 3; i++) await hit('fog_' + await fogDir());
   check(await scene() === 'l1_outpost', 'following the red light leads to the M.E.G. outpost'); await shot('33-l1_outpost');
-  await hit('log'); await closeDoc(); await hit('map'); await closeDoc(); await hit('radio');
+  await hit('log'); await closeDoc(); await hit('map'); await closeDoc(); await hit('radio'); await closeCloseup('l1_outpost_radio');
   await hit('cage'); await slot('outpost_key'); await hit('cage'); await hit('cage');
   check(await has('valve'), 'the outpost key opens the supply cage with the valve handle');
   await hit('garden'); await hit('garden'); check(await scene() === 'l1_garden', 'pried open the sealed door into the Garden'); await shot('34-l1_garden');
-  await hit('man'); await hit('bag'); check(!(await has('photo')), 'the bag is held fast by the vines');
+  await hit('man'); await closeCloseup('l1_garden_man'); await hit('bag'); check(!(await has('photo')), 'the bag is held fast by the vines');
   await slot('shears'); await hit('bag'); await hit('bag');
   check(await has('photo'), 'cut the vines with the shears and took the bag');
   await hit('back'); await hit('back'); await hit('back');
@@ -302,7 +312,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await sanity() > before || before === 100, 'drinking almond water restores sanity');
   await hit('camp'); check(await scene() === 'l2_camp', 'the cream steel door opens on an abandoned newcomer camp');
   await shot('38b-l2_camp');
-  await hit('register'); await closeDoc(); await hit('board');
+  await hit('register'); await closeDoc(); await hit('board'); await closeCloseup('l2_camp_board');
   await hit('toolbox'); check(await has('wrench'), 'found the wrench in the toolbox');
   await hit('barrel'); await hit('bunk');
   check((await flags()).l2_rested, 'resting on the bunk records a checkpoint');
@@ -347,7 +357,7 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
   check(await scene() === 'l2_rail', 'approaching the window scares you back');
   await hit('forward'); await hit('door'); check(await scene() === 'l2_monitor', 'the monitor room');
   await shot('39f-l2_monitor');
-  await hit('screens'); await hit('terminal');
+  await hit('screens'); await closeCloseup('l2_monitor_screens'); await hit('terminal');
   check(await page.evaluate(() => window.__rooms.hotspots().some((h) => h.id === 'rec_name')), 'the terminal asks for one line');
   await shot('39g-l2_terminal');
   await hit('rec_name'); check((await flags()).rec === 'name', 'after tape #5 you can write your own name');
@@ -393,17 +403,44 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
     check(s1 > s0 && await sanity() === s1, 'sitting at the table restores sanity, once'); }
   await hit('table'); check(await docOpen(), 'the papers on the table can be read'); await closeDoc();
 
-  await page.evaluate(() => { const st = window.__rooms.state; st.sanity = 100; st.flags.red_x = 0; window.__rooms.g.go('l0_red', { free: true }); });
+  await page.evaluate(() => { const st = window.__rooms.state; st.sanity = 100; st.flags.red_x = 0; st.flags.red_anchored = false; window.__rooms.g.go('l0_red', { free: true }); });
+  check(await page.textContent('#lvlName') === 'RED ROOMS', 'Red Rooms displays its own level name in HUD');
   await hit('forward'); check(await scene() === 'l0_red_hall', 'went deeper into the Red Rooms');
   await shot('45-l0_red_hall');
   await hit('pack'); check(await docOpen(), "the agent's log is in the pack"); await closeDoc();
   check(await has('knife'), 'took the knife from the pack');
   await slot('knife'); await hit('shroom'); check(await fl('red_shroom_cut'), 'the knife cuts open the cyst in the hall');
+  await hit('radio_room'); check(await scene() === 'l0_red_radio', 'entered the Red Rooms relay alcove');
+  await hit('transcript'); check(await docOpen(), 'read lost M.E.G. squad transcript'); await closeDoc();
+  await hit('relay'); await closeCloseup('l0_red_relay'); check(await fl('red_anchored') && await fl('red_x') === 0, 'calibrating the relay resets Red Rooms pressure once');
+  await hit('back'); check(await scene() === 'l0_red_hall', 'returned to red hall from relay alcove');
+  await hit('nest_room'); check(await scene() === 'l0_red_nest', 'entered the crimson spore nest');
+  await slot('knife'); await hit('wall_crate'); check(await docOpen() && await fl('red_nest_cut'), 'knife cuts open the embedded supply crate in the nest'); await closeDoc();
+  await hit('back');
+  await page.evaluate(() => { window.__rooms.state.flags.red_x = 1; });
   await hit('forward'); check(await scene() === 'l0_red_core', 'reached the end of the Red Rooms');
   await slot('knife'); await hit('cyst'); check(await docOpen(), 'the knife opens the cyst in the flesh wall'); await closeDoc();
   check(await page.evaluate(() => window.__rooms.state.flags.red_x) === 2, 'every step deeper counts against you');
   await hit('back'); await hit('back'); await hit('back');
   check(await scene() === 'l0_loop' && await fl('red_x') === 0, 'running straight back out still gets you out of the Red Rooms');
+
+  // Blackout Zone deep wing (5-room level)
+  await page.evaluate(() => { const g = window.__rooms.g; g.s.sanity = 100; g.s.bo = { step: 0, dir: 'ahead' }; g.go('l0_blackout', { free: true }); });
+  check(await page.textContent('#lvlName') === 'BLACKOUT ZONE', 'Blackout Zone displays its own level name in HUD');
+  await hit('substation'); check(await scene() === 'l0_bo_substation', 'entered Blackout Zone substation');
+  await hit('log'); check(await docOpen(), 'read substation breaker log'); await closeDoc();
+  await hit('breaker_emer'); await hit('breaker_cut');
+  check(await fl('bo_emer') && await fl('bo_cut'), 'toggled emergency red lamps and cut wet-hall power');
+  await hit('forward'); check(await scene() === 'l0_bo_floodhall', 'crossed into flooded cable hall safely after power cut');
+  await hit('pouch'); check(await fl('bo_pouch'), 'took waterproof almond water pouch');
+  await hit('locker'); check(await scene() === 'l0_bo_locker', 'entered blackout duty room');
+  await hit('desk_note'); check(await docOpen(), 'read duty room log'); await closeDoc();
+  await hit('drawer'); await hit('intercom'); await closeCloseup('bo_intercom');
+  check(await fl('bo_bar') && await fl('bo_intercom'), 'looted duty room drawer and triggered intercom');
+  await hit('back'); await hit('forward'); check(await scene() === 'l0_bo_pit', 'reached the blind shaft');
+  await hit('pit_note'); check(await docOpen(), 'read blind shaft note'); await closeDoc();
+  await hit('manila_door'); check(await scene() === 'l0_manila', 'blind shaft door opens an alternate route into the Manila Room');
+
   await page.evaluate(() => { window.__rooms.state.flags.red_x = 3; window.__rooms.g.go('l0_red_hall', { free: true }); });
   { const t0 = Date.now(); check(await endingIs('red') && Date.now() - t0 < 6000, 'after walking back and forth, the Red Rooms keep you within seconds'); }
 
@@ -420,13 +457,47 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
     check(a[0] + a[2] <= b[0] || b[0] + b[2] <= a[0] || a[1] + a[3] <= b[1] || b[1] + b[3] <= a[1], 'the grey doorway does not cover the flickering wall'); }
   await shot('46-l0_loop-torment');
   await hit('torment'); check(await scene() === 'l0_torment', 'reached the edge of the Torment');
+  check(await page.textContent('#lvlName') === 'THE TORMENT', 'The Torment displays its own level name in HUD');
   await shot('47-l0_torment');
   await hit('evp'); check(await has('tape6'), "took tape #6 out of M.E.G.'s recorder at the edge");
   await slot('tape6'); await slot('camcorder'); check(await docOpen(), 'tape #6 plays on the camcorder'); await closeDoc();
+  // Explore deeper Torment boundary path (4-room level)
+  if (!(await has('rod'))) await page.evaluate(() => window.__rooms.g.give('rod'));
+  await hit('edge_path'); check(await scene() === 'l0_tor_ring', 'walked along the un-ashed boundary to outer grave ring');
+  await hit('grave'); check(await docOpen(), 'read outer grave rubbing'); await closeDoc();
+  await hit('kettle'); check(await fl('tor_kettle'), 'touching half-ashed kettle crumbles it');
+  await hit('forward'); check(await scene() === 'l0_tor_tree', 'reached the dead-tree fringe');
+  await hit('meg_board'); check(await docOpen(), 'read M.E.G. Torment observation board'); await closeDoc();
+  await slot('rod'); await hit('leaf_bottle'); check(await fl('tor_bottle'), 'hooked un-ashed almond water out of screaming leaves with rod');
+  await hit('forward'); check(await scene() === 'l0_tor_statue', 'reached the still moon statue vantage');
+  await hit('inspect_moon'); await closeCloseup('l0_tor_statue_cu');
+  await hit('statue_plaque'); check(await docOpen(), 'read distant statue pedestal inscription'); await closeDoc();
+  await hit('back'); await hit('back'); await hit('back');
+  check(await scene() === 'l0_torment', 'retreated along the Torment boundary to entry');
   await hit('back');
   for (const n of [7, 9]) { await hit('forward'); await hit('forward'); check((await ids()).includes('torment'), `the grey doorway is still there on loop ${n}`); }
   await hit('forward'); await hit('forward');
   check(!(await ids()).includes('torment') && await fl('torment_gone'), 'then the Torment is gone for good');
+
+  // The Arches & Archive deep wing (6-room level)
+  await page.evaluate(() => { const g = window.__rooms.g; g.s.sanity = 70; g.flag('archive_open', true); g.go('l0_arches', { free: true }); });
+  check(await page.textContent('#lvlName') === 'THE ARCHES', 'The Arches displays its own level name in HUD');
+  await hit('arch'); check(await scene() === 'l0_arch_cloister', 'entered the endless pale cloister');
+  await hit('sketch'); check(await docOpen(), 'read architectural sketch in cloister'); await closeDoc();
+  await hit('echo'); check(await fl('arch_echo'), 'clapping in the cloister tests room acoustics');
+  await hit('pool_arch'); check(await scene() === 'l0_arch_pool', 'entered the vaulted shallow pool');
+  await hit('pool_note'); check(await docOpen(), 'read note by the vaulted pool'); await closeDoc();
+  await hit('rack'); await hit('pool'); await closeCloseup('l0_arch_pool_cu');
+  check(await fl('arch_pool_water') && await fl('arch_pool_calm'), 'took clean water and calmed down at the pool');
+  await hit('back'); await hit('cat_arch'); check(await scene() === 'l0_arch_catalog', 'entered the catalog antechamber');
+  await hit('index_cards'); check(await docOpen(), 'read index card fragments 0117-0121'); await closeDoc();
+  await hit('glass_win');
+  await hit('back'); await hit('back'); check(await scene() === 'l0_arches', 'returned to main arches hall');
+  await hit('door'); check(await scene() === 'l0_archive', 'entered archive from arches');
+  await hit('vault'); check(await scene() === 'l0_arch_vault', 'entered film vault behind archive mesh gate');
+  await hit('shelves'); await hit('rewinder'); check(await docOpen() && await fl('vault_rewound'), 'rewinder dispenses 0120 inventory sheet'); await closeDoc();
+  await hit('back'); check(await scene() === 'l0_archive', 'returned to archive from film vault');
+
   await page.evaluate(() => window.__rooms.g.go('l0_torment', { free: true }));
   await hit('fog'); check(!(await page.isVisible('#ending')) && await fl('torment_touched'), 'touching the grey costs you, but you can still pull back');
   await hit('fog'); check(await endingIs('torment'), 'walking into the grey gives the Torment ending');
@@ -442,6 +513,50 @@ const check = (cond, msg) => { if (!cond) { failures++; console.error(`  ✗ ${m
 
   console.log('Holes ending');
   await page.click('#btnRetry'); await started();
+  await page.evaluate(() => { const r = window.__rooms; if (!r.state.inv.includes('rod')) r.g.give('rod'); r.state.holes = { row: 3, pits: [false, false, false] }; r.g.go('l0_holes', { free: true }); });
+  check(await page.textContent('#lvlName') === 'THE HOLES', 'The Holes displays its own level name in HUD');
+  // Explore reworked Pitfalls wing (6-room vertical level)
+  await page.evaluate(() => { const r = window.__rooms; if (!r.state.inv.includes('camcorder')) r.g.give('camcorder'); r.state.holes = { row: 0, pits: [true, false, false] }; r.g.go('l0_holes', { free: true }); });
+  await hit('peek_pit'); await closeCloseup('l0_pit_edge');
+  await page.evaluate(() => { const r = window.__rooms; r.state.holes = { row: 3, pits: [false, false, false] }; r.g.go('l0_holes', { free: true }); });
+  await hit('catwalk'); check(await scene() === 'l0_hole_ledge', 'entered narrow wall ledge past the holes');
+  await hit('rope'); check(await docOpen(), 'read depth-sounding rope note'); await closeDoc();
+  await hit('caution_cone');
+  await slot('rod'); await hit('winch'); check(await fl('hole_winch_unlocked'), 'rod pries open the rusted pitfall winch');
+  await hit('descend'); check(await scene() === 'l0_hole_shaft', 'rappelled down winch cable into vertical shaft alcove');
+  await hit('look_up'); await closeCloseup('l0_pit_shaft');
+  await hit('shaft_intercom'); check(await docOpen(), 'listened to pitfall shaft distress intercom'); await closeDoc();
+  await hit('hatch'); check(await scene() === 'l0_hole_pitroom', 'crawled into the uncanny fake suburban street at pit bottom');
+  await hit('fake_house'); await closeCloseup('l0_pit_facade');
+  await hit('streetlamp'); check(await docOpen(), 'read Marvin warning taped to pit bottom streetlamp'); await closeDoc();
+  await hit('porch_box'); check(await fl('hole_pit_loot'), 'looted fake porch utility box');
+  if (!(await view())) await page.click('#btnView');
+  await hit('pit_grate'); check(await scene() === 'l0_hole_nest', 'hidden 0120 drainage grate climbs straight to supply island');
+  await page.click('#btnView');
+  await hit('depth_gauge'); await closeCloseup('l0_pit_map');
+  await hit('floodlight'); check(await fl('hole_beacon_on'), 'switched on supply island floodlight');
+  await hit('back'); check(await scene() === 'l0_hole_bridge', 'stepped back onto twin steel beam bridge');
+  await hit('abyss_look'); await closeCloseup('l0_pit_edge');
+  await slot('rod'); await hit('beam_left'); check(await fl('hole_beam_tested'), 'probed rusted left beam with rod');
+  await hit('beam_right'); check(await scene() === 'l0_hole_nest', 'crossed solid right steel beam to supply island');
+  await hit('tin_box'); check(await docOpen() && await fl('hole_nest_loot'), 'looted waterproof tin box on the island'); await closeDoc();
+  await hit('ladder_up'); check(await scene() === 'l0_stairs', 'maintenance ladder climbs straight back to stairwell');
+
+  // Explore deeper Ceiling Crawlspace wing (5-room level)
+  await page.evaluate(() => { const r = window.__rooms; if (!r.state.inv.includes('screwdriver')) r.g.give('screwdriver'); if (!r.state.inv.includes('camcorder')) r.g.give('camcorder'); r.g.go('l0_ceiling2', { free: true }); });
+  check(await page.textContent('#lvlName') === 'CRAWLSPACE', 'Ceiling Crawlspace displays its own level name in HUD');
+  await hit('forward'); check(await scene() === 'l0_ceil_pipes', 'crawled into hot pipeway');
+  await slot('screwdriver'); await hit('hatch'); check(await docOpen() && await fl('ceil_hatch_open'), 'unscrewed pipeway inspection hatch'); await closeDoc();
+  await hit('forward'); check(await scene() === 'l0_ceil_overlook', 'reached overlook gap above yellow halls');
+  await hit('peek_note'); check(await docOpen(), 'read trembling note beside ceiling gap'); await closeDoc();
+  if (!(await view())) await page.click('#btnView');
+  await hit('peek'); await closeCloseup('l0_ceil_peek_cu'); check(await fl('ceil_peeked'), 'peeking through viewfinder spots yourself below');
+  await page.click('#btnView');
+  await hit('forward'); check(await scene() === 'l0_ceil_cache', 'reached J.H. high beam cache');
+  await hit('jh_note'); check(await docOpen(), 'read J.H. high beam note'); await closeDoc();
+  await hit('jh_box'); check(await fl('ceil_jh_box'), 'took clean almond water from chalk-circled tin');
+  await hit('drop_pillar'); check(await scene() === 'l0_pillar', 'loose panel drops directly back to pillar room');
+
   await page.evaluate(() => { const r = window.__rooms; r.state.holes = { row: 3, pits: [false, false, false] }; r.g.go('l0_holes', { free: true }); });
   await hit('passage'); check(await scene() === 'l0_blackout', 'a passage beyond the holes leads into the Blackout Zone');
   await page.evaluate(() => { const r = window.__rooms; r.g.give('ladder'); r.state.holes = { row: 0, pits: [true, true, false] }; r.g.go('l0_holes', { free: true }); });

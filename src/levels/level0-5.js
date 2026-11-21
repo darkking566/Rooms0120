@@ -118,7 +118,24 @@ const beds = [
   { x1: -1.5, x2: -0.8, y1: 0.5, y2: 0.7, z1: 3.8, z2: 5.0, color: '#a49f86', top: '#b5ae8e', edge: true },
 ];
 const medCart = { x1: 0.85, x2: 1.35, y1: 0.35, y2: 1, z1: 4.0, z2: 4.5, color: '#9aa39c', top: '#b9c2bb', edge: true };
-const corridorR = room(ward, { hw: 1.2, depth: 8, wallTex: 'concrete', floorTex: 'concrete', lights: [2.2, 5], flick: wardFlick, flickerLights: [0] });
+const corridorR = room(ward, {
+  hw: 1.2, depth: 8, wallTex: 'concrete', floorTex: 'concrete', lights: [2.2, 5], flick: wardFlick, flickerLights: [0],
+  openings: [{ side: -1, z1: 1.7, z2: 2.7, top: -0.55 }],
+});
+const nurseDoor = wallQuad(-1.2, -0.55, 1, 1.7, 2.7);
+const nurseR = room(ward, {
+  hw: 1.45, depth: 6, wallTex: 'concrete', floorTex: 'concrete', lights: [2.0, 4.4], flick: wardFlick,
+  openings: [{ side: 1, z1: 2.6, z2: 3.7, top: -0.55 }],
+});
+const nurseDesk = { x1: -1.42, x2: -0.52, y1: 0.42, y2: 1, z1: 2.2, z2: 3.3, color: '#6b7268', top: '#838c80', edge: true };
+const nurseBoard = wallQuad(-1.45, -0.45, 0.12, 2.3, 3.3);
+const therapyDoor = wallQuad(1.45, -0.55, 1, 2.6, 3.7);
+const therapyR = room(pal('#6f857e', '#3a4642', '#2a332e', '#080e0c', '#a8d8d0'), { hw: 1.6, depth: 6.5, wallTex: 'concrete', floorTex: 'concrete', lights: [2.0, 4.5] });
+const therapyLocker = { x1: -1.55, x2: -1.05, y1: -0.25, y2: 1, z1: 2.1, z2: 2.8, color: '#62706b', top: '#7a8a84', edge: true };
+const therapyNoteQ = wallQuad(1.6, -0.25, 0.15, 2.0, 2.6);
+const morgueR = room(pal('#646b68', '#333836', '#282c2a', '#060807', '#b8cfc8'), { hw: 1.5, depth: 6, wallTex: 'concrete', floorTex: 'concrete', lights: [2.0, 4.2] });
+const morgueDrawer = wallQuad(-1.5, -0.25, 0.35, 2.1, 3.3);
+const morgueTable = { x1: 0.35, x2: 1.25, y1: 0.46, y2: 1, z1: 2.4, z2: 3.4, color: '#78807c', top: '#949e99', edge: true };
 const stairsR = room(ward, { hw: 1.2, depth: 5, lights: [2.2], wallTex: 'concrete' });
 
 function bottleIcon(ctx, x, y) {
@@ -279,6 +296,7 @@ export const L05_SCENES = {
     },
     hotspots: [
       back('l05_ward', '回到病房'),
+      hit('nurse', bounds(nurseDoor, 4), '左側廢棄護理站', (g) => { chaseStep(g); g.go('l05_nurse'); }, 'go'),
       hit('rubble', [500, 200, 160, 230], '瓦礫堆', (g) => g.say('混凝土塊、扭彎的鐵架、一隻鞋。味道是從瓦礫底下傳出來的。你沒有去翻。')),
       hit('forward', [370, 200, 120, 150], '從瓦礫的窄縫鑽過去', (g) => {
         const f = g.s.flags;
@@ -289,6 +307,111 @@ export const L05_SCENES = {
         }
         g.go('l05_stairs', { msg: '你沿著走廊走了很久。牆上的油漆換了顏色，門牌上的字變得陌生——醫院好像在不知不覺間變成了別的地方。然後你看見了樓梯。' });
       }, 'go'),
+    ],
+  },
+
+  l05_nurse: {
+    level: '0.5', title: '廢棄護理站', room: nurseR, hazard: huntLabel, update: huntTick,
+    viewMsg: '觀景窗裡，病房呼叫板亮著一個永遠熄不掉的紅燈：「床號 0120」。',
+    enter(g, { first }) {
+      chaseStep(g);
+      if (first) g.say('走廊側邊的廢棄護理站。值班台堆滿發霉病歷，呼叫燈板偶爾閃一下紅光。右邊通往水療復健室，正前方是太平間。');
+    },
+    draw(ctx, t, s, R) {
+      box(ctx, R, nurseDesk);
+      poly(ctx, nurseBoard, '#18201c');
+      const nb = bounds(nurseBoard);
+      ctx.fillStyle = (t * 2.2 | 0) % 2 ? '#e04838' : '#5a1e18';
+      ctx.fillRect(nb[0] + 10, nb[1] + 16, 8, 8);
+      poly(ctx, therapyDoor, '#121c18');
+      txt(ctx, '水療室', P(1.45, -0.66, 3.1)[0] - 8, P(1.45, -0.66, 3.1)[1], '#a6bfb2', 11);
+      poly(ctx, faceQuad(-0.42, -0.58, 0.42, 1, 5.99), '#101412');
+      txt(ctx, '太平間', 480, P(0, -0.68, 5.99)[1], '#9fb2a8', 11);
+      drawChaser(ctx, s, t);
+    },
+    hotspots: [
+      back('l05_corridor', '回到醫院走廊'),
+      hit('chart_book', boxRect(nurseDesk, 8), '值班台上的病歷總表', (g) => g.read('n05_nurse')),
+      hit('call_board', bounds(nurseBoard, 6), '閃爍的病房呼叫板', (g) => {
+        g.sfx('beep');
+        if (g.s.flags.l05_hunted && !g.s.flags.l05_dissolved) {
+          g.s.flags.l05_pursuit = (g.s.flags.l05_pursuit || 0) + 3;
+          return g.say('刺耳的呼叫鈴在空蕩醫院裡炸開——背後的咕嚕聲立刻加快了！快往右邊水療池或退回積水！');
+        }
+        g.say('呼叫燈板上只有「0120」那格紅燈在亮。按下去，遠處病房傳來一聲微弱的鈴響。');
+      }),
+      hit('therapy', bounds(therapyDoor, 4), '右側水療復健室', (g) => { chaseStep(g); g.go('l05_therapy'); }, 'go'),
+      hit('morgue', bounds(faceQuad(-0.42, -0.58, 0.42, 1, 5.99), 10), '前方積水太平間', (g) => { chaseStep(g); g.go('l05_morgue'); }, 'go'),
+    ],
+  },
+
+  l05_therapy: {
+    level: '0.5', title: '水療復健室', room: therapyR, hazard: huntLabel, update: huntTick,
+    viewMsg: '觀景窗裡，水療池裡的褐色油汙正微微起泡，跟入口走廊的水完全連通。',
+    enter(g, { first }) {
+      if (g.s.flags.l05_hunted && !g.s.flags.l05_dissolved) {
+        dissolve(g);
+        return g.say('你衝進水療復健室，沿著池邊跨進深水！溺屍撲上來的瞬間栽進褐色水療池，發出一聲尖叫化成一灘濃稠的糊。你得救了！');
+      }
+      if (first) g.say('青白磁磚貼成的復健水療室，中央大池灌滿跟入口一樣的褐色油汙。左牆靠著生鏽儲物櫃，右牆貼著一張泡濕的紀錄。');
+    },
+    draw(ctx, t, s, R) {
+      water(ctx, R, t, 0.65, 1.35, 6.2);
+      box(ctx, R, therapyLocker);
+      paper(ctx, R, therapyNoteQ, 2.3, '#d4d8c8');
+    },
+    hotspots: [
+      back('l05_nurse', '回到廢棄護理站'),
+      hit('therapy_note', bounds(therapyNoteQ, 8), '牆上的濕透紀錄', (g) => g.read('n05_therapy')),
+      hit('therapy_locker', boxRect(therapyLocker, 8), '池邊生鏽儲物櫃', (g) => {
+        if (!once(g, 'l05_therapy_bar')) return g.say('儲物櫃裡只剩發霉的浴巾。');
+        g.give('bar', '你在儲物櫃頂層摸出一條沒受潮的能量棒。');
+      }, 'take'),
+      hit('pool_edge', [320, 355, 320, 75], '灌滿褐水的水療池', (g) => g.say('池裡灌滿跟入口一樣的溫熱褐水。要是被那東西追上，衝進這間房就能靠這池水溶掉它。')),
+    ],
+  },
+
+  l05_morgue: {
+    level: '0.5', title: '積水太平間', room: morgueR, hazard: huntLabel, update: huntTick,
+    viewMsg: '觀景窗裡，那個半拉開的 0120 冷凍抽屜裡，印著一雙濕漉漉的蒼白手印。',
+    enter(g, { first }) {
+      chaseStep(g);
+      if (first) g.say('冰冷陰森的太平間。左牆是一整排生鏽冷凍抽屜，其中寫著「0120」的那格微微拉開著；右側不鏽鋼台上擺著檢屍簿。');
+    },
+    draw(ctx, t, s, R) {
+      poly(ctx, morgueDrawer, '#3d4542');
+      const db = bounds(morgueDrawer);
+      ctx.strokeStyle = '#7c8a85'; ctx.lineWidth = 2; ctx.strokeRect(db[0], db[1], db[2], db[3]);
+      txt(ctx, '0120', db[0] + db[2] / 2, db[1] + 24, '#d8e4dc', 11);
+      box(ctx, R, morgueTable);
+      if (!s.flags.l05_morgue_almond) {
+        const bp = P(0.8, 0.46, 2.8);
+        bottleIcon(ctx, bp[0], bp[1]);
+      }
+      drawChaser(ctx, s, t);
+    },
+    drawView(ctx) {
+      const db = bounds(morgueDrawer);
+      ctx.save(); ctx.fillStyle = 'rgba(200,255,220,0.4)';
+      ctx.beginPath(); ctx.arc(db[0] + db[2] * 0.4, db[1] + db[3] * 0.65, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(db[0] + db[2] * 0.65, db[1] + db[3] * 0.65, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
+    hotspots: [
+      back('l05_nurse', '退回廢棄護理站'),
+      hit('morgue_log', boxRect(morgueTable, 8), '不鏽鋼台上的檢屍簿與瓶子', (g) => {
+        if (once(g, 'l05_morgue_almond')) g.give('almond');
+        g.read('n05_morgue', () => {
+          if (g.s.flags.l05_morgue_almond && !g.s.flags.l05_morgue_said) {
+            g.flag('l05_morgue_said');
+            g.say('檢屍簿旁邊壓著一瓶還沒拆封的杏仁水，你順手收進背包。');
+          }
+        });
+      }),
+      hit('drawer_0120', bounds(morgueDrawer, 8), '半拉開的 0120 冷凍抽屜', (g) => {
+        g.sfx('clank');
+        g.closeup('l05_morgue_cu', { msg: '抽屜裡空無一物，金屬底板上只殘留一灘微溫的泥水——像是有人剛從裡面坐起來走掉。' });
+      }),
     ],
   },
 
@@ -308,7 +431,7 @@ export const L05_SCENES = {
     },
     hotspots: [
       back('l05_corridor', '回到醫院走廊'),
-      hit('pool', [620, 345, 150, 65], '樓梯旁一窪清澈的水', (g) => g.say('格柵底下有一窪很清的水，溫溫的，有一股游泳池的氯味。水底看不見盡頭。你盯著它看了很久，最後還是沒有下去。')),
+      hit('pool', [620, 345, 150, 65], '樓梯旁一窪清澈的水', (g) => g.closeup('l05_pool', { msg: '格柵底下有一窪很清的水，溫溫的，有一股游泳池的氯味。水底看不見盡頭。你盯著它看了很久，最後還是沒有下去。' })),
       hit('forward', [380, 290, 200, 120], '下樓', (g) => { g.flag('l1_via_flood'); g.flag('l1_fresh', 'flood'); g.go('l1_arrive', { msg: '你走下格柵樓梯，雙膝一軟跪在冰冷的水泥地上。很安靜，很冷，很乾。你在那裡跪了很久，才想起來要呼吸。' }); }, 'go'),
     ],
   },

@@ -3,7 +3,7 @@
 import { P, bounds, box, boxRect, faceQuad, paper, poly, seg, shade, wallQuad } from '../render.js';
 import { rand } from '../rng.js';
 import { frostOverlay } from './level0-3.js';
-import { back, clockOf, glow, hit, once, outline, pal, room, sliding, tvStatic, txt } from './sublevel-kit.js';
+import { back, clockOf, drawBag, drawShuttle, glow, hit, once, outline, pal, room, sliding, tvStatic, txt } from './sublevel-kit.js';
 
 // ---------- the B.N.T.G. walk to Level 0.1 (entrance) ----------
 // Per the wiki you simply walk into Level 0.1, but Level 0 is too vast to stumble on it;
@@ -84,8 +84,26 @@ const frozenAirlock = (s) => s.flags.l01_cut === 'airlock';
 // --- ring corridor: curving off to the right; the far section is cooking ---
 const ringR = room(station, {
   hw: 1.2, depth: 7, lights: [1.7, 3.6, 5.4], flick: stationFlick, baseboard: false, flickerLights: [1],
-  openings: [{ side: -1, z1: 2.2, z2: 3.2, top: -0.6 }, { side: 1, z1: 2.4, z2: 3.4, top: -0.6 }, { side: 1, z1: 5.4, z2: 7, top: -1 }],
+  openings: [
+    { side: -1, z1: 2.2, z2: 3.2, top: -0.6 },
+    { side: -1, z1: 4.2, z2: 5.2, top: -0.6 },
+    { side: 1, z1: 2.4, z2: 3.4, top: -0.6 },
+    { side: 1, z1: 5.4, z2: 7, top: -1 },
+  ],
 });
+const medDoor = wallQuad(-1.2, -0.6, 1, 4.2, 5.2);
+const maintDoor = wallQuad(1.6, -0.58, 1, 3.8, 4.8);
+const medbayR = room(station, { hw: 1.5, depth: 5.5, lights: [1.9, 4.0], baseboard: false });
+const medBed = { x1: -0.65, x2: 0.55, y1: 0.45, y2: 0.68, z1: 2.3, z2: 3.6, color: '#dce6ea', top: '#f2f7f9', edge: true };
+const medMonitor = wallQuad(-1.5, -0.4, 0.18, 2.0, 2.9);
+const medCabinet = wallQuad(1.5, -0.35, 0.45, 2.1, 3.0);
+const maintR = room(pal('#9ba9af', '#627076', '#455056', '#060c10', '#c8ecff'), { hw: 1.4, depth: 6.5, lights: [1.8, 4.4], baseboard: false });
+const maintValves = wallQuad(-1.4, -0.38, 0.4, 2.1, 3.2);
+const maintWindow = wallQuad(1.4, -0.45, 0.25, 2.3, 3.6);
+const dockR = room(station, { hw: 1.9, depth: 7, lights: [2.0, 4.8], baseboard: false });
+const dockShuttle = { x1: -1.65, x2: -0.35, y1: -0.1, y2: 1, z1: 2.8, z2: 5.4, color: '#8a99a0', top: '#b2c0c6', edge: true };
+const dockPouch = { x1: 0.92, x2: 1.48, y1: 0.62, y2: 1, z1: 2.2, z2: 2.7, color: '#5b6a58', top: '#70826c', edge: true };
+const dockValve = faceQuad(-0.42, -0.55, 0.42, 0.35, 6.95);
 const hotTurn = wallQuad(1.2, -1, 1, 5.4, 7);
 
 // --- crew quarters (safe): six bunks made every day, and a seventh cot ---
@@ -183,7 +201,7 @@ export const L01_SCENES = {
       if (!(s.flags.l01_walk || 0)) paper(ctx, R, walkNote, 3, '#efe7cf');
     },
     hotspots: [
-      { ...back('l0_pillar', '回到柱子的房間'), click: (g) => { g.flag('l01_walk', 0); g.go('l0_pillar'); } },
+      { ...back('l0_colonnade', '回到長柱列過道'), click: (g) => { g.flag('l01_walk', 0); g.go('l0_colonnade'); } },
       hit('left', pillarRect(walkSide.left), '從左邊的柱子旁走過去', (g) => walkStep(g, 'left'), 'go'),
       hit('right', pillarRect(walkSide.right), '從右邊的柱子旁走過去', (g) => walkStep(g, 'right'), 'go'),
       { ...hit('guide', bounds(walkNote, 8), '貼在柱子上的便條', (g) => g.read('n_annex')), when: (s) => !(s.flags.l01_walk || 0) },
@@ -225,14 +243,14 @@ export const L01_SCENES = {
       if (frozenAirlock(s)) frostOverlay(ctx, t, s, 0.8);
     },
     hotspots: [
-      back('l0_pillar', '走回黃色的地毯', '你退過門檻。鋼和玻璃一面一面變回黃色的牆紙，嗡嗡聲回來了。'),
+      back('l0_colonnade', '走回黃色的地毯', '你退過門檻。鋼和玻璃一面一面變回黃色的牆紙，嗡嗡聲回來了。'),
       hit('forward', bounds(airDoor, 4), '趁門打開時穿過去', (g) => {
         if (frozenAirlock(g.s)) return g.say('門凍死在門框裡，玻璃上結了一層白霜。這條路已經被你關掉了。');
         if (doorOpen(g.s) > 0.7) return g.go('l01_ring', { msg: '你在門闔上前一步鑽了過去。身後「砰」地一聲，門又開始它的循環。' });
         g.sanity(-4); g.sfx('thud');
         g.say('門猛地闔上，夾住了你的肩膀，又彈開。你縮回來，肩膀發麻。看準綠燈亮的時候再走。');
       }, 'go'),
-      hit('robot', [300, 345, 360, 50], '清潔機器人', (g) => g.say('機器人繞過你的鞋子，繼續擦一塊早就乾淨的地板。機身上印著：ZENITH・維護 07。它擦的那一塊，剛好是你剛才站的地方。')),
+      hit('robot', [300, 345, 360, 50], '清潔機器人', (g) => g.closeup('l01_robot', { msg: '機器人繞過你的鞋子，繼續擦一塊早就乾淨的地板。機身上印著：ZENITH・維護 07。它擦的那一塊，剛好是你剛才站的地方。' })),
       hit('note', bounds(placard, 6), '牆上的站牌', (g) => g.read('n01')),
     ],
   },
@@ -255,7 +273,7 @@ export const L01_SCENES = {
       const sign = P(1.2, -0.75, 4.9);
       ctx.fillStyle = '#111a1e'; ctx.fillRect(sign[0] - 30, sign[1] - 12, 48, 20);
       txt(ctx, hot ? '+68°C' : '+21°C', sign[0] - 6, sign[1] + 3, hot ? '#ff6a4a' : '#7fe0ff', 11);
-      for (const [o, label] of [[ringR.openings[0], '船員艙'], [ringR.openings[1], '廚房']]) {
+      for (const [o, label] of [[ringR.openings[0], '船員艙'], [ringR.openings[1], '醫療艙'], [ringR.openings[2], '廚房']]) {
         const c = P(o.side * 1.2, -0.72, (o.z1 + o.z2) / 2);
         txt(ctx, label, c[0], c[1], shade(R, '#3b6f86', o.z1), 12);
       }
@@ -270,6 +288,7 @@ export const L01_SCENES = {
         g.go('l01_airlock');
       } },
       hit('quarters', bounds(wallQuad(-1.2, -0.6, 1, 2.2, 3.2)), '船員艙', (g) => g.go('l01_quarters'), 'go'),
+      hit('medbay', bounds(medDoor, 4), '醫療艙', (g) => g.go('l01_medbay'), 'go'),
       hit('galley', bounds(wallQuad(1.2, -0.6, 1, 2.4, 3.4)), '廚房', (g) => g.go('l01_galley'), 'go'),
       hit('forward', [470, 200, 140, 140], '沿著彎道往前走', (g) => {
         if (!g.s.flags.l01_cut) { g.sanity(-3); g.drink(-4); return g.say('你才走近幾步，熱浪就撲上臉，睫毛像要捲起來。牆上的讀數：+68°C。得先讓溫控把這一段冷下來。'); }
@@ -355,7 +374,7 @@ export const L01_SCENES = {
         if (!once(g, 'l01_water')) return g.say('水箱見底了。出水口還滴了兩下。');
         g.drink(35); g.sfx('drink'); g.say('冰涼、乾淨，沒有任何味道。你一口氣喝了很多。');
       }),
-      hit('tray', bounds([P(-0.12, 0.42, 1.85), P(0.12, 0.42, 2.05)], 10), '第七個餐盤', (g) => g.say('餐盤邊緣貼著名牌。前六個寫著名字，第七個是空白的——上面有剛擦過的痕跡。')),
+      hit('tray', bounds([P(-0.12, 0.42, 1.85), P(0.12, 0.42, 2.05)], 10), '第七個餐盤', (g) => g.closeup('l01_tray', { msg: '餐盤邊緣貼著名牌。前六個寫著名字，第七個是空白的——上面有剛擦過的痕跡。' })),
       hit('green', bounds(greenDoor, 4), '水耕溫室', (g) => g.go('l01_greenhouse'), 'go'),
     ],
   },
@@ -394,6 +413,8 @@ export const L01_SCENES = {
       });
       txt(ctx, s.flags.l01_cut ? 'OK' : 'D!', mx, my + 4, s.flags.l01_cut ? '#62f0a0' : '#ff5a4a', 10);
       const slot = P(0.85, -0.1, 5); ctx.fillStyle = s.flags.l01_console ? '#62f0a0' : '#f05a4a'; ctx.fillRect(slot[0] - 6, slot[1] - 2, 12, 4);
+      poly(ctx, maintDoor, '#0d161b'); outline(ctx, maintDoor, shade(R, '#7a9aa4', 4.2), 2);
+      const ml = P(1.6, -0.68, 4.3); txt(ctx, '維生機房', ml[0] - 8, ml[1], shade(R, '#7fe0ff', 4.2), 10);
       if (frozen) frostOverlay(ctx, t, s, 0.7);
     },
     drawOver(ctx, t, s) {
@@ -414,6 +435,7 @@ export const L01_SCENES = {
     },
     hotspots: [
       back('l01_galley', '回到廚房'),
+      { ...hit('maint', bounds(maintDoor, 4), '右側球殼維生機房', (g) => g.go('l01_maint'), 'go'), when: (s) => !climateOpen(s) },
       hit('tomato', bounds(tomatoQ, 6), '架子上的番茄', (g) => {
         if (g.s.flags.l01_cut === 'greenhouse') return g.say('葉子凍成了玻璃一樣的東西，一碰就碎。');
         if (!once(g, 'l01_tomato')) return g.say('其他的果子都還是青的。');
@@ -464,6 +486,102 @@ export const L01_SCENES = {
         g.flag('l1_via_zenith'); g.flag('l1_fresh', 'zenith');
         g.go('l1_arrive', { msg: '你穿過閃爍的裂口。玻璃、甲板、球殼一起被抽走，腳下變成了冰冷潮濕的水泥。' });
       }, 'go'),
+    ],
+  },
+
+  l01_medbay: {
+    level: '0.1', title: '醫療艙', room: medbayR, safe: true,
+    viewMsg: '觀景窗裡，體徵螢幕上跳動著七條心電波形——其中一條完全跟你的心跳重合。',
+    enter(g, { first }) {
+      if (first) g.say('純白無塵的自動醫療艙。中央擺著一張冷白診療床，牆邊的體徵螢幕還亮著，急救櫃沒有上鎖。');
+    },
+    draw(ctx, t, s, R) {
+      panelSeams(ctx, R, 1.5, 1.2, 5.5, 0.65); floorStrip(ctx, R, 1, 5.5, '#62f0c8');
+      box(ctx, R, medBed);
+      poly(ctx, medMonitor, '#0a1c22'); outline(ctx, medMonitor, '#74b8c8', 2);
+      const mb = bounds(medMonitor);
+      ctx.strokeStyle = '#62f0a0'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let x = mb[0] + 6; x < mb[0] + mb[2] - 6; x += 6) {
+        const y = mb[1] + mb[3] * 0.5 + Math.sin(x * 0.25 + t * 5) * 7;
+        if (x === mb[0] + 6) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      poly(ctx, medCabinet, shade(R, '#dce4e8', 2.4)); outline(ctx, medCabinet, '#6f848c', 2);
+      const cp = P(1.5, 0.02, 2.55);
+      ctx.fillStyle = '#d9483b'; ctx.fillRect(cp[0] - 26, cp[1] - 3, 14, 6); ctx.fillRect(cp[0] - 22, cp[1] - 7, 6, 14);
+    },
+    hotspots: [
+      back('l01_ring', '回到環形走廊'),
+      hit('med_log', bounds(medMonitor, 8), '體徵螢幕與船醫日誌', (g) => g.read('n01_medbay')),
+      hit('med_bed', boxRect(medBed, 8), '自動體徵掃描診療床', (g) => {
+        if (!once(g, 'l01_med_scan')) return g.closeup('l01_med_scan', { msg: '掃描儀亮起綠燈：「生命體徵穩定。建議勿接觸未經授權之第七席位。」' });
+        g.sanity(12); g.sfx('ok');
+        g.closeup('l01_med_scan', { msg: '自動掃描臂滑過你上方，釋放出一陣帶著淡薄荷味的鎮靜霧氣。螢幕上卻亮起了第七條陌生生命線。（清醒度 +12）' });
+      }),
+      hit('med_cab', bounds(medCabinet, 8), '沒上鎖的急救冷藏櫃', (g) => {
+        if (!once(g, 'l01_med_almond')) return g.say('急救櫃裡只剩貼著過期標籤的生理食鹽水袋。');
+        g.give('almond', '你在冷藏櫃最下層找到一瓶標著「抗精神耗竭劑（杏仁水）」的密封瓶。');
+      }, 'take'),
+    ],
+  },
+
+  l01_maint: {
+    level: '0.1', title: '球殼維生機房', room: maintR,
+    viewMsg: '觀景窗望向右側夾層觀察窗——整片發黃潮濕的壁紙像霉斑一樣，正從外層貼著金屬球殼慢慢蔓延進來。',
+    enter(g, { first }) {
+      if (first) g.say('巨型冷卻管線在低矮機房裡震動嘶鳴。左邊是冷卻分流閥與檢修夾，右邊有扇望向球殼外壁夾層的厚玻璃窗，盡頭連著停泊灣。');
+    },
+    draw(ctx, t, s, R) {
+      panelSeams(ctx, R, 1.4, 1.2, 6.5, 0.7);
+      for (const y of [-0.7, -0.45]) seg(ctx, P(-1.35, y, 1.2), P(-1.35, y, 6.5), '#5a94aa', 7);
+      poly(ctx, maintValves, shade(R, '#45545c', 2.5)); outline(ctx, maintValves, '#8eb2be', 2);
+      poly(ctx, maintWindow, '#2a2414'); outline(ctx, maintWindow, '#7e9098', 3);
+      const wb = bounds(maintWindow);
+      ctx.fillStyle = 'rgba(200,179,94,0.42)';
+      ctx.fillRect(wb[0] + 6, wb[1] + 6, wb[2] - 12, wb[3] - 12);
+      poly(ctx, faceQuad(-0.42, -0.58, 0.42, 1, 6.49), '#0c161c');
+      outline(ctx, faceQuad(-0.42, -0.58, 0.42, 1, 6.49), '#88b4c4', 2);
+    },
+    hotspots: [
+      back('l01_greenhouse', '回到水耕溫室'),
+      hit('forward', bounds(faceQuad(-0.42, -0.58, 0.42, 1, 6.49), 10), '走進封閉停泊灣', (g) => g.go('l01_dock'), 'go'),
+      hit('maint_note', bounds(maintValves, 8), '冷卻分流閥上的檢修筆記', (g) => g.read('n01_maint')),
+      hit('shell_win', bounds(maintWindow, 8), '球殼外壁夾層觀察窗', (g) => {
+        g.say(g.s.view
+          ? '觀景窗清楚拍到黃色壁紙正緊貼著空間站外壁一層層擠壓——難怪冷卻系統怎麼都負荷不了。'
+          : '窗外不是太空，而是緊貼著金屬球殼的潮濕黃色牆面，中間還夾著幾根發燙的管線。');
+      }),
+    ],
+  },
+
+  l01_dock: {
+    level: '0.1', title: '封閉停泊灣', room: dockR,
+    viewMsg: '觀景窗裡，B.N.T.G. 穿梭艙的擋風玻璃後面隱約浮現出四個模板箭頭的倒影。',
+    enter(g, { first }) {
+      if (first) g.say('高聳的弧形停泊灣，中央停著一艘早已熄火的 B.N.T.G. 勘查穿梭艙。艙旁放著一只探勘物資袋，正前方是封死的外艙氣閥。');
+    },
+    draw(ctx, t, s, R) {
+      panelSeams(ctx, R, 1.9, 1.2, 7, 0.8); floorStrip(ctx, R, 1, 7, '#f0b84a');
+      drawShuttle(ctx, R, dockShuttle);
+      const win = faceQuad(-1.42, 0.04, -0.55, 0.42, 2.79);
+      poly(ctx, win, '#182834'); outline(ctx, win, '#80a8bc', 2);
+      txt(ctx, 'B.N.T.G.', P(-0.98, 0.65, 2.78)[0], P(-0.98, 0.65, 2.78)[1], '#e6d89e', 11);
+      drawBag(ctx, R, dockPouch, { stripe: '#e0b848' });
+      poly(ctx, dockValve, '#263036'); outline(ctx, dockValve, '#90a4ae', 2.5);
+      txt(ctx, 'EXT SEALED', 480, P(0, -0.1, 6.95)[1], '#ff7a64', 10);
+    },
+    hotspots: [
+      back('l01_maint', '退回維生機房'),
+      hit('shuttle', boxRect(dockShuttle, 6), 'B.N.T.G. 勘查穿梭艙', (g) => g.read('n01_dock')),
+      hit('dock_pouch', boxRect(dockPouch, 10), '艙旁的探勘物資袋', (g) => {
+        if (!once(g, 'l01_dock_bar')) return g.say('物資袋已經翻空了，只剩幾片壓扁的標記模板。');
+        g.give('bar', '你在物資袋內層找到一條還封得嚴嚴實實的高熱量能量棒。');
+      }, 'take'),
+      hit('ext_valve', bounds(dockValve, 8), '封死的外艙氣閥', (g) => {
+        g.sfx('clank');
+        g.say('氣閥被液壓死死鎖住。指示燈紅字寫著：「外部大氣異常——偵測到黃色走廊牆體接觸」。');
+      }),
     ],
   },
 };
