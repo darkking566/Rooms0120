@@ -2,10 +2,15 @@
   "name": "rooms0120",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "An original 2D point-and-click horror game set in the Backrooms.",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node tests/walkthrough.cjs && node tests/sublevels.cjs"
+    "test": "node tests/integrity.mjs && node tests/walkthrough.cjs && node tests/sublevels.cjs",
+    "test:integrity": "node tests/integrity.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   },
   "engines": {
     "node": ">=18"

@@ -24,6 +24,11 @@ const watch5 = (g) => {
   g.take('tape5'); g.flag('watched_tape5'); g.sfx('whirr');
   g.read('n_tape5', () => { g.sanity(10); g.say('你按下停止鍵。那個名字還在你嘴裡。這一次，你沒有忘記。'); });
 };
+// Tape #6 is M.E.G.'s EVP recording from the edge of the Torment. Hearing it costs a little.
+const watch6 = (g) => {
+  g.take('tape6'); g.flag('watched_tape6'); g.sfx('static');
+  g.read('n_tape6', () => { g.sanity(-5); g.say('你按下停止鍵。那幾句話停了，可是你知道它們在那邊沒有停。'); });
+};
 const tapeItem = (n, where) => ({
   name: `錄影帶 #${n}`, desc: `一卷小型錄影帶，標籤上寫著「#${n}」。${where}`,
   combine: { camcorder: watch(`tape${n}`) },
@@ -48,13 +53,36 @@ export const ITEMS = {
   },
   almond: {
     name: '杏仁水', desc: '微溫、帶點甜味。喝下去能讓腦袋清醒一些。',
-    self: (g) => { g.take('almond'); g.sanity(30); g.drink(35); g.sfx('drink'); g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。'); },
+    self: (g) => {
+      g.take('almond'); g.sanity(30); g.drink(35); g.sfx('drink');
+      if (g.s.flags.c1s_plague) {
+        g.flag('c1s_plague', false);
+        return g.say('你喝下杏仁水。冰甜的液體順著喉嚨下去，原本燒得發昏的高熱與疫疾慢慢退開了。');
+      }
+      if (g.s.scene.startsWith('l001_')) {
+        g.flag('l001_calmed');
+        return g.say('你喝下杏仁水。微甜的液體暫時壓住了日光燈的嗡鳴與悶熱，被剝奪的五感慢慢清晰起來。');
+      }
+      if (g.s.scene.startsWith('dull_')) {
+        g.sanity(-25);
+        return g.say('你喝下杏仁水。喉嚨雖然潤了一點，但「黯室」裡死寂引發的幻覺毫無減退——杏仁水對這裡沒有用。');
+      }
+      g.say('你喝下杏仁水。喉嚨不再發乾，嗡嗡聲也退遠了一些。');
+    },
   },
   almond_wet: {
     name: '濕掉的杏仁水', desc: '從濕地毯上撿來的。瓶蓋是鬆的，瓶底沾滿了地毯裡的水。',
     self: (g) => {
       g.take('almond_wet'); g.sanity(-12); g.drink(-10); g.sfx('drink');
       g.say('又鹹又苦，還帶著一股藥水味——這根本不是杏仁水，是從地毯裡滲進去的東西。喝完反而更渴了。');
+    },
+  },
+  cashew: {
+    name: '腰果水', desc: '標籤磨掉了一半，只剩「…ASHEW」。這一層的水，喝下去才知道是什麼。',
+    self: (g) => {
+      g.take('cashew'); g.drink(15); g.sfx('drink');
+      g.sanity(-15);
+      g.say('你喝下去。味道又甜又苦，喉嚨像被砂紙磨過。這不是杏仁水。胃在往上翻，腦袋裡嗡嗡作響。');
     },
   },
   bar: {
@@ -73,6 +101,8 @@ export const ITEMS = {
   tape3: tapeItem(3, '和攝影機一起用就能播放。'),
   tape4: tapeItem(4, '上面還黏著紅色的地毯纖維。'),
   tape5: { name: '錄影帶 #5', desc: '一卷小型錄影帶，標籤上寫著「#5」。摸起來是冰的。', combine: { camcorder: watch5 } },
+  tape6: { name: '錄影帶 #6', desc: '一卷小型錄影帶，標籤上寫著「#6 EVP」。外殼的一角是灰色的，摸起來像粉筆灰。', combine: { camcorder: watch6 } },
+  knife: { name: '折疊刀', desc: 'M.E.G. 的折疊刀，刀柄上刻著「V.」。刀刃很利，割得開軟的東西。' },
   wrench: { name: '扳手', desc: '很重的活動扳手，握把被很多隻手磨得發亮。' },
   ladder: { name: '折疊梯', desc: '鋁製的折疊梯。可以架在高處的洞口下面，也可以橫著放。' },
   key: { name: '黃銅鑰匙', desc: '小小的黃銅鑰匙。標籤上寫著「別開」，字跡被手指摸得快看不見了。' },
@@ -82,7 +112,7 @@ export const ITEMS = {
   camcorder: {
     name: '攝影機', desc: '一台舊型的手持攝影機，螢幕還亮著。再點一次就能舉起來透過觀景窗看（也可以按 V 鍵）。',
     self: (g) => g.setView(!g.s.view),
-    combine: { tape: insertTape, tape2: watch('tape2'), tape3: watch('tape3'), tape4: watch('tape4'), tape5: watch5 },
+    combine: { tape: insertTape, tape2: watch('tape2'), tape3: watch('tape3'), tape4: watch('tape4'), tape5: watch5, tape6: watch6 },
   },
   tape: { name: '錄影帶', desc: '一卷小型錄影帶，標籤上寫著「0120」。', combine: { camcorder: insertTape } },
   outpost_key: { name: 'M.E.G. 鑰匙', desc: '小鑰匙，吊牌上寫著「第七前哨站・物資籠」。吊牌背面有人用指甲刻了一道「正」字的第一筆。' },
@@ -93,6 +123,10 @@ export const ITEMS = {
   },
   photo: { name: '拍立得照片', desc: '一間黃色的房間，牆角坐著一個人，臉被拍糊了。背面寫著：「第一次」。翻回正面時，牆角是空的。' },
   valve: { name: '閥門把手', desc: '沉甸甸的鐵製把手，接頭是方形的。' },
+  recorder: { name: '錄音筆', desc: '三方聯合哨站發給訪客的小型錄音筆。在 ACMA 收容室或現場或許用得上。' },
+  recorder2: { name: '備用錄音筆', desc: '從三合研究院領出的第二支錄音筆，外殼還貼著檢修標籤。' },
+  dragon_scale: { name: '龍鱗', desc: '深黑泛紅的堅硬鱗片，握在手心像剛熄滅的煤炭一樣隱隱發燙。' },
+  extinguisher: { name: '乾粉滅火器', desc: '在 Level 0.1「險區」雜物隔間撿到的乾粉滅火器，能暫時壓制驟燃區的局部火勢。' },
 };
 
 export function drawIcon(ctx, id, s = 56) {
@@ -241,17 +275,56 @@ export function drawIcon(ctx, id, s = 56) {
     case 'tape3':
     case 'tape4':
     case 'tape5':
-      ctx.fillStyle = '#1e1e20'; ctx.beginPath(); ctx.roundRect(-18, -11, 36, 22, 2); ctx.fill();
-      ctx.fillStyle = '#e9e1c1'; ctx.fillRect(-14, -9, 28, 6);
+    case 'tape6':
+      ctx.fillStyle = id === 'tape6' ? '#4a4a4e' : '#1e1e20'; ctx.beginPath(); ctx.roundRect(-18, -11, 36, 22, 2); ctx.fill();
+      ctx.fillStyle = id === 'tape6' ? '#cfd2d6' : '#e9e1c1'; ctx.fillRect(-14, -9, 28, 6);
       ctx.fillStyle = '#777';
       for (const x of [-8, 8]) { ctx.beginPath(); ctx.arc(x, 4, 4, 0, Math.PI * 2); ctx.fill(); }
       if (id !== 'tape') { ctx.fillStyle = '#2b241a'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`#${id.slice(4)}`, 0, -4); }
+      break;
+    case 'knife':
+      ctx.rotate(-0.6);
+      ctx.fillStyle = '#2d3748'; ctx.beginPath(); ctx.roundRect(-5, -4, 10, 24, 2); ctx.fill();
+      ctx.fillStyle = '#cbd5e0'; ctx.beginPath(); ctx.moveTo(-3, -4); ctx.lineTo(3, -4); ctx.lineTo(1, -22); ctx.lineTo(-3, -20); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#a0aec0'; ctx.fillRect(-2, -4, 4, 3);
       break;
     case 'wrench':
       ctx.rotate(-0.7);
       ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-3, -14, 6, 34);
       ctx.beginPath(); ctx.arc(0, -16, 9, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-3, -26, 6, 10);
+      break;
+    case 'recorder':
+    case 'recorder2':
+      ctx.fillStyle = id === 'recorder2' ? '#3a4654' : '#2a2d34';
+      ctx.beginPath(); ctx.roundRect(-9, -18, 18, 36, 3); ctx.fill();
+      ctx.fillStyle = '#607080'; ctx.fillRect(-6, -15, 12, 8);
+      ctx.fillStyle = id === 'recorder2' ? '#4fb3bf' : '#d64545';
+      ctx.beginPath(); ctx.arc(0, -2, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9aa0a6'; ctx.fillRect(-5, 6, 10, 8);
+      break;
+    case 'dragon_scale':
+      ctx.beginPath();
+      ctx.moveTo(0, -20);
+      ctx.quadraticCurveTo(15, -4, 12, 16);
+      ctx.quadraticCurveTo(0, 22, -12, 16);
+      ctx.quadraticCurveTo(-15, -4, 0, -20);
+      ctx.closePath();
+      ctx.fillStyle = '#381216'; ctx.fill();
+      ctx.strokeStyle = '#b43b2a'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#732124';
+      ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(5, 6); ctx.lineTo(0, 12); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+      break;
+    case 'extinguisher':
+      ctx.fillStyle = '#c4281c';
+      ctx.beginPath(); ctx.roundRect(-10, -10, 20, 30, 5); ctx.fill();
+      ctx.fillStyle = '#e8e2d0';
+      ctx.fillRect(-8, -2, 16, 10);
+      ctx.fillStyle = '#222428';
+      ctx.fillRect(-4, -18, 8, 8);
+      ctx.fillRect(4, -17, 10, 4);
+      ctx.strokeStyle = '#1a1c20'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-4, -14); ctx.quadraticCurveTo(-16, -12, -14, 6); ctx.stroke();
       break;
     default:
       ctx.fillStyle = '#888'; ctx.fillRect(-10, -10, 20, 20);

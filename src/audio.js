@@ -71,7 +71,19 @@ export class Sound {
     this.bus.gain.setTargetAtTime(1, now, 0.6);
     const add = (src, ...rest) => { this.chain(src, ...rest, this.bus); src.start(); this.sources.push(src); };
 
-    if (lv === '0.1') {
+    if (lv === '0.01') {
+      add(this.node('Oscillator', { type: 'sawtooth', frequency: 124 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 340 }), this.node('Gain', { gain: 0.068 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 62 }), this.node('Gain', { gain: 0.055 }));
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 1600, Q: 0.9 }), this.node('Gain', { gain: 0.024 }));
+    } else if (lv === '0.1-dz') {
+      add(this.node('Oscillator', { type: 'sawtooth', frequency: 128 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 420 }), this.node('Gain', { gain: 0.085 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 64 }), this.node('Gain', { gain: 0.075 }));
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 260 }), this.node('Gain', { gain: 0.18 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.45) this.burst(0.08, 0.07, 'highpass', 2400); }, 950));
+    } else if (lv === '0.98') {
+      // Absolute silence with only the faintest sub-audible upper-air breeze
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 520, Q: 2.5 }), this.node('Gain', { gain: 0.004 }));
+    } else if (lv === '0.1') {
       add(this.node('Oscillator', { type: 'sine', frequency: 84 }), this.node('Gain', { gain: 0.04 }));
       add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 1100, Q: 1.8 }), this.node('Gain', { gain: 0.025 }));
     } else if (lv === '0.3') {
@@ -80,6 +92,44 @@ export class Sound {
     } else if (lv === '0.5') {
       add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 220 }), this.node('Gain', { gain: 0.16 }));
       this.timers.push(setInterval(() => this.drip(), 900));
+    } else if (lv === 'C1') {
+      add(this.node('Oscillator', { type: 'sine', frequency: 45 }), this.node('Gain', { gain: 0.01 }));
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 1200 }), this.node('Gain', { gain: 0.004 }));
+    } else if (lv === 'C1.2') {
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 200 }), this.node('Gain', { gain: 0.08 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.25) this.bang(); }, 5500));
+    } else if (lv === 'C1.3') {
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 800, Q: 1.2 }), this.node('Gain', { gain: 0.03 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 55 }), this.node('Gain', { gain: 0.015 }));
+    } else if (lv === 'C1.4') {
+      add(this.node('Oscillator', { type: 'sawtooth', frequency: 40 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 140 }), this.node('Gain', { gain: 0.04 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.35) this.groan(); }, 3200));
+    } else if (lv === '0.4') {
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 300 }), this.node('Gain', { gain: 0.05 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 50 }), this.node('Gain', { gain: 0.02 }));
+    } else if (lv === '0-blackout') {
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 170 }), this.node('Gain', { gain: 0.09 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.45) this.drip(); }, 2100));
+    } else if (lv === '0-red') {
+      add(this.node('Oscillator', { type: 'sawtooth', frequency: 48 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 140 }), this.node('Gain', { gain: 0.07 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 72 }), this.node('Gain', { gain: 0.035 }));
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 210 }), this.node('Gain', { gain: 0.14 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.4) this.groan(); }, 2400));
+    } else if (lv === '0-torment') {
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 380, Q: 1.4 }), this.node('Gain', { gain: 0.06 }));
+      add(this.noise(this.white, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 2500, Q: 2.2 }), this.node('Gain', { gain: 0.008 }));
+      add(this.node('Oscillator', { type: 'sine', frequency: 66 }), this.node('Gain', { gain: 0.025 }));
+    } else if (lv === '0-arches') {
+      add(this.node('Oscillator', { type: 'sine', frequency: 96 }), this.node('Gain', { gain: 0.025 }));
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 240 }), this.node('Gain', { gain: 0.04 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.35) this.drip(); }, 3200));
+    } else if (lv === '0-holes') {
+      add(this.node('Oscillator', { type: 'sine', frequency: 44 }), this.node('Gain', { gain: 0.045 }));
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'bandpass', frequency: 190, Q: 1.3 }), this.node('Gain', { gain: 0.12 }));
+      this.timers.push(setInterval(() => { if (Math.random() < 0.25) this.groan(); }, 4600));
+    } else if (lv === '0-ceiling') {
+      add(this.node('Oscillator', { type: 'sawtooth', frequency: 112 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 165 }), this.node('Gain', { gain: 0.032 }));
+      add(this.noise(this.brown, true), this.node('BiquadFilter', { type: 'lowpass', frequency: 140 }), this.node('Gain', { gain: 0.05 }));
     } else if (lv === 0 || lv === 0.2 || lv === '0.7') {
       add(this.node('Oscillator', { type: 'sawtooth', frequency: 118 }), this.node('BiquadFilter', { type: 'lowpass', frequency: 260 }), this.node('Gain', { gain: 0.05 }));
       add(this.node('Oscillator', { type: 'sine', frequency: 59 }), this.node('Gain', { gain: 0.05 }));
@@ -173,6 +223,12 @@ export class Sound {
       case 'whirr': this.tone('square', 1200, 1700, 0.18, 0.025); this.burst(0.35, 0.08, 'bandpass', 2600); break;
       case 'thud': this.tone('sine', 110, 40, 0.35, 0.45); this.burst(0.15, 0.25, 'lowpass', 300, this.brown); break;
       case 'groan': this.groan(); break;
+      case 'bang': this.bang(); break;
+      case 'clank':
+        this.tone('sine', 64 + Math.random() * 14, 34, 0.9, 0.045);
+        this.burst(0.25, 0.025, 'bandpass', 720, this.white);
+        break;
+      case 'drip': this.drip(); break;
       case 'page': this.burst(0.2, 0.12, 'bandpass', 1800); break;
       case 'sting':
         for (const f of [233, 247, 370, 523]) this.tone('sawtooth', f, f * 0.94, 1.5, 0.09);
